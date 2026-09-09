@@ -1,0 +1,53 @@
+id: 017-portolan-catalog
+case_type: positive
+modes: [live]
+score_types:
+  live: agent_benchmark
+project_dir: project
+hard_gate: true
+live:
+  prompt_file: prompt.md
+  agent_workdir: project
+  fixtures:
+    - { source: ../../fixtures/mini-portolan/catalog.json, destination: project/catalog/catalog.json }
+    - { source: ../../fixtures/mini-portolan/AGENTS.md, destination: project/catalog/AGENTS.md }
+    - { source: ../../fixtures/mini-portolan/README.md, destination: project/catalog/README.md }
+    - { source: ../../fixtures/mini-portolan/parcels/collection.json, destination: project/catalog/parcels/collection.json }
+    - { source: ../../fixtures/mini-portolan/parcels/AGENTS.md, destination: project/catalog/parcels/AGENTS.md }
+    - { source: ../../fixtures/mini-portolan/parcels/README.md, destination: project/catalog/parcels/README.md }
+    - { source: ../../fixtures/mini-portolan/parcels/parcels.parquet, destination: project/catalog/parcels/parcels.parquet }
+    - { source: ../../fixtures/mini-portolan/parcels/parcels-upstream.geojson, destination: project/catalog/parcels/parcels-upstream.geojson }
+
+# Does the shipped guidance actually change what an agent does with a Portolan
+# catalog? Two behaviours decide it, and both are graded by consequence rather
+# than by inspecting prose:
+#
+#   1. `parcels/AGENTS.md` states the count rule -- `record_status` carries one
+#      superseded historical row, and every count must filter it out. Three
+#      rows match ARIMAA; two are current. An agent that queried without
+#      reading the collection's agent guide reports 3 and fails row_count.
+#   2. The GeoParquet holds the `data` role under an opaque asset key, while
+#      the pre-conversion GeoJSON is keyed `parcels` and carries `source`.
+#      Selecting by key rather than by role lands on the upstream extract,
+#      whose columns are the publisher's originals (`siht1`, `tunnus`), so a
+#      wrong pick cannot silently produce the right number.
+#
+# The provenance assertions grade the other half of the guidance: a Portolan
+# collection already publishes SPDX license, producer/host providers and a
+# version identity, so a project built from one has no excuse for an unpinned
+# or unattributed source.
+assertions:
+  - assert: project.conforms_to_schema
+  - assert: project.parses
+  - assert: project.graph_resolves
+  - assert: geodata.row_count
+    args:
+      path: data/derived/candidates.parquet
+      equals: 2
+  - assert: provenance.every_source_has_provider_and_access
+  - assert: provenance.every_source_pinned
+  - assert: provenance.license_present_where_required
+  - assert: provenance.rationale_present
+  - assert: validation.required_all_present
+  - assert: validation.no_implicit_pass
+  - assert: validation.run_record_matches
