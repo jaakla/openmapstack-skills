@@ -136,9 +136,26 @@ The equivalent convenience command is:
 ../../.e2e-venv/bin/python run_e2e.py
 ```
 
+`data/source/` is a cache, and it never expires on its own. A re-run reuses
+whatever is there if the files are internally coherent — counts agreeing with
+their recorded metadata, ownership and active-status predicates holding — which
+establishes that the bytes are sound, not that they still match what the
+services publish. Reuse older than seven days logs a warning naming the age.
+
+**Before regenerating the committed artifacts, discard it:**
+
+```bash
+../../.e2e-venv/bin/python pipeline.py --refresh
+```
+
+Regenerating from a stale cache produces a project that looks fine and that CI
+cannot reproduce, because CI always starts cold and fetches the current data.
+That mismatch surfaces as the `project.qgz` currency failure in
+`.github/workflows/example.yml`, a long way from its cause.
+
 Outputs include:
 
-- `data/source/Tartu_maakond_KATASTER_GPKG.gpkg` — 79,056 cadastral parcels
+- `data/source/Tartu_maakond_KATASTER_GPKG.gpkg` — 79,082 cadastral parcels
 - `data/source/etak_main_roads.geojson` — completeness-verified ETAK main roads
 - `data/source/tartu_municipal_education.geojson` — normalized official municipal facilities
 - `data/derived/final-candidates.gpkg`, `.parquet`, `.json`

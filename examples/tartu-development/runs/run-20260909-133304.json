@@ -1,0 +1,101 @@
+{
+  "run_id": "run-20260909-133304",
+  "started_at": "2026-09-09T13:33:04.395938+00:00",
+  "completed_at": "2026-09-09T13:33:09.649721+00:00",
+  "status": "warning",
+  "inputs_hash": "sha256:b33a5402987c8b5e737c613d2063154a2cfb5466e1c24bbf7c8162b8286e995c",
+  "outputs_hash": "sha256:a6bb45317750bfc9c52e6eba03c3198b64e129b37a0cf175fa0a0a097ab53203",
+  "source_manifest": "data/source/manifest.json",
+  "validation_report": "validation/latest-report.json",
+  "sources": [
+    {
+      "key": "cadastral_parcels",
+      "sha256": "sha256:f318990f939e9a9206ddb220412d93e15143686d67dbc23a0a63632ac4e16848"
+    },
+    {
+      "key": "roads",
+      "sha256": "sha256:a806a652c51166907184617386a7fe12e25fdc28e32ff61f9a7fe847968cba80"
+    },
+    {
+      "key": "education_pois",
+      "sha256": "sha256:d1d8b97b18d8f92cb917624c96cd0308a9537fde78f9ca4b61c29b4080da897e"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "data/source/manifest.json",
+      "sha256": "sha256:2889738ec4a79522b1a0442f4ddd26de9f191965e4fff919226af235cf893249"
+    },
+    {
+      "path": "data/source/etak_main_roads.meta.json",
+      "sha256": "sha256:ed350ca561c5112158cbd1eb472d5814f04c13c14d04934940043c4cc66db286"
+    },
+    {
+      "path": "data/source/tartu_municipal_education.geojson",
+      "sha256": "sha256:d1d8b97b18d8f92cb917624c96cd0308a9537fde78f9ca4b61c29b4080da897e"
+    },
+    {
+      "path": "data/source/Tartu_maakond_KATASTER_GPKG.meta.json",
+      "sha256": "sha256:4c9026774677f9339caf84130ecf500fcd9a093841a902b8241252e8e533c92f"
+    },
+    {
+      "path": "data/source/etak_main_roads.geojson",
+      "sha256": "sha256:a806a652c51166907184617386a7fe12e25fdc28e32ff61f9a7fe847968cba80"
+    },
+    {
+      "path": "data/source/Tartu_maakond_KATASTER_GPKG.gpkg",
+      "sha256": "sha256:f318990f939e9a9206ddb220412d93e15143686d67dbc23a0a63632ac4e16848"
+    },
+    {
+      "path": "data/source/tartu_municipal_education.meta.json",
+      "sha256": "sha256:ed16e01b307d514d6124b0dffa2735b69185f8a00d87690f8a4bac468d041757"
+    },
+    {
+      "path": "data/overrides/planned-road.geojson",
+      "sha256": "sha256:48cb90e3b178b326d8ce9cac97af40e76b4719f9e57189df7fb9d2922d67b22e"
+    },
+    {
+      "path": "pipeline.py",
+      "sha256": "sha256:a574760e68950c71b98c751523c9e315798b772cb932d528eb2a25473e66788a"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/derived/final-candidates.gpkg",
+      "sha256": "sha256:3d0d228787516f43bbbf0562a8fa00bca1516fa36fb0a99f7a489e07666ade13"
+    },
+    {
+      "path": "data/derived/final-candidates.parquet",
+      "sha256": "sha256:6c7af976e89c1a297cde876f13acd5144ad84a8a8268c374ffc6c0c25612623c"
+    },
+    {
+      "path": "data/derived/final-candidates.json",
+      "sha256": "sha256:87f5bf24e11cbec6b1a18cf140b1fd950a6034807fe46251277f22cf743fd5b6"
+    },
+    {
+      "path": "data/derived/education_catchments.json",
+      "sha256": "sha256:6200085f3b1cadc762f2123b6e12131e52b37d115849b6847011a21183952066"
+    },
+    {
+      "path": "data/derived/education_catchment_variants.json",
+      "sha256": "sha256:9fe406286c9f90d83e7a8445e57ef6c51e0d847df2c480af5a1738fcc85a3a76"
+    },
+    {
+      "path": "data/derived/education_pois.json",
+      "sha256": "sha256:b84e2f776811c380f8f4df3a3d84f78af85af4c7138dccfa7dd8a749d6fc5917"
+    },
+    {
+      "path": "data/derived/main_roads.json",
+      "sha256": "sha256:17526ac5a5f99f846b182e8370221cc338165bbf8ab8ac202de1b28f362b3f69"
+    },
+    {
+      "path": "project.qgz",
+      "sha256": "sha256:c92253124cfc67fa9b4be10780a711952995bdf5b882c1c6be72f88bd6bece5b"
+    }
+  ],
+  "environment": {
+    "python": "3.12.3",
+    "duckdb": "1.5.5",
+    "pyproj": "3.7.2"
+  }
+}

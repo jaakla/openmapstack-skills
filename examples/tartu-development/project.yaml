@@ -6,7 +6,7 @@ project:
     walking distance to city-owned kindergarten and school), and land-use criteria in Tartu, and show
     them on an interactive map with education POIs and catchment areas.
   created_at: 2026-08-25 08:15:03+03:00
-  updated_at: '2026-09-09T09:34:32.991201+00:00'
+  updated_at: '2026-09-09T13:33:09.649721+00:00'
   status: warning
 interpretation:
   objective: "Find cadastral parcels in the Tartu region satisfying stated land-use, minimum size (>=\
@@ -41,23 +41,23 @@ sources:
     portal_page: https://geoportaal.maaruum.ee/eng/spatial-data/cadastral-data-p310.html
     access:
       method: http(s) bulk download
-      downloaded_at: '2026-08-25T00:26:19Z'
-      retrieved_at: '2026-08-25T00:26:19Z'
+      downloaded_at: '2026-09-09T13:30:40.532180+00:00'
+      retrieved_at: '2026-09-09T13:30:40.532180+00:00'
       file:
         archive_name: Tartu_maakond_KATASTER_GPKG.zip
         extracted_file: Tartu_maakond_KATASTER_GPKG.gpkg
         table_name: Tartu maakond
         format: GeoPackage (GPKG/SQLite)
-        size_bytes: 55746560
+        size_bytes: 55762944
         row_count: 79082
         column_count: 32
       request_spec: 'Direct county GPKG zip download from Maa- ja Ruumiamet S3 storage: https://s3.pilw.io/rp-kemit-kataster/ANDMED/Tartu_maakond_KATASTER_GPKG.zip
-        extracted to data/source/Tartu_maakond_KATASTER_GPKG.gpkg containing layer ''Tartu maakond'' (79,056
+        extracted to data/source/Tartu_maakond_KATASTER_GPKG.gpkg containing layer ''Tartu maakond'' (79,082
         parcels in EPSG:3301).'
     version:
-      published_at: 2026-08-25
-      identifier: Tartu_maakond_KATASTER_GPKG (daily snapshot 2026-08-25)
-      etag: 330f453002a8a3923a022e6bfdb11077-4
+      published_at: '2026-09-09'
+      identifier: Tartu_maakond_KATASTER_GPKG (daily snapshot 2026-09-09)
+      etag: 5ca4142268384d1153b04d2087599c62-4
     selection:
       municipality: Tartu linn
       filter: pindala >= 20000 AND siht1 IN ('MAATULUNDUSMAA', 'TOOTMISMAA', 'ARIMAA')
@@ -104,7 +104,7 @@ sources:
       - oiguslik_alus
       - eksport
     rationale: Authoritative cadastral geometry and land-use attributes from Maa- ja Ruumiamet. Downloaded
-      as the official Tartu county GeoPackage snapshot containing all 79,056 parcels with legal land-use
+      as the official Tartu county GeoPackage snapshot containing all 79,082 parcels with legal land-use
       designations (siht1) and official area measurements (pindala in m²).
   roads:
     role: authoritative_input
@@ -114,8 +114,8 @@ sources:
     portal_page: https://geoportaal.maaruum.ee/est/ruumiandmed/eesti-topograafia-andmekogu/laadi-etak-andmed-alla-p609.html
     access:
       method: WFS 2.0.0 (GetFeature)
-      downloaded_at: '2026-09-09T09:34:27.668614+00:00'
-      retrieved_at: '2026-09-09T09:34:27.668614+00:00'
+      downloaded_at: '2026-09-09T13:31:40.365087+00:00'
+      retrieved_at: '2026-09-09T13:31:40.365087+00:00'
       file:
         name: etak_main_roads.geojson
         layer_name: etak:e_501_tee_j
@@ -127,7 +127,7 @@ sources:
         equals numberMatched.
     version:
       published_at: 2026-08-20
-      identifier: etak:e_501_tee_j (ETAK roads GeoServer snapshot)
+      identifier: etak:e_501_tee_j completeness-verified snapshot
     selection:
       bbox:
       - 640000
@@ -169,8 +169,8 @@ sources:
     portal_page: https://geohub.tartulv.ee/
     access:
       method: ArcGIS REST FeatureServer / GeoJSON
-      downloaded_at: '2026-09-09T09:34:31.408401+00:00'
-      retrieved_at: '2026-09-09T09:34:31.408401+00:00'
+      downloaded_at: '2026-09-09T13:31:45.425315+00:00'
+      retrieved_at: '2026-09-09T13:31:45.425315+00:00'
       file:
         name: tartu_municipal_education.geojson
         table_name: education_pois
@@ -691,13 +691,13 @@ runtime:
     qgis: 3.44.3 Docker opt-in; deterministic XML builder by default
 runs:
   latest:
-    id: run-20260909-093408
-    started_at: '2026-09-09T09:34:08.622351+00:00'
-    completed_at: '2026-09-09T09:34:32.991201+00:00'
+    id: run-20260909-133304
+    started_at: '2026-09-09T13:33:04.395938+00:00'
+    completed_at: '2026-09-09T13:33:09.649721+00:00'
     status: warning
-    inputs_hash: sha256:7f1154505c5ca3799ef9a813fc454726678c329fca5a31cbb44d8955b8603966
-    outputs_hash: sha256:3865d044802ee5f7b28a88e6a1d03beff4b510bd6c9829ff6cd8265023d0f9d0
+    inputs_hash: sha256:b33a5402987c8b5e737c613d2063154a2cfb5466e1c24bbf7c8162b8286e995c
+    outputs_hash: sha256:a6bb45317750bfc9c52e6eba03c3198b64e129b37a0cf175fa0a0a097ab53203
     record:
-      path: runs/run-20260909-093408.json
+      path: runs/run-20260909-133304.json
     validation_report:
       path: validation/latest-report.json

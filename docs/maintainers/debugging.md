@@ -136,8 +136,13 @@ identical in the checks list:
   opening or closing in Tartu rewrites the file. It is advisory on a pull
   request and a hard failure on the schedule for exactly this reason.
 
-To tell them apart without guessing, read the job's uploaded `worked-example-run`
-artifact rather than re-running anything: its run record inventories every
+Regenerating the example is what clears the second kind, and it must be done
+with `pipeline.py --refresh`: `data/source/` is a cache with no expiry, so a
+plain re-run can reproduce the committed artifacts exactly from stale local
+data and look like it worked.
+
+To tell the two kinds apart without guessing, read the job's uploaded
+`worked-example-run` artifact rather than re-running anything: its run record inventories every
 output by SHA-256 and its validation report carries feature counts, both
 comparable with what the repository ships.
 

@@ -25,6 +25,7 @@
 # Execution: python pipeline.py (run_e2e.py is a thin wrapper)
 # =============================================================================
 
+import argparse
 import datetime
 import hashlib
 import io
@@ -32,6 +33,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import sqlite3
 import urllib.parse
 import urllib.request
@@ -111,6 +113,69 @@ def _sha256(path: Path) -> str:
     return "sha256:" + digest.hexdigest()
 
 
+#: A cached source older than this is reused, but says so loudly.
+#
+# `data/source/` exists so a re-run does not re-download 40 MB of cadastre.
+# Nothing in that cache expires on its own, and the reuse test each source
+# applies below -- counts agreeing with recorded metadata, ownership and
+# active-status predicates holding -- establishes that the bytes on disk are
+# internally coherent, never that they still match what the service publishes.
+# The two look identical in a log until the committed artifacts are regenerated
+# from a stale cache: CI always starts cold, so it fetches the current data and
+# cannot reproduce them.
+CACHE_MAX_AGE_DAYS = 7
+
+
+def _cache_age_days(path: Path) -> float | None:
+    """How long ago the cached file was written, or ``None`` if it is absent."""
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return None
+    now = datetime.datetime.now(datetime.timezone.utc).timestamp()
+    return max(0.0, (now - mtime) / 86400.0)
+
+
+def _http_date_to_day(value: str | None) -> str | None:
+    """The YYYY-MM-DD of an RFC 7231 ``Last-Modified``, or ``None`` if absent."""
+    if not value:
+        return None
+    try:
+        parsed = datetime.datetime.strptime(value, "%a, %d %b %Y %H:%M:%S %Z")
+    except ValueError:
+        return None
+    return parsed.date().isoformat()
+
+
+def _reuse_cached(label: str, path: Path, coherent: bool, refresh: bool) -> bool:
+    """Whether to reuse a cached source, and say why in the log.
+
+    ``coherent`` is the caller's own integrity test. It is deliberately not a
+    freshness test, so age is reported separately: a stale reuse is the one
+    failure mode here that produces a plausible, self-consistent, wrong result.
+    """
+    if refresh:
+        if path.exists():
+            log.info("--refresh: discarding cached %s", label)
+        return False
+    if not coherent:
+        return False
+    age = _cache_age_days(path)
+    if age is None:
+        return False
+    if age > CACHE_MAX_AGE_DAYS:
+        log.warning(
+            "Cached %s is %.1f days old and is being reused. It is internally coherent, "
+            "which is not the same as current -- upstream may have moved. Re-run with "
+            "--refresh before committing regenerated artifacts.",
+            label,
+            age,
+        )
+    else:
+        log.info("Using cached %s (%.1f days old): %s", label, age, path)
+    return True
+
+
 def _read_json_url(base_url: str, params: dict, timeout: int = 120) -> dict:
     url = base_url + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"User-Agent": "openmapstack-pipeline/1.0"})
@@ -119,25 +184,59 @@ def _read_json_url(base_url: str, params: dict, timeout: int = 120) -> dict:
 
 
 # ------------------------------- STEP 0: sources ----------------------------
-def fetch_and_manifest_sources() -> tuple[Path, Path, Path, list[dict]]:
-    """Fetch complete, semantically fit sources and record exact runtime metadata."""
+def fetch_and_manifest_sources(refresh: bool = False) -> tuple[Path, Path, Path, list[dict]]:
+    """Fetch complete, semantically fit sources and record exact runtime metadata.
+
+    ``refresh`` empties ``data/source/`` and re-fetches every service. Use it
+    before regenerating the committed artifacts; see ``CACHE_MAX_AGE_DAYS``.
+    """
+    if refresh and SOURCE.is_dir():
+        # Empty the directory rather than bypassing reuse file by file. The run
+        # record inventories *everything* under data/source/, so a file written
+        # by an older version of this pipeline -- which nothing here reads and a
+        # cold checkout never has -- would otherwise enter inputs_hash and make
+        # the refreshed attestation differ from CI's. Discarding also means no
+        # cached bytes are parsed, so a truncated cache cannot block the refresh
+        # that exists to replace it.
+        discarded = sorted(item.name for item in SOURCE.iterdir() if item.is_file())
+        shutil.rmtree(SOURCE)
+        log.info("--refresh: emptied %s (%d cached file(s))", SOURCE, len(discarded))
     SOURCE.mkdir(parents=True, exist_ok=True)
 
     # 1. Cadastral GeoPackage for Tartu county
     cadastre_zip = SOURCE / "Tartu_maakond_KATASTER_GPKG.zip"
     cadastre_gpkg = SOURCE / "Tartu_maakond_KATASTER_GPKG.gpkg"
+    cadastre_meta_file = SOURCE / "Tartu_maakond_KATASTER_GPKG.meta.json"
     cadastre_url = "https://s3.pilw.io/rp-kemit-kataster/ANDMED/Tartu_maakond_KATASTER_GPKG.zip"
 
-    if not cadastre_gpkg.exists():
+    # The cadastre is a *daily* snapshot behind a stable URL, so which snapshot
+    # is on disk is only knowable from the response that delivered it. Record
+    # the ETag and Last-Modified at download time and keep them beside the file;
+    # a cache without that sidecar cannot say what it holds and is refetched.
+    cadastre_meta: dict = {}
+    if cadastre_meta_file.is_file():
+        try:
+            cadastre_meta = json.loads(cadastre_meta_file.read_text())
+        except json.JSONDecodeError:
+            cadastre_meta = {}
+    cadastre_cached = cadastre_gpkg.exists() and bool(cadastre_meta.get("retrieved_at"))
+    if not _reuse_cached("Cadastral GeoPackage", cadastre_gpkg, cadastre_cached, refresh):
         log.info("Downloading official Tartu county Cadastral GeoPackage from Maa- ja Ruumiamet S3...")
         req = urllib.request.Request(cadastre_url, headers={"User-Agent": "openmapstack-pipeline/1.0"})
         with urllib.request.urlopen(req, timeout=120) as resp:
             content = resp.read()
+            headers = resp.headers
         log.info("Downloaded %0.1f MB zip; extracting to %s", len(content) / (1024 * 1024), SOURCE)
         with zipfile.ZipFile(io.BytesIO(content)) as z:
             z.extractall(SOURCE)
-    else:
-        log.info("Using cached Cadastral GeoPackage: %s", cadastre_gpkg)
+        cadastre_meta = {
+            "source_url": cadastre_url,
+            "retrieved_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "etag": (headers.get("ETag") or "").strip('"') or None,
+            "last_modified": headers.get("Last-Modified"),
+            "zip_bytes": len(content),
+        }
+        cadastre_meta_file.write_text(json.dumps(cadastre_meta, indent=2, ensure_ascii=False))
 
     # 2. ETAK main roads via complete, paginated WFS query.
     roads_geojson = SOURCE / "etak_main_roads.geojson"
@@ -157,6 +256,7 @@ def fetch_and_manifest_sources() -> tuple[Path, Path, Path, list[dict]]:
             and roads_meta.get("matched") == roads_meta.get("returned")
             and roads_meta.get("returned") == len(roads_raw.get("features", []))
         )
+    roads_cache_valid = _reuse_cached("ETAK main roads", roads_geojson, roads_cache_valid, refresh)
     if not roads_cache_valid:
         log.info("Fetching complete ETAK main-road result with WFS pagination...")
         features: list[dict] = []
@@ -206,8 +306,6 @@ def fetch_and_manifest_sources() -> tuple[Path, Path, Path, list[dict]]:
             "returned": len(features),
         }
         roads_meta_file.write_text(json.dumps(roads_meta, indent=2, ensure_ascii=False))
-    else:
-        log.info("Using completeness-verified cached ETAK roads: %s", roads_geojson)
     if "retrieved_at" not in roads_meta:
         roads_meta["retrieved_at"] = datetime.datetime.fromtimestamp(
             roads_geojson.stat().st_mtime, datetime.timezone.utc
@@ -235,6 +333,9 @@ def fetch_and_manifest_sources() -> tuple[Path, Path, Path, list[dict]]:
                 for f in pois_raw.get("features", [])
             )
         )
+    education_cache_valid = _reuse_cached(
+        "municipal education data", pois_geojson, education_cache_valid, refresh
+    )
     if not education_cache_valid:
         log.info("Fetching authoritative Tartu municipal education layers...")
         normalized: list[dict] = []
@@ -298,8 +399,6 @@ def fetch_and_manifest_sources() -> tuple[Path, Path, Path, list[dict]]:
             "returned": len(normalized),
         }
         pois_meta_file.write_text(json.dumps(pois_meta, indent=2, ensure_ascii=False))
-    else:
-        log.info("Using semantics-verified cached municipal education data: %s", pois_geojson)
     if "retrieved_at" not in pois_meta:
         pois_meta["retrieved_at"] = datetime.datetime.fromtimestamp(
             pois_geojson.stat().st_mtime, datetime.timezone.utc
@@ -322,6 +421,14 @@ def fetch_and_manifest_sources() -> tuple[Path, Path, Path, list[dict]]:
     pois_count = len(pois_raw.get("features", []))
     pois_cols = list(pois_raw["features"][0]["properties"].keys()) + ["geometry"] if pois_count > 0 else []
 
+    # Which daily snapshot this is: the archive's own Last-Modified when the
+    # server gave one, else the moment we retrieved it. Never a fixed literal --
+    # that is how a refreshed download comes to be filed under an older date.
+    _cadastre_retrieved_at = cadastre_meta.get("retrieved_at") or datetime.datetime.fromtimestamp(
+        cadastre_gpkg.stat().st_mtime, datetime.timezone.utc
+    ).isoformat()
+    _cadastre_snapshot_day = _http_date_to_day(cadastre_meta.get("last_modified")) or _cadastre_retrieved_at[:10]
+
     manifest = [
         {
             "key": "cadastral_parcels",
@@ -331,8 +438,11 @@ def fetch_and_manifest_sources() -> tuple[Path, Path, Path, list[dict]]:
             "table_name": "Tartu maakond",
             "source_url": cadastre_url,
             "portal_page": "https://geoportaal.maaruum.ee/eng/spatial-data/cadastral-data-p310.html",
-            "download_timestamp": "2026-08-25T00:26:19Z",
-            "version": "Tartu_maakond_KATASTER_GPKG (daily snapshot 2026-08-25)",
+            "download_timestamp": _cadastre_retrieved_at,
+            "version": f"Tartu_maakond_KATASTER_GPKG (daily snapshot {_cadastre_snapshot_day})",
+            "published_at": _cadastre_snapshot_day,
+            "etag": cadastre_meta.get("etag"),
+            "size_bytes": cadastre_gpkg.stat().st_size,
             "rows": parcels_info,
             "n_columns": len(parcels_cols),
             "columns": parcels_cols,
@@ -1177,6 +1287,18 @@ def finalize_run(report: dict, manifest: list[dict], started_at: str) -> None:
         source["access"]["downloaded_at"] = item["download_timestamp"]
         if "file" in source["access"]:
             source["access"]["file"]["row_count"] = item["rows"]
+            # Measured, not declared: a size left at whatever prose once said
+            # describes a file that is no longer there.
+            if item.get("size_bytes") is not None:
+                source["access"]["file"]["size_bytes"] = item["size_bytes"]
+        # Snapshot identity travels with the bytes for a mutable-URL source, so
+        # write back whatever the response actually reported.
+        if item.get("version"):
+            source.setdefault("version", {})["identifier"] = item["version"]
+        if item.get("published_at"):
+            source.setdefault("version", {})["published_at"] = item["published_at"]
+        if item.get("etag"):
+            source.setdefault("version", {})["etag"] = item["etag"]
         completeness = item.get("completeness")
         if completeness and item["key"] == "roads":
             source["selection"]["completeness"] = {
@@ -4178,13 +4300,32 @@ def render_dashboard(con: duckdb.DuckDBPyConnection, validation: dict, manifest:
     log.info("Rendered dashboard: %s (%0.1f KB)", out, len(html) / 1024)
 
 
-def main() -> None:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Regenerate the Tartu worked example from its authoritative sources."
+    )
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help=(
+            "discard the cached sources in data/source/ and re-fetch every service. "
+            "Use this before committing regenerated artifacts: the cache never "
+            "expires on its own, and CI always starts cold."
+        ),
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = _parse_args(argv)
     started_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
     run_id = _run_id()
     for d in (DERIVED, VALIDATION, RUNS, SOURCE):
         d.mkdir(parents=True, exist_ok=True)
 
-    cadastre_gpkg, roads_geojson, pois_geojson, manifest = fetch_and_manifest_sources()
+    cadastre_gpkg, roads_geojson, pois_geojson, manifest = fetch_and_manifest_sources(
+        refresh=args.refresh
+    )
 
     con = duckdb.connect()
     con.install_extension("spatial")
