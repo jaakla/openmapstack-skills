@@ -1,6 +1,6 @@
 ---
 name: open-map-stack
-description: "Use textual agent instructions for GIS and geospatial work: source discovery and provenance, vector/raster/point-cloud pipelines, CRS and metric analysis, spatial SQL, routing and isochrones, QGIS projects, tile generation, and web maps. Use advanced tools and formats such as OSM, Overture, STAC, Sentinel/Landsat, LiDAR, GeoPackage, GeoParquet, COG, PMTiles, WMS/WFS/OGC APIs, GDAL, GeoPandas, DuckDB Spatial, PostGIS, QGIS, MapLibre, and Estonian spatial data including ETAK and EPSG:3301. Open-first, with hosted services when scale or reliability requires them. Do not use for casual map references, simple place lookups, or ordinary travel directions without analytical GIS work."
+description: "Use textual agent instructions for GIS and geospatial work: source discovery and provenance, vector/raster/point-cloud pipelines, CRS and metric analysis, spatial SQL, routing and isochrones, QGIS projects, tile generation, and web maps. Use advanced tools and formats such as OSM, Overture, STAC, Sentinel/Landsat, LiDAR, GeoPackage, GeoParquet, COG, PMTiles, WMS/WFS/OGC APIs, Portolan catalogs, GDAL, GeoPandas, DuckDB Spatial, PostGIS, QGIS, MapLibre, and Estonian spatial data including ETAK and EPSG:3301. Open-first, with hosted services when scale or reliability requires them. Do not use for casual map references, simple place lookups, or ordinary travel directions without analytical GIS work."
 ---
 
 # OpenMapStack Toolkit
@@ -59,7 +59,7 @@ Hard rules for every material analysis — each is expanded in `references/proje
 
 | If the task involves... | Read |
 |---|---|
-| Finding or sourcing data (OSM, Overture, Sentinel, Landsat, building footprints, regional portals, STAC catalogs, MCP-based discovery) | `references/data-sources.md` |
+| Finding or sourcing data (OSM, Overture, Sentinel, Landsat, building footprints, regional portals, STAC and Portolan catalogs, MCP-based discovery) | `references/data-sources.md` |
 | Reading the user's own warehouse or database (PostGIS, DuckDB, GeoParquet directories): credentials by reference, read-only discovery, approved snapshots, pin classes | `references/user-data-sources.md` |
 | Choosing local processing vs online/hosted/SaaS services for global or continental scale; basemaps, elevation, routing, geocoding, place search, postcode lookup APIs | `references/services-and-scale.md` |
 | Choosing a format, converting between formats, or any CRS / projection / EPSG question | `references/formats-and-crs.md` |
@@ -135,7 +135,7 @@ For simple one-shot questions (single CRS conversion, one `ogr2ogr` invocation),
 
 Before diving into a task, classify it:
 
-1. **Discovery** ("what data exists for…?", "is there a dataset of…?") → start with `data-sources.md`. STAC search if raster; Overture or OSM if vector basemap.
+1. **Discovery** ("what data exists for…?", "is there a dataset of…?", "read this catalog") → start with `data-sources.md`. STAC search if raster; Overture or OSM if vector basemap; for a Portolan catalog read its `AGENTS.md` before querying.
 2. **Conversion / CRS** ("convert this to…", "reproject to…", "the projection looks wrong") → `formats-and-crs.md`. Usually one `ogr2ogr` or `gdalwarp` call.
 3. **Analysis** ("what's the average elevation in…", "how many buildings within 500m of…", "where are the hotspots?") → `analytics.md` and likely `processing.md`. Push to DuckDB/PostGIS first.
 4. **Delivery** ("publish this as a web map", "generate tiles for…") → `web-delivery.md`. PMTiles + Martin + MapLibre is the default.

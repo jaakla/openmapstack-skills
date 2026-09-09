@@ -5,10 +5,11 @@ Strategies and concrete commands for discovering and acquiring open geospatial d
 ## Discovery hierarchy — try in this order
 
 1. **Existing STAC catalogs** — for any raster, satellite, or EO data
-2. **Overture Maps** — for global building, place, transportation, address basemap
-3. **OpenStreetMap (via Overpass or extracts)** — for detailed local features Overture doesn't cover
-4. **National / regional portals** — for authoritative or jurisdiction-specific data
-5. **Specialist datasets** — building footprints (Microsoft, Google), elevation (Copernicus DEM), point clouds (OpenTopography), weather/climate (ECMWF, NOAA)
+2. **A Portolan catalog**, when the user names one or points at a catalog root — a static STAC catalog whose datasets are already cloud-native and self-documenting
+3. **Overture Maps** — for global building, place, transportation, address basemap
+4. **OpenStreetMap (via Overpass or extracts)** — for detailed local features Overture doesn't cover
+5. **National / regional portals** — for authoritative or jurisdiction-specific data
+6. **Specialist datasets** — building footprints (Microsoft, Google), elevation (Copernicus DEM), point clouds (OpenTopography), weather/climate (ECMWF, NOAA)
 
 Only fall back to ad-hoc downloads when the above don't cover the need.
 
@@ -63,6 +64,52 @@ ds = odc.stac.load(
 ### Cost-aware planning
 
 Use `estimate_data_size` (available via STAC MCP) or compute the bbox-clipped pixel count yourself before pulling. Sentinel-2 L2A at 10m resolution over a 1° bbox is roughly 10GB per scene — plan accordingly.
+
+## Portolan catalogs
+
+[Portolan](https://portolan-sdi.org/) publishes geospatial data as a **static STAC catalog on object storage** instead of a WMS/WFS/Feature server: vector as GeoParquet paired with PMTiles, raster as COG, tabular as plain Parquet with no geometry column. There is no API to call. You read the JSON, then query the files in place over HTTP range requests — the access pattern this toolkit already defaults to.
+
+**Recognize one by:** a `catalog.json` root served from a bucket, an `AGENTS.md` and `README.md` beside every catalog and collection, and `stac_extensions` carrying a `https://schemas.portolan-sdi.org/portolan/<version>/schema.json` URI. That URI is the only signal of the spec version.
+
+```
+catalog-root/
+├── catalog.json                 # root STAC Catalog; children via rel: child
+├── AGENTS.md                    # linked rel: agents
+├── README.md                    # linked rel: describedby
+└── {collection_id}/
+    ├── collection.json          # extent, providers, license, assets, links
+    ├── AGENTS.md, README.md
+    ├── {data}.parquet           # asset with role: data
+    ├── {data}.pmtiles           # rel: pmtiles link / role: visual
+    └── styles/default.json      # asset with role: style + default
+```
+
+### Working rules
+
+* **Read the collection's `AGENTS.md` before writing a query.** This is the point of the format: it names the join keys, the CRS, the useful aggregations, and the data-quality traps. Skipping it and inferring the schema from `DESCRIBE` is how you get a plausible wrong answer.
+* **Select assets by `roles`, never by asset key.** `data` is the primary Parquet/COG, `visual` the PMTiles, `style` a MapLibre style, `collection-mirror` an `items.parquet` you should query instead of fetching every item JSON.
+* **Use the `https` href.** An `s3://`/`gs://` URL may appear under `alternate`; do not hand-rewrite one form into the other.
+* Query it with the standard DuckDB pattern (`INSTALL spatial; INSTALL httpfs;`) from `spatial-sql.md` — nothing Portolan-specific is required.
+
+### Dedicated skills
+
+`portolan-sdi/portolan-skills` publishes [Agent Skills](https://github.com/anthropics/agent-skills) for this, and they are more detailed than this section: **`reading-portolan`** for consuming a catalog (metadata, assets by role, DuckDB queries, cross-dataset joins, partitioned collections, PMTiles maps), plus publisher-side skills (`portolan-bootstrap`, `portolan-cli`, `portolan-migrate`, `git-backed-catalog`). Prefer them when they are installed; how to install them is agent-specific. `portolan-sdi/portolan-spec` is ground truth when a catalog and any skill disagree, and rule ids such as `PORTO-CORE-027` point into its `requirements.yaml`.
+
+### Pinning a Portolan source
+
+A Portolan collection carries most of what `project-spec.md` requires, so map it across rather than inventing provenance:
+
+| Manifest field | Take from |
+|---|---|
+| `version.identifier` / `published_at` | collection `updated`, plus the `schemas.portolan-sdi.org` version URI |
+| `license` | the SPDX `license` field, or the `rel: license` link when it is `other` |
+| provider / authority | `providers` — at least one `producer` and exactly one `host`, host last |
+| upstream original | `rel: via` (and `rel: canonical`) on a mirror |
+
+Two traps specific to this mapping:
+
+* **A catalog whose `producer` and `host` differ is a mirror, not the authority.** Its top-level `updated` is the last *sync* time, not the source's publication date. Pin and attribute the original through the `via` link; a mirror can silently lag.
+* **`file:checksum` is multihash-encoded, not a raw sha256 string.** Copying it straight into a `sha256:` pin field records a value that will never match the bytes. Decode it, or hash the retrieved file yourself — `local_snapshot` pins are verified against real content.
 
 ## Overture Maps — modern open vector basemap
 
