@@ -1,0 +1,113 @@
+{
+  "run_id": "run-20260909-103753",
+  "started_at": "2026-09-09T10:37:53.986384+00:00",
+  "completed_at": "2026-09-09T10:38:05.290198+00:00",
+  "status": "warning",
+  "inputs_hash": "sha256:39a3b5e2c4b942bd6e95f23b8edc41d8864f1a7ed4ac0b46805930c15488c26f",
+  "outputs_hash": "sha256:a6bb45317750bfc9c52e6eba03c3198b64e129b37a0cf175fa0a0a097ab53203",
+  "source_manifest": "data/source/manifest.json",
+  "validation_report": "validation/latest-report.json",
+  "sources": [
+    {
+      "key": "cadastral_parcels",
+      "sha256": "sha256:f318990f939e9a9206ddb220412d93e15143686d67dbc23a0a63632ac4e16848"
+    },
+    {
+      "key": "roads",
+      "sha256": "sha256:a806a652c51166907184617386a7fe12e25fdc28e32ff61f9a7fe847968cba80"
+    },
+    {
+      "key": "education_pois",
+      "sha256": "sha256:d1d8b97b18d8f92cb917624c96cd0308a9537fde78f9ca4b61c29b4080da897e"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "data/source/manifest.json",
+      "sha256": "sha256:59ff71f7eb4f4c57940020304427948c5279b402a72b3218e314c9171107c375"
+    },
+    {
+      "path": "data/source/parcels.geojson",
+      "sha256": "sha256:3418cefc0d0f37111622700cc3f5a93dd66142df65c12e0a5120c196ffa57cca"
+    },
+    {
+      "path": "data/source/roads.geojson",
+      "sha256": "sha256:0b19591516b02f087b247a753801885bf264a5f592b533dc68409aad16c55d69"
+    },
+    {
+      "path": "data/source/etak_main_roads.meta.json",
+      "sha256": "sha256:11fd18fb08c8c96d945a036c29fa37d001f858b0fb3752eeda572ca25ff90eb3"
+    },
+    {
+      "path": "data/source/tartu_municipal_education.geojson",
+      "sha256": "sha256:d1d8b97b18d8f92cb917624c96cd0308a9537fde78f9ca4b61c29b4080da897e"
+    },
+    {
+      "path": "data/source/etak_main_roads.geojson",
+      "sha256": "sha256:a806a652c51166907184617386a7fe12e25fdc28e32ff61f9a7fe847968cba80"
+    },
+    {
+      "path": "data/source/Tartu_maakond_KATASTER_GPKG.gpkg",
+      "sha256": "sha256:f318990f939e9a9206ddb220412d93e15143686d67dbc23a0a63632ac4e16848"
+    },
+    {
+      "path": "data/source/roads.json",
+      "sha256": "sha256:c964cad950737c7fe4dad0c26bc0b80bbc30904a632ceb81e8ca77fbc4e190ef"
+    },
+    {
+      "path": "data/source/parcels.json",
+      "sha256": "sha256:4793c80fae19791bd1cd73cc34667c54d9816d3f13fd0664a8f68d1bd7a7b157"
+    },
+    {
+      "path": "data/source/tartu_municipal_education.meta.json",
+      "sha256": "sha256:5603e9c3eaee1f18cb0b780d4e29d569827cb56cee72891d644ad55c910ae6dd"
+    },
+    {
+      "path": "data/overrides/planned-road.geojson",
+      "sha256": "sha256:48cb90e3b178b326d8ce9cac97af40e76b4719f9e57189df7fb9d2922d67b22e"
+    },
+    {
+      "path": "pipeline.py",
+      "sha256": "sha256:e40f5d66b7e1286ffd93b85ad872445e31dc6c99ad0efc6225763cfd064acd16"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/derived/final-candidates.gpkg",
+      "sha256": "sha256:3d0d228787516f43bbbf0562a8fa00bca1516fa36fb0a99f7a489e07666ade13"
+    },
+    {
+      "path": "data/derived/final-candidates.parquet",
+      "sha256": "sha256:6c7af976e89c1a297cde876f13acd5144ad84a8a8268c374ffc6c0c25612623c"
+    },
+    {
+      "path": "data/derived/final-candidates.json",
+      "sha256": "sha256:87f5bf24e11cbec6b1a18cf140b1fd950a6034807fe46251277f22cf743fd5b6"
+    },
+    {
+      "path": "data/derived/education_catchments.json",
+      "sha256": "sha256:6200085f3b1cadc762f2123b6e12131e52b37d115849b6847011a21183952066"
+    },
+    {
+      "path": "data/derived/education_catchment_variants.json",
+      "sha256": "sha256:9fe406286c9f90d83e7a8445e57ef6c51e0d847df2c480af5a1738fcc85a3a76"
+    },
+    {
+      "path": "data/derived/education_pois.json",
+      "sha256": "sha256:b84e2f776811c380f8f4df3a3d84f78af85af4c7138dccfa7dd8a749d6fc5917"
+    },
+    {
+      "path": "data/derived/main_roads.json",
+      "sha256": "sha256:17526ac5a5f99f846b182e8370221cc338165bbf8ab8ac202de1b28f362b3f69"
+    },
+    {
+      "path": "project.qgz",
+      "sha256": "sha256:c92253124cfc67fa9b4be10780a711952995bdf5b882c1c6be72f88bd6bece5b"
+    }
+  ],
+  "environment": {
+    "python": "3.12.3",
+    "duckdb": "1.5.5",
+    "pyproj": "3.7.2"
+  }
+}
