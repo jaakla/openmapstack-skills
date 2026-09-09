@@ -44,8 +44,10 @@ class SkillRoutingTests(unittest.TestCase):
     def test_portolan_routes_to_the_reference_that_documents_it(self) -> None:
         """Consuming a Portolan catalog is discovery, so it must route like it.
 
-        The substance belongs in `data-sources.md`, and SKILL.md must name the
-        term, or an agent handed a catalog root never reaches that section.
+        This is a routing assertion and nothing more: it proves an agent
+        reaching for the term lands on the section, not that the section makes
+        the agent behave. Eval case `017-portolan-catalog` grades the behaviour,
+        by consequence, against a fixture catalog.
         """
         self.assertIn("Portolan", self.skill)
         data_sources = (REPO_ROOT / "references/data-sources.md").read_text(encoding="utf-8")

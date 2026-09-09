@@ -1,0 +1,13 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.0.0",
+  "id": "mini-tartu-portolan",
+  "description": "Minimal Portolan catalog used by the OpenMapStack eval suite. Cadastral parcels for a small part of Tartu, converted from an Estonian open-data extract.",
+  "links": [
+    { "rel": "root", "href": "./catalog.json", "type": "application/json" },
+    { "rel": "self", "href": "./catalog.json", "type": "application/json" },
+    { "rel": "child", "href": "./parcels/collection.json", "type": "application/json", "title": "Cadastral parcels" },
+    { "rel": "agents", "href": "./AGENTS.md", "type": "text/markdown" },
+    { "rel": "describedby", "href": "./README.md", "type": "text/markdown" }
+  ]
+}

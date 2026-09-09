@@ -1,0 +1,50 @@
+{
+  "type": "Collection",
+  "stac_version": "1.0.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json"
+  ],
+  "id": "parcels",
+  "title": "Cadastral parcels (mini Tartu extract)",
+  "description": "Cadastral parcels with legal land-use designation, converted to GeoParquet from an Estonian Land and Spatial Development Board extract.",
+  "license": "CC-BY-4.0",
+  "updated": "2026-09-01T00:00:00Z",
+  "extent": {
+    "spatial": { "bbox": [[26.68, 58.35, 26.76, 58.39]] },
+    "temporal": { "interval": [["2026-01-01T00:00:00Z", null]] }
+  },
+  "providers": [
+    { "name": "Maa- ja Ruumiamet", "roles": ["producer", "licensor"], "url": "https://geoportaal.maaruum.ee/" },
+    { "name": "OpenMapStack eval fixtures", "roles": ["host"], "url": "https://example.org/mini-portolan" }
+  ],
+  "table:columns": [
+    { "name": "cadastral_id", "type": "string", "description": "Stable cadastral identifier." },
+    { "name": "land_use", "type": "string", "description": "Legal land-use designation as published (ARIMAA, ELAMUMAA, MAATULUNDUSMAA, TOOTMISMAA)." },
+    { "name": "municipality", "type": "string", "description": "Municipality name." },
+    { "name": "record_status", "type": "string", "description": "current or superseded. See AGENTS.md before counting." },
+    { "name": "geometry", "type": "geometry", "description": "Parcel polygon, EPSG:3301." }
+  ],
+  "assets": {
+    "b7f2": {
+      "href": "./parcels.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "Parcels, GeoParquet",
+      "roles": ["data"]
+    },
+    "parcels": {
+      "href": "./parcels-upstream.geojson",
+      "type": "application/geo+json",
+      "title": "Upstream extract before conversion",
+      "roles": ["source"]
+    }
+  },
+  "links": [
+    { "rel": "root", "href": "../catalog.json", "type": "application/json" },
+    { "rel": "parent", "href": "../catalog.json", "type": "application/json" },
+    { "rel": "self", "href": "./collection.json", "type": "application/json" },
+    { "rel": "agents", "href": "./AGENTS.md", "type": "text/markdown" },
+    { "rel": "describedby", "href": "./README.md", "type": "text/markdown" },
+    { "rel": "via", "href": "https://geoportaal.maaruum.ee/eng/spatial-data/cadastral-data-p310.html", "type": "text/html", "title": "Original publisher page" }
+  ]
+}
