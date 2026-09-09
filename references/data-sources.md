@@ -88,6 +88,7 @@ catalog-root/
 
 * **Read the collection's `AGENTS.md` before writing a query.** This is the point of the format: it names the join keys, the CRS, the useful aggregations, and the data-quality traps. Skipping it and inferring the schema from `DESCRIBE` is how you get a plausible wrong answer.
 * **Select assets by `roles`, never by asset key.** `data` is the primary Parquet/COG, `visual` the PMTiles, `style` a MapLibre style, `collection-mirror` an `items.parquet` you should query instead of fetching every item JSON.
+* **A collection with no `data` asset is not empty — it is partitioned.** Large collections put the files behind a `partition:glob` and/or one item per partition, and the `data` role then sits on the *item*, not the collection. Read the glob or the items; do not conclude the collection has nothing to query. Where the collection publishes an `items.parquet` (`collection-mirror`), query that to find partitions instead of fetching hundreds of item JSONs.
 * **Use the `https` href.** An `s3://`/`gs://` URL may appear under `alternate`; do not hand-rewrite one form into the other.
 * Query it with the standard DuckDB pattern (`INSTALL spatial; INSTALL httpfs;`) from `spatial-sql.md` — nothing Portolan-specific is required.
 
