@@ -122,6 +122,41 @@ Two related traps:
 - a relation's detection power depends on the data and the variant size. Widening the mini-Tartu road threshold by 1.5× cannot expose an inverted predicate because the only far parcel sits at 5450 m; the fixture declares `variant: {multiply: 3}` for that reason. When a mutation survives, check the geometry before suspecting the relation;
 - a GeoJSON output without a `crs` member reads back as EPSG:4326. A pipeline that writes analysis-CRS coordinates into plain GeoJSON and declares `EPSG:3301` in the manifest fails `geodata.dataset_crs_is` correctly. Write the `crs` member (or use GeoParquet) rather than relaxing the check.
 
+## A red worked-example job is usually the world moving, not the branch
+
+`.github/workflows/example.yml` regenerates `examples/tartu-development/` from
+live Estonian services, so its failures split into two kinds that look
+identical in the checks list:
+
+- **the change broke the example** — reported by `validate`, `verify`, or the
+  real-QGIS render step;
+- **the sources moved** — reported only by the final artifact-currency step,
+  which diffs the regenerated `project.qgz` against the committed one. The
+  legend embeds facility counts (`Verified municipal schools (n=26)`), so one
+  opening or closing in Tartu rewrites the file. It is advisory on a pull
+  request and a hard failure on the schedule for exactly this reason.
+
+To tell them apart without guessing, read the job's uploaded `worked-example-run`
+artifact rather than re-running anything: its run record inventories every
+output by SHA-256 and its validation report carries feature counts, both
+comparable with what the repository ships.
+
+```bash
+gh run download <run-id> -n worked-example-run -D /tmp/wx
+```
+
+Observed 2026-09-09 (issue #20's PR): the counts read 517 against a committed
+518, seven of the eight inventoried outputs differed, and `project.qgz`
+differed at an identical 3698 bytes — consistent with a same-length digit
+substitution in one of those legend counts.
+
+Note what that byte-identical size rules out. Comparing a `.qgz` compares a
+deflate stream, so a zlib or QGIS change could in principle move the bytes with
+the content unchanged. It was not the cause there and the container is
+deterministic by construction — `write_qgis_project` pins the zip entry to a
+1980 timestamp and fixed permissions — but a currency failure with *no*
+accompanying digest drift in the run record is the signature to suspect.
+
 ## Generated benchmark artifacts are evidence, not source
 
 Retained live/visual evidence belongs under `evals/results/<run-id>/...` and CI artifacts. Do not treat generated result JSON, screenshots, event streams, or temporary projects as canonical repository state unless a fixture intentionally owns them.

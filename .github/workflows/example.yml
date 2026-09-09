@@ -9,7 +9,10 @@ name: Worked example (full validation)
 #
 # It reaches three external services (Maa- ja Ruumiamet S3, the ETAK WFS, and
 # Tartu's ArcGIS Feature Services), so it is deliberately not on every PR:
-# an outage upstream must not redden unrelated work.
+# an outage upstream must not redden unrelated work. For the same reason the
+# artifact-currency check at the end is advisory on a pull request and a hard
+# failure on the schedule -- live sources drift on their own timetable, which
+# is a fact about the world rather than a defect in someone's branch.
 
 on:
   schedule:
@@ -64,11 +67,26 @@ jobs:
         # facility counts, so an upstream change to Tartu's education data
         # will trip this too -- also correctly: the committed example has then
         # stopped describing the current sources and wants regenerating.
+        #
+        # That second case is why this is advisory on a pull request. The
+        # sources are live third-party services, so a kindergarten opening in
+        # Tartu changes project.qgz without anything in the PR being wrong,
+        # and the diff would then block a merge for a fact about the world.
+        # The scheduled run is the one whose job is to notice that drift, and
+        # there it stays a hard failure. The steps above -- validate, verify,
+        # and the real-QGIS render -- are what a PR is actually gated on: they
+        # ask whether this change broke the example, not whether the example
+        # still matches sources that moved underneath it.
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           git diff --exit-code -- examples/tartu-development/project.qgz || {
-            echo "::error::The committed project.qgz differs from the one pipeline.py"\
+            if [ "$EVENT_NAME" = "pull_request" ]; then level=warning; else level=error; fi
+            echo "::${level}::The committed project.qgz differs from the one pipeline.py"\
                  "just produced. Re-run examples/tartu-development/pipeline.py and"\
-                 "commit the regenerated project.qgz (and its run record)."
+                 "commit the regenerated project.qgz (and its run record). On a pull"\
+                 "request this is advisory: upstream Tartu data moves on its own."
             git diff --stat -- examples/tartu-development/project.qgz
             exit 1
           }
