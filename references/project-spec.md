@@ -723,6 +723,9 @@ Sampling rules on top of the parameter contract above:
 - `sample` is optional, must differ from `canonical`, and is what bare
   `--sample` binds; without it the role needs an explicit value on the
   command line;
+- an explicit flag value equal to `canonical` is refused rather than run:
+  `--sample-rows 0` samples nothing, so accepting it would label a full run
+  `sampled`;
 - a sampling parameter must **not** pair `step`/`field`: it selects *input*,
   not a processing threshold, so there is no step value to agree with.
 
@@ -749,12 +752,23 @@ bytes — so it cannot share the canonical hash chain. On top of that:
 
 `openmapstack validate` reports this as `runs.sample_isolation`; the same
 invariant is exposed to external harnesses as the
-`validation.sample_run_not_promoted` check. `openmapstack run --sample*`
-additionally re-reads the manifest afterwards and fails if the pipeline
-promoted its own sampled run, and reports any declared outputs the sampled run
-overwrote in place — those files no longer hash to what the canonical run
-recorded, so the project is correctly no longer `validated` until it is re-run
-in full.
+`validation.sample_run_not_promoted` check.
+
+`openmapstack run --sample*` additionally re-inspects the tree afterwards and
+fails the command if the pipeline promoted its own sampled run by any route:
+
+- moving `runs.latest.id` to the sampled record;
+- rewriting or deleting the record `runs.latest` already resolves to. The id
+  never changes in this case, so comparing ids alone would report success while
+  the run of record has quietly become sampled evidence;
+- writing no run record marked `mode: sampled` at all. A pipeline that ignored
+  the sampling arguments leaves nothing recording that this run sampled, or
+  what it realized, and an unmarked run reads as a canonical one.
+
+It also reports any declared output the sampled run overwrote **or removed** —
+those files no longer hash to what the canonical run recorded, so the project
+is correctly no longer `validated` until it is re-run in full. Under `--strict`
+that report is a failure.
 
 **Warnings** give the explicit confidence/incompleteness handling. The rendered UX surfaces them (don't imply autoconfirmed geodata is current/complete). **Runs** capture what changed between executions and let a new engineer `rerun` tomorrow.
 

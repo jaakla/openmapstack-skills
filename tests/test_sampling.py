@@ -137,6 +137,19 @@ class ResolveSampleTests(unittest.TestCase):
             resolve_sample(_parameters(ROWS), {"sample_rows": "many"})
         self.assertIn("must be a integer", str(caught.exception))
 
+    def test_a_value_that_disables_sampling_is_refused(self) -> None:
+        """`--sample-rows 0` is the canonical run spelled differently: it has
+        the right type, but binding it would process the full inputs while the
+        command labelled the run sampled."""
+        with self.assertRaises(SamplingError) as caught:
+            resolve_sample(_parameters(ROWS), {"sample_rows": 0})
+        self.assertIn("canonical value", str(caught.exception))
+
+    def test_an_empty_string_does_not_sample_either(self) -> None:
+        with self.assertRaises(SamplingError) as caught:
+            resolve_sample(_parameters(AREA), {"sample_area": ""})
+        self.assertIn("canonical value", str(caught.exception))
+
     def test_use_declared_without_a_declared_sample_fails(self) -> None:
         with self.assertRaises(SamplingError) as caught:
             resolve_sample(_parameters(ROWS), {"sample_rows": USE_DECLARED})
@@ -325,6 +338,8 @@ sampled = area is not None
 output = root / "data" / "derived" / "candidate.json"
 output.parent.mkdir(parents=True, exist_ok=True)
 output.write_text(json.dumps({"type": "FeatureCollection", "features": [], "area": area}), encoding="utf-8")
+if os.environ.get("EVAL_DELETE_OUTPUT") == "1":
+    output.unlink()
 
 if sampled:
     run_id = "run-20260826-120000"
@@ -340,9 +355,21 @@ if sampled:
     if os.environ.get("EVAL_BAD_SAMPLE") != "1":
         record["sample"]["realized"] = {"rows": 3, "bbox": area}
         record["sample"]["scale_factor"] = 0.01
-    run_path = root / "runs" / (run_id + ".json")
-    run_path.parent.mkdir(parents=True, exist_ok=True)
-    run_path.write_text(json.dumps(record), encoding="utf-8")
+    if os.environ.get("EVAL_NO_RECORD") != "1":
+        run_path = root / "runs" / (run_id + ".json")
+        run_path.parent.mkdir(parents=True, exist_ok=True)
+        run_path.write_text(json.dumps(record), encoding="utf-8")
+    if os.environ.get("EVAL_REWRITE_CANONICAL") == "1":
+        import yaml
+        manifest = yaml.safe_load((root / "project.yaml").read_text(encoding="utf-8"))
+        canonical = dict(record, run_id=manifest["runs"]["latest"]["id"])
+        (root / "runs" / (canonical["run_id"] + ".json")).write_text(
+            json.dumps(canonical), encoding="utf-8"
+        )
+    if os.environ.get("EVAL_DELETE_CANONICAL") == "1":
+        import yaml
+        manifest = yaml.safe_load((root / "project.yaml").read_text(encoding="utf-8"))
+        (root / "runs" / (manifest["runs"]["latest"]["id"] + ".json")).unlink()
     if os.environ.get("EVAL_PROMOTE_SAMPLE") == "1":
         import yaml
         manifest_path = root / "project.yaml"
@@ -479,6 +506,118 @@ class SampledRunCliTests(unittest.TestCase):
         )
         self.assertEqual(code, 1)
         self.assertTrue(any("sample.realized" in problem for problem in payload["promotion_problems"]))
+
+    def test_rewriting_the_canonical_record_in_place_fails_the_command(self) -> None:
+        """Promotion without moving the pointer: the pipeline overwrites the
+        record `runs.latest` already names, so an id comparison sees nothing
+        while runs.latest comes to resolve to sampled evidence."""
+        path = self._project(AREA)
+        before = yaml.safe_load(path.read_text(encoding="utf-8"))["runs"]["latest"]["id"]
+        code, payload = self._run_with_env(
+            ["run", str(path), "--sample-area", "1,2,3,4"], EVAL_REWRITE_CANONICAL="1"
+        )
+        self.assertEqual(code, 1)
+        self.assertEqual(payload["status"], "failed")
+        after = yaml.safe_load(path.read_text(encoding="utf-8"))["runs"]["latest"]["id"]
+        self.assertEqual(before, after, "the manifest is untouched; only the record changed")
+        self.assertTrue(
+            any("rewrote the canonical run record" in problem for problem in payload["promotion_problems"]),
+            payload["promotion_problems"],
+        )
+        self.assertTrue(
+            any("resolves to sampled run record" in problem for problem in payload["promotion_problems"]),
+            payload["promotion_problems"],
+        )
+
+    def test_a_sampled_record_created_at_the_canonical_path_fails_the_command(self) -> None:
+        """The same promotion where no canonical record existed to compare
+        against: what matters is what runs.latest resolves to afterwards."""
+        path = self._project(AREA)
+        canonical = self.root / "runs" / "run-20260826-000000.json"
+        canonical.unlink()
+        code, payload = self._run_with_env(
+            ["run", str(path), "--sample-area", "1,2,3,4"], EVAL_REWRITE_CANONICAL="1"
+        )
+        self.assertEqual(code, 1)
+        self.assertTrue(
+            any("resolves to sampled run record" in problem for problem in payload["promotion_problems"]),
+            payload["promotion_problems"],
+        )
+
+    def test_deleting_the_canonical_record_fails_the_command(self) -> None:
+        path = self._project(AREA)
+        code, payload = self._run_with_env(
+            ["run", str(path), "--sample-area", "1,2,3,4"], EVAL_DELETE_CANONICAL="1"
+        )
+        self.assertEqual(code, 1)
+        self.assertTrue(
+            any("deleted the canonical run record" in problem for problem in payload["promotion_problems"]),
+            payload["promotion_problems"],
+        )
+
+    def test_a_run_that_records_no_sample_fails_the_command(self) -> None:
+        """A pipeline that ignores the sampling arguments leaves nothing saying
+        this run sampled anything, so the command cannot substantiate that it
+        did. Silence is not evidence."""
+        path = self._project(AREA)
+        code, payload = self._run_with_env(
+            ["run", str(path), "--sample-area", "1,2,3,4"], EVAL_NO_RECORD="1"
+        )
+        self.assertEqual(code, 1)
+        self.assertEqual(payload["status"], "failed")
+        self.assertTrue(
+            any("no run record declaring" in problem for problem in payload["promotion_problems"]),
+            payload["promotion_problems"],
+        )
+
+    def test_a_pre_existing_sampled_record_is_not_evidence_for_this_run(self) -> None:
+        """The record must be *this* invocation's: an untouched sampled record
+        left over from an earlier run would otherwise satisfy the check."""
+        path = self._project(AREA)
+        stale = self.root / "runs" / "run-20260825-074500.json"
+        stale.write_text(
+            json.dumps(
+                {
+                    "run_id": stale.stem,
+                    "started_at": "2026-08-25T07:45:00Z",
+                    "completed_at": "2026-08-25T07:45:02Z",
+                    "status": "passed",
+                    "mode": "sampled",
+                    "sample": {
+                        "requested": {"sample_area": "1,2,3,4"},
+                        "realized": {"bbox": "1,2,3,4", "rows": 3},
+                    },
+                    "environment": {"python": "test"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        code, payload = self._run_with_env(
+            ["run", str(path), "--sample-area", "1,2,3,4"], EVAL_NO_RECORD="1"
+        )
+        self.assertEqual(code, 1)
+        self.assertTrue(
+            any("no run record declaring" in problem for problem in payload["promotion_problems"]),
+            payload["promotion_problems"],
+        )
+
+    def test_deleting_a_declared_output_counts_as_clobbering_it(self) -> None:
+        """Removing a canonical output destroys it just as surely as rewriting
+        it; reporting only modifications would call that run clean."""
+        path = self._project(AREA)
+        code, payload = self._run_with_env(
+            ["run", str(path), "--sample-area", "1,2,3,4"], EVAL_DELETE_OUTPUT="1"
+        )
+        self.assertEqual(code, 0, payload)
+        self.assertEqual(payload["canonical_outputs_overwritten"], ["data/derived/candidate.json"])
+        self.assertFalse((self.root / "data" / "derived" / "candidate.json").exists())
+
+    def test_strict_turns_a_deleted_output_into_a_failure(self) -> None:
+        path = self._project(AREA)
+        code, _ = self._run_with_env(
+            ["run", str(path), "--sample-area", "1,2,3,4", "--strict"], EVAL_DELETE_OUTPUT="1"
+        )
+        self.assertEqual(code, 1)
 
     def test_a_sampled_run_leaves_runs_latest_alone(self) -> None:
         path = self._project(AREA)

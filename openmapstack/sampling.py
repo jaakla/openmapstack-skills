@@ -24,10 +24,12 @@ Structurally, not by convention:
 - ``runs.latest`` may never point at a sampled record, so ``verify``, the
   clean-rerun protocol, and ``validation.expectations`` attestations -- which
   bind to ``runs.latest.inputs_hash`` -- cannot inherit a sampled baseline;
-- ``openmapstack run --sample*`` re-reads the manifest afterwards and fails
-  loudly if the pipeline promoted itself into ``runs.latest``.
+- ``openmapstack run --sample*`` re-inspects the tree afterwards and fails
+  loudly if the pipeline promoted itself into ``runs.latest`` -- by moving the
+  pointer, by rewriting or deleting the record that pointer already resolves
+  to, or by writing no sampled record at all.
 
-If a sampled run overwrites the declared outputs in place, the existing
+If a sampled run overwrites or removes the declared outputs, the existing
 ``outputs_hash`` machinery already refuses to call the project validated: the
 files no longer hash to what the canonical run recorded. The CLI reports that
 clobber explicitly so the later failure is not a surprise.
@@ -127,6 +129,14 @@ def resolve_sample(manifest: dict[str, Any], requested: Mapping[str, Any]) -> Sa
             value = parameter.sample
         elif not value_has_type(value, parameter.type):
             raise SamplingError(f"{_ROLE_FLAGS[role]} must be a {parameter.type} for parameter {parameter.id!r}")
+        # A sampling role's canonical value *is* "no sampling", so binding it
+        # would run the full inputs while the record claims `mode: sampled`.
+        # Refuse rather than mislabel: `--sample-rows 0` is a canonical run.
+        if value == parameter.canonical:
+            raise SamplingError(
+                f"{_ROLE_FLAGS[role]} {value!r} is parameter {parameter.id!r}'s canonical value, "
+                f"which disables sampling; drop the flag to run canonically"
+            )
         extra_argv, extra_environment = parameter.bind(value)
         argv.extend(extra_argv)
         environment.update(extra_environment)

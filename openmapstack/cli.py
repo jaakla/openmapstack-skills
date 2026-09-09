@@ -9,6 +9,7 @@ import shlex
 import subprocess
 import sys
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 import yaml
 
@@ -17,7 +18,7 @@ from typing import Any
 
 from . import __version__
 from .project import ProjectError, get_in, load_json, load_project, project_path, step_outputs
-from .sampling import Sample, SamplingError, declared_sample, resolve_sample, run_record_errors
+from .sampling import Sample, SamplingError, declared_sample, resolve_sample, run_mode, run_record_errors
 from .validation import ValidationResult, validate_project
 from .verify import VerifyResult, verify_project
 
@@ -316,11 +317,11 @@ def _cmd_run(args: argparse.Namespace) -> int:
         environment.update(sample.environment)
         environment["OPENMAPSTACK_RUN_MODE"] = "sampled"
 
-    # A sampled run may overwrite the declared outputs in place. Fingerprint
-    # them first so the clobber is reported here rather than surfacing later
-    # as an unexplained outputs_hash mismatch.
-    outputs_before = _declared_output_digests(project_file.parent, project) if sample is not None else {}
-    latest_before = get_in(project, "runs", "latest", "id")
+    # A sampled run may overwrite the declared outputs or rewrite the canonical
+    # run record in place. Fingerprint both first, so either is reported here
+    # rather than surfacing later as an unexplained hash mismatch -- or, worse,
+    # not at all.
+    baseline = _SampledRunBaseline.capture(project_file.parent, project) if sample is not None else None
 
     if not args.json:
         print(f"Preflight: {preflight.status}")
@@ -361,9 +362,8 @@ def _cmd_run(args: argparse.Namespace) -> int:
         return 1
 
     if sample is not None:
-        return _report_sampled_run(
-            args, project_file, command, completed, sample, outputs_before, latest_before, preflight
-        )
+        assert baseline is not None
+        return _report_sampled_run(args, project_file, command, completed, sample, baseline, preflight)
 
     validation = validate_project(project_file, artifacts=True)
     payload = {
@@ -420,14 +420,66 @@ def _declared_output_digests(root: Path, project: dict[str, Any]) -> dict[str, s
     return digests
 
 
+def _canonical_record_path(project: dict[str, Any], latest_id: Any) -> str | None:
+    """Where ``runs.latest``'s record lives: declared if stated, else by convention."""
+    declared = get_in(project, "runs", "latest", "record", "path")
+    if isinstance(declared, str) and declared:
+        return declared
+    return f"runs/{latest_id}.json" if latest_id else None
+
+
+def _run_record_digests(root: Path, *also: str | None) -> dict[str, str]:
+    """SHA-256 of the run records present right now, keyed by relative path.
+
+    ``also`` names records to include even when they sit outside ``runs/``, so
+    a manifest pointing ``runs.latest.record.path`` elsewhere is fingerprinted
+    too.
+    """
+    from .integrity import sha256_file
+
+    runs_dir = root / "runs"
+    paths = sorted(runs_dir.glob("*.json")) if runs_dir.is_dir() else []
+    digests = {path.relative_to(root).as_posix(): sha256_file(path) for path in paths}
+    for relative in also:
+        if relative and relative not in digests and (root / relative).is_file():
+            digests[relative] = sha256_file(root / relative)
+    return digests
+
+
+@dataclass(frozen=True)
+class _SampledRunBaseline:
+    """What a sampled run must leave alone, fingerprinted before it starts.
+
+    Comparing ``runs.latest.id`` across the run is not enough on its own: a
+    pipeline can rewrite the record that id already points at, leaving the
+    manifest untouched while ``runs.latest`` comes to resolve to sampled
+    evidence. So the record's bytes are part of the baseline, not just its name.
+    """
+
+    latest_id: Any
+    canonical_record: str | None
+    outputs: dict[str, str]
+    records: dict[str, str]
+
+    @classmethod
+    def capture(cls, root: Path, project: dict[str, Any]) -> "_SampledRunBaseline":
+        latest_id = get_in(project, "runs", "latest", "id")
+        canonical_record = _canonical_record_path(project, latest_id)
+        return cls(
+            latest_id=latest_id,
+            canonical_record=canonical_record,
+            outputs=_declared_output_digests(root, project),
+            records=_run_record_digests(root, canonical_record),
+        )
+
+
 def _report_sampled_run(
     args: argparse.Namespace,
     project_file: Path,
     command: list[str],
     completed: subprocess.CompletedProcess,
     sample: Sample,
-    outputs_before: dict[str, str],
-    latest_before: Any,
+    baseline: _SampledRunBaseline,
     preflight: ValidationResult,
 ) -> int:
     """Report a sampled run, refusing to let it stand in for the canonical one.
@@ -436,8 +488,9 @@ def _report_sampled_run(
     analysis would be asking the wrong question -- the reported validation is
     the pre-run one, which is the last point at which the tree described the
     canonical project. What a sampled run is graded on instead is narrow: the
-    pipeline must not have promoted itself into ``runs.latest``, and any record
-    it wrote must state what it realized.
+    pipeline must not have promoted itself into ``runs.latest`` by any route,
+    it must have left evidence that it sampled at all, and any record it wrote
+    must state what it realized.
     """
     root = project_file.parent
     validation = preflight
@@ -450,27 +503,72 @@ def _report_sampled_run(
         after = {}
         problems.append(f"project.yaml is unreadable after the sampled run: {exc}")
     latest_after = get_in(after, "runs", "latest", "id") if after else None
-    if after and latest_after != latest_before:
+    if after and latest_after != baseline.latest_id:
         problems.append(
-            f"the sampled run moved runs.latest from {latest_before!r} to {latest_after!r}; "
+            f"the sampled run moved runs.latest from {baseline.latest_id!r} to {latest_after!r}; "
             f"a sampled run cannot become the canonical run of record"
         )
 
+    # Moving runs.latest is the loud promotion. The quiet one is rewriting the
+    # record that id already names: the manifest never changes, so comparing
+    # ids alone reports success while runs.latest now resolves to sampled
+    # evidence. Compare the record's bytes, and treat deleting it as the same
+    # offence -- it destroys the canonical run of record either way.
+    canonical_after = _canonical_record_path(after, latest_after) if after else None
+    records_after = _run_record_digests(root, baseline.canonical_record, canonical_after)
+    canonical_record = baseline.canonical_record
+    if canonical_after:
+        try:
+            record = load_json(root / canonical_after) if (root / canonical_after).is_file() else None
+        except ProjectError:
+            record = None
+        if isinstance(record, dict) and run_mode(record) == "sampled":
+            problems.append(
+                f"runs.latest now resolves to sampled run record {canonical_after}; "
+                f"the canonical run of record cannot be a sampled one"
+            )
+    if canonical_record and canonical_record in baseline.records:
+        if canonical_record not in records_after:
+            problems.append(
+                f"the sampled run deleted the canonical run record {canonical_record}; "
+                f"a sampled run cannot replace the canonical run of record"
+            )
+        elif records_after[canonical_record] != baseline.records[canonical_record]:
+            problems.append(
+                f"the sampled run rewrote the canonical run record {canonical_record} in place; "
+                f"runs.latest must keep resolving to the record the canonical run wrote"
+            )
+
     # Any run record the pipeline just wrote must declare its realized sample;
-    # reuse the shipped check so the CLI and the check API cannot drift.
+    # reuse the shipped check so the CLI and the check API cannot drift. At
+    # least one of them must declare `mode: sampled`, because a pipeline that
+    # ignored the sampling arguments leaves nothing behind that says this run
+    # sampled anything -- and an unmarked run is a canonical-looking one.
+    sampled_evidence: list[str] = []
     for record_path in sorted((root / "runs").glob("*.json")) if (root / "runs").is_dir() else []:
+        relative = record_path.relative_to(root).as_posix()
         try:
             record = load_json(record_path)
         except ProjectError:
             continue
-        if isinstance(record, dict):
-            problems.extend(f"runs/{record_path.name}: {problem}" for problem in run_record_errors(record))
+        if not isinstance(record, dict):
+            continue
+        problems.extend(f"{relative}: {problem}" for problem in run_record_errors(record))
+        written = baseline.records.get(relative) != records_after.get(relative)
+        if written and run_mode(record) == "sampled":
+            sampled_evidence.append(relative)
+    if not sampled_evidence:
+        problems.append(
+            "the sampled run wrote no run record declaring `mode: sampled`; without one "
+            "nothing records that this run sampled, or what it realized"
+        )
 
+    # Iterate the baseline, not the tree afterwards: an output the sampled run
+    # deleted is as destructive to the canonical result as one it rewrote, and
+    # only the baseline still knows it was there.
     outputs_after = _declared_output_digests(root, after or {})
     overwritten = sorted(
-        path
-        for path, digest in outputs_after.items()
-        if path in outputs_before and outputs_before[path] != digest
+        path for path, digest in baseline.outputs.items() if outputs_after.get(path) != digest
     )
     if problems:
         status = "failed"
@@ -503,7 +601,7 @@ def _report_sampled_run(
             )
         if overwritten:
             print(
-                "WARN  the declared outputs now hold sampled data: "
+                "WARN  the sampled run overwrote or removed declared canonical outputs: "
                 f"{', '.join(overwritten)}. Re-run without --sample before validating.",
                 file=sys.stderr,
             )

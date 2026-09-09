@@ -199,7 +199,9 @@ not answers. That is enforced, not merely advised: a sampled run record is
 marked `mode: sampled`, must record what it *realized* rather than only what
 was requested, and can never become `runs.latest` — `openmapstack validate`
 reports this as `runs.sample_isolation`, and `run --sample` fails outright if a
-pipeline promotes its own sampled run. See `references/project-spec.md`.
+pipeline promotes its own sampled run — by moving `runs.latest`, by rewriting
+the record it already points at, or by leaving no sampled record behind at all.
+See `references/project-spec.md`.
 
 ### `openmapstack verify` — check the analysis, not just the paperwork
 
