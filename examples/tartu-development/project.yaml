@@ -6,7 +6,7 @@ project:
     walking distance to city-owned kindergarten and school), and land-use criteria in Tartu, and show
     them on an interactive map with education POIs and catchment areas.
   created_at: 2026-08-25 08:15:03+03:00
-  updated_at: '2026-08-31T07:55:12.857884+00:00'
+  updated_at: '2026-09-09T09:34:32.991201+00:00'
   status: warning
 interpretation:
   objective: "Find cadastral parcels in the Tartu region satisfying stated land-use, minimum size (>=\
@@ -49,7 +49,7 @@ sources:
         table_name: Tartu maakond
         format: GeoPackage (GPKG/SQLite)
         size_bytes: 55746560
-        row_count: 79056
+        row_count: 79082
         column_count: 32
       request_spec: 'Direct county GPKG zip download from Maa- ja Ruumiamet S3 storage: https://s3.pilw.io/rp-kemit-kataster/ANDMED/Tartu_maakond_KATASTER_GPKG.zip
         extracted to data/source/Tartu_maakond_KATASTER_GPKG.gpkg containing layer ''Tartu maakond'' (79,056
@@ -114,8 +114,8 @@ sources:
     portal_page: https://geoportaal.maaruum.ee/est/ruumiandmed/eesti-topograafia-andmekogu/laadi-etak-andmed-alla-p609.html
     access:
       method: WFS 2.0.0 (GetFeature)
-      downloaded_at: '2026-08-25T12:29:16.773504+00:00'
-      retrieved_at: '2026-08-25T12:29:16.773504+00:00'
+      downloaded_at: '2026-09-09T09:34:27.668614+00:00'
+      retrieved_at: '2026-09-09T09:34:27.668614+00:00'
       file:
         name: etak_main_roads.geojson
         layer_name: etak:e_501_tee_j
@@ -169,13 +169,13 @@ sources:
     portal_page: https://geohub.tartulv.ee/
     access:
       method: ArcGIS REST FeatureServer / GeoJSON
-      downloaded_at: '2026-08-25T12:29:17.422507+00:00'
-      retrieved_at: '2026-08-25T12:29:17.422507+00:00'
+      downloaded_at: '2026-09-09T09:34:31.408401+00:00'
+      retrieved_at: '2026-09-09T09:34:31.408401+00:00'
       file:
         name: tartu_municipal_education.geojson
         table_name: education_pois
         format: GeoJSON (FeatureCollection, EPSG:4326 / EPSG:3301)
-        row_count: 61
+        row_count: 62
         column_count: 9
       request_spec: 'School service item 45671f12e7864221976cb11c48c57cd1, layer 0: Omand=1 AND Liik&lt;&gt;5
         AND Lopetamise_kp IS NULL. Kindergarten service item 2500887fd6414aa18cc08c7b8e712623, layer 0:
@@ -191,8 +191,8 @@ sources:
       - field: Liik
         domain_value: 10 = Tartu municipal kindergarten; 5 = school outside Tartu
       completeness:
-        matched: 61
-        returned: 61
+        matched: 62
+        returned: 62
     license:
       name: License not stated in ArcGIS item metadata
       url: https://www.arcgis.com/home/item.html?id=45671f12e7864221976cb11c48c57cd1
@@ -691,13 +691,13 @@ runtime:
     qgis: 3.44.3 Docker opt-in; deterministic XML builder by default
 runs:
   latest:
-    id: run-20260831-075507
-    started_at: '2026-08-31T07:55:07.898315+00:00'
-    completed_at: '2026-08-31T07:55:12.857884+00:00'
+    id: run-20260909-093408
+    started_at: '2026-09-09T09:34:08.622351+00:00'
+    completed_at: '2026-09-09T09:34:32.991201+00:00'
     status: warning
-    inputs_hash: sha256:4f79784bf11cff7ffa2bd80410e309b5cf9d4654f079a52a411680455e2addbe
-    outputs_hash: sha256:d0032caa69ef8aadee7ba30d616cea8c5d9c99aa0d0ffeae8d55e860a8baed8d
+    inputs_hash: sha256:7f1154505c5ca3799ef9a813fc454726678c329fca5a31cbb44d8955b8603966
+    outputs_hash: sha256:3865d044802ee5f7b28a88e6a1d03beff4b510bd6c9829ff6cd8265023d0f9d0
     record:
-      path: runs/run-20260831-075507.json
+      path: runs/run-20260909-093408.json
     validation_report:
       path: validation/latest-report.json
