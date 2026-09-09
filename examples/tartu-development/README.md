@@ -108,7 +108,7 @@ not present-day conditions (see warning `SCENARIO-001`):
 - Tier 1 — road plus both municipal education proxies: **66 parcels / 849.1 ha**
 - Tier 2 — road plus either municipal education proxy: **85 parcels / 2,472.3 ha**
 - Tier 3 — road access only: **367 parcels / 6,249.4 ha**
-- Total road-accessible candidates: **518 parcels / 9,570.8 ha**
+- Total road-accessible candidates: **517 parcels / 9,570.8 ha**
 - Candidates whose closest qualifying road is the hypothetical scenario: **60**
 - Effective education layer: **26 schools + 34 kindergartens active**, 1 switched
   off by `OVERRIDE-001` (61 authoritative facilities in the immutable source)
