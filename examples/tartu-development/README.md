@@ -106,15 +106,15 @@ Both scenario overrides are in effect, so these numbers describe the scenario,
 not present-day conditions (see warning `SCENARIO-001`):
 
 - Tier 1 — road plus both municipal education proxies: **66 parcels / 849.1 ha**
-- Tier 2 — road plus either municipal education proxy: **85 parcels / 2,472.3 ha**
+- Tier 2 — road plus either municipal education proxy: **84 parcels / 2,468.3 ha**
 - Tier 3 — road access only: **367 parcels / 6,249.4 ha**
-- Total road-accessible candidates: **517 parcels / 9,570.8 ha**
-- Candidates whose closest qualifying road is the hypothetical scenario: **60**
-- Effective education layer: **26 schools + 34 kindergartens active**, 1 switched
-  off by `OVERRIDE-001` (61 authoritative facilities in the immutable source)
+- Total road-accessible candidates: **517 parcels / 9,566.9 ha**
+- Candidates whose closest qualifying road is the hypothetical scenario: **59**
+- Effective education layer: **27 schools + 34 kindergartens active**, 1 switched
+  off by `OVERRIDE-001` (62 authoritative facilities in the immutable source)
 
-Removing `OVERRIDE-001` moves 64 parcels back from Tier 2 to Tier 1
-(130 / 3,185.1 ha), which is the point of the scenario: a single kindergarten
+Removing `OVERRIDE-001` moves 63 parcels back from Tier 2 to Tier 1
+(129 / 3,181.2 ha), which is the point of the scenario: a single kindergarten
 carries most of the western cluster's Tier 1 status. That comparison is a switch
 in the dashboard's Map tab, because the pipeline exports
 `dist_school_baseline_m` / `dist_kg_baseline_m` alongside the effective
