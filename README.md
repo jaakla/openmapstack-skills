@@ -1,17 +1,19 @@
 # openmapstack
 
-**Geospatial questions →  reproducible, validated GIS analysis project (with very nice interactive map).**
+**Turn Geospatial questions into reproducible, validated GIS analysis project (with very nice interactive map on web and QGIS).**
 
 Install:
 ```bash
 npx skills add jaakla/openmapstack -g
 ```
 
-OpenMapStack gives your favorite AI agent: Claude Code, Codex, Cursor, OpenCode, and 50+ other agents a production workflow from **authoritative data discovery** through analysis to interactive web and GIS deliverables. Material workflows become inspectable and repeatable well-defined projects in a `yaml` file with pinned sources, explicit assumptions and CRS choices, deterministic processing, isolated overrides, machine-readable validation, and surfaced provenance.
+OpenMapStack gives your favorite AI agent: Claude Code, Codex, Cursor, OpenCode, PI and 50+ other agents a production workflow from **authoritative data discovery** through reusable analysis pipeline.py to interactive web and GIS deliverables. The workflow becomes inspectable and repeatable as well-defined projects in a `yaml` file with pinned sources, explicit assumptions and CRS choices, deterministic processing in a python script, isolated overrides, machine-readable validation, and surfaced provenance.
 
-It is open-first and cloud-native by default, built on shoulders of the awesome Open GIS stack: STAC for discovery; GeoParquet, COG, and PMTiles for storage and delivery; DuckDB and PostGIS for compute; and QGIS, MapLibre, and Martin for presentation. It also uses GDAL/OGR, GeoPandas, xarray/rioxarray, PDAL, routing engines, spatial SQL, and pragmatic hosted services when scale or reliability requires them.
+It is open-first (both data and code-wise) and cloud-native by default, built on shoulders of the awesome Open GIS stack: STAC for discovery; GeoParquet, COG, and PMTiles for storage and delivery; DuckDB and PostGIS for compute; and QGIS, MapLibre, and Martin for presentation. It also encourages to use GDAL/OGR, GeoPandas, xarray/rioxarray, PDAL, routing engines, spatial SQL, and pragmatic hosted services when scale or reliability requires them.
 
 ## What's in this repo
+
+Core skills:
 
 - [SKILL.md](SKILL.md) — the skill entry point: triggers, global defaults, format and compute decision matrices, anti-patterns, and a quick triage guide.
 - [references/data-sources.md](references/data-sources.md) - lists OSM, Overture, Sentinel/Landsat, regional portals, STAC catalogs and others.
@@ -25,19 +27,22 @@ It is open-first and cloud-native by default, built on shoulders of the awesome 
 - [references/validation-and-ops.md](references/validation-and-ops.md) — validation, manifests, attribution, and deployment checks, including the machine-readable reproducible-project contract.
 - [references/project-spec.md](references/project-spec.md) — the specific`openmapstack-project/v1` schema: compiling any material analysis into a reproducible GIS project (`project.yaml`, pipeline, source provenance, overrides, validation, semantic presentation, QGIS output).
 - [templates/](templates/) — ready scaffolds (`project.yaml`, `pipeline.py`, `presentation.yaml`, `validation.yaml`) for new projects.
+
+Additional materials:
+
 - [examples/tartu-development/](examples/tartu-development/) — a fully-worked reproducible project matching the acceptance scenario: source provenance + timestamps, explicit assumptions, two verified project overrides (a scenario attribute change with prior-value verification, and hypothetical scenario geometry), deterministic pipeline, machine-readable validation, and semantic presentation.
 - [evals/](evals/) — the eval suite grading whether an agent reaches the right analytical answer, respects the GIS-method guardrails, and reruns reproducibly, with the `openmapstack-project/v1` contract as the substrate that makes those independently checkable: `python evals/run.py --mode fixture` runs deterministic, no-LLM checks against real generated artifacts (analytical correctness against known geospatial truth, metric CRS, source immutability, schema, overrides, validation integrity, presentation contract, and clean reruns), plus adversarial cases and a pluggable live-agent benchmark (Claude Code, Codex, and any OpenAI-compatible API such as OpenRouter — URL and model via `OPENAI_COMPATIBLE_*` env, API key as a secret).
 - [`openmapstack/`](openmapstack/) — the installable `openmapstack validate/run/inspect` CLI for auditing and executing `openmapstack-project/v1` projects, plus [`openmapstack/checks/`](openmapstack/checks/): the reusable, semantic check library. All but five of its checks are oracle-free, so the same functions that grade the eval suite also grade a user's own project on data this repository has never seen.
 - [docs/openmapbench-interop.md](docs/openmapbench-interop.md) — the narrow, versioned contract a benchmark harness such as OpenMapBench consumes: `openmapstack checks` / `check` / `api-info` (`openmapstack-check-api/v1`), the packaged result schemas, skill snapshots, arm provenance, and exported task bundles.
 - [`.claude-plugin/`](.claude-plugin/) — Claude Code plugin and marketplace manifests, so the repository can also be installed with `/plugin install`. Validated in CI by [`.github/workflows/plugin.yml`](.github/workflows/plugin.yml).
 
-My local Estonia-specific guidance (Maa- ja Ruumiamet, ETAK, EPSG:3301 / L-EST97) is included for convenience. But all the global sources are incuded for world-wide coverage.
+Some my local Estonia-specific guidance (Maa- ja Ruumiamet, ETAK, EPSG:3301 / L-EST97) is included for convenience. But most of the major global sources are included for world-wide coverage.
 
 ## Install
 
-The recommended way is the [skills CLI](https://github.com/vercel-labs/skills), which works for Claude Code, Cursor, OpenCode, Codex, and 50+ other agents.
+### Recommended: skills.sh CLI
 
-### Recommended: skills CLI
+The recommended way is the [skills CLI](https://github.com/vercel-labs/skills), which works for Claude Code, Cursor, OpenCode, Codex, and 50+ other agents.
 
 Install globally (available in every project):
 
@@ -49,7 +54,7 @@ Update later with `npx skills update open-map-stack`. Remove with `npx skills re
 
 ### Claude Code plugin (optional)
 
-Claude Code users can install the same repository as a plugin instead. This adds
+Claude Code users can install the same repository also as a plugin. This adds
 versioned installs, `/plugin update`, and project-scoped installs that a team
 picks up from a repository's `.claude/settings.json`:
 
@@ -122,7 +127,7 @@ Start Claude Code and run `/skills open-map-stack` should appear in the list. Th
 
 ## Use
 
-The skill auto-activates when you ask Claude about geospatial work — terms like GIS, OpenStreetMap, Overture, Sentinel, Landsat, LiDAR, GeoTIFF, shapefile, GeoPackage, raster/vector tiles, isochrones, spatial joins, EPSG codes, and projections will all trigger it. You don't need to invoke it manually, but sometimes hinting "use open-map-stack skills" helps.
+The skill auto-activates when you ask Claude about geospatial work — terms like GIS, OpenStreetMap, Overture, Sentinel, Landsat, LiDAR, GeoTIFF, shapefile, GeoPackage, raster/vector tiles, isochrones, spatial joins, EPSG codes, and projections will all trigger it. You don't need to invoke it manually, but sometimes hinting "use open-map-stack skills" may be useful to encourage agents to do it.
 
 Example prompts that engage the skill:
 
@@ -132,11 +137,11 @@ Example prompts that engage the skill:
 - "Set up an OSRM routing server from a Estonia OSM extract."
 - "Build an isochrone API around these points."
 
-If you want to force the skill to load, you can reference it explicitly:
-
-> Use the open-map-stack skill to convert this shapefile to GeoParquet.
-
 ## Project CLI
+
+> The key innovation of the skill is not just do the work every time again and then forget it, but to create special well-defined project with data and process descriptions and rerunnable scripts, so the whole process becomes investigatable and repeatable.
+
+To help with that we have special CLI to work with the projects.
 
 The CLI operates on an `openmapstack-project/v1` manifest. A project directory may
 be supplied in place of its `project.yaml` file.
