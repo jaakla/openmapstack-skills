@@ -1,7 +1,7 @@
 # User data sources — warehouses, credentials, snapshots, clean reruns
 
 Read this when an analysis must read the user's own tables: a PostGIS
-database, a DuckDB file, or a directory of GeoParquet/GeoPackage files that
+database, a DuckDB file, or a local protected directory of GeoParquet/GeoPackage files that
 is not a public download. It covers what `references/data-sources.md` does
 not: data that has an owner, a credential, and no published version.
 
