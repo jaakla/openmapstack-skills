@@ -9,51 +9,27 @@ Production-grade geospatial workflows with an open-first stack and pragmatic hos
 
 ## Reproducible project-first contract
 
-> **Core principle: reasoning may be exploratory; the delivered analysis must be deterministic, inspectable, and reproducible.**
+For every material multi-stage GIS analysis, compile or maintain a deterministic,
+inspectable, reproducible technical project before delivery. A map, dashboard or
+report is a view over that project, not the canonical definition of the analysis.
 
-For any material multi-stage GIS analysis, do not optimize for reaching the final map, dashboard, or answer quickly. A one-off polished dashboard is **not** the deliverable — a reproducible technical GIS project is. First establish a reusable project artifact, then derive the map/dashboard/report from it.
+**Before compiling or delivering a material analysis, read
+`references/project-workflow.md` for the mandatory workflow and delivery rules,
+and `references/project-spec.md` for the full `openmapstack-project/v1` schema.**
+Use `templates/` and the worked `examples/tartu-development` project.
 
-Before treating an analysis as complete, you MUST compile (or maintain) a project like `examples/tartu-development`: a canonical `project.yaml` (`openmapstack-project/v1`), `pipeline.py`, and `README.md`; pinned sources with timestamps, selections and licensing; explicit assumptions; every manual addition or correction stored as real geodata; deterministic ordered steps with explicit CRS; machine-readable validation rules plus the report from the run; and output definitions with semantic presentation intent and provenance surfaced in the rendered view. **`references/project-spec.md` is the full schema — read it before compiling a project.**
+Keep authoritative sources real, immutable and pinned; never invent baseline
+geometry without explicit informed consent. Record assumptions and every manual
+correction as data or canonical pipeline logic, make overrides executable and
+verified, and preserve unknown semantic attributes as unknown. The project must
+have explicit CRS, deterministic ordered steps, machine-readable validation and
+run evidence, provenance, and a documented clean rerun without chat dependencies.
+Run `openmapstack validate` and the canonical `openmapstack run` path when the CLI
+is available. Missing validation capability is `not_testable`, never an implicit
+pass. Follow the referenced workflow's complete QGIS and presentation obligations.
 
-Workflow (agent may retry/experiment internally, but the accepted analysis is recompiled deterministically):
-
-```
-USER QUESTION
-    ↓
-interpretation / exploration        (internal, may be ad-hoc)
-    ↓
-COMPILE GIS PROJECT                 project.yaml + pipeline + manifest + overrides + validation
-    ↓
-EXECUTE PROJECT
-    ↓
-validated derived datasets
-    ↓
-QGIS project / standardized web view
-    ↓
-FINAL ANALYSIS / DASHBOARD / ANSWER
-```
-
-The polished map/dashboard is a **view over the project**, not the canonical definition of the analysis.
-
-Hard rules for every material analysis — each is expanded in `references/project-spec.md`:
-
-* **Real source data mandatory; never hallucinate coordinates.** Fabricating coordinates or synthesizing baseline geometry is forbidden without explicit, informed user consent. Hypothetical or planned features go in `data/overrides/` with provenance, rationale, and evidence.
-* **Never mutate source data.** Immutable source + project override layer = effective input. Distinguish external facts, transformations, corrections, assumptions, and hypothetical data.
-* **Overrides must be executable and verified.** Target a real source feature; for attribute changes the asserted prior value must match. Evidence must be non-placeholder. Validation reports each override `applied`, `rejected`, or `not_testable` — listing one is not applying it. Scenario features stay labeled hypothetical and visually distinct from authoritative layers.
-* **Record, don't memoize on chat.** Encode every manual fix as data or pipeline logic. A fresh environment with the documented sources must reproduce the project; the transcript is not part of the dependency graph.
-* **Prove semantic predicates from data.** Ownership, active status, public access, legal designation: the source must expose an authoritative field or documented mapping. Preserve unknown as unknown; never default a missing value to the desired class.
-* **Bounded APIs must prove completeness.** Record `numberMatched`/equivalent and page until returned == matched. A response filled to the request limit is incomplete until proven otherwise.
-* **Validation is a pipeline stage**, not prose advice, with machine-readable results. Every declared check appears exactly once in the report; `warning`/`not_testable` propagate to run and project status; run IDs and hashes resolve to a real `runs/*.json` record.
-* **Run the project CLI when available.** Use `openmapstack validate project.yaml` before delivery and `openmapstack run project.yaml` for the canonical execution path. The CLI audits the manifest, provenance, graph, artifacts, report, and run record; it does not replace domain GIS checks performed by the pipeline.
-* **The manifest must resolve.** Every step input is a source key or an earlier step's output, spelled as the producer declared it; every `generated_by` names a real step (`manifest_graph_resolves`).
-* **One canonical implementation creates every declared output.** Convenience/E2E entrypoints may wrap `pipeline.py` but must not duplicate its processing, QGIS, or report logic.
-* **Build a layer- and style-perfect QGIS project (`project.qgz`)** mirroring the web view: matching layer-tree groups, identical categorized styles, `./path.gpkg|layername=name` datasources, and a regional tiled basemap. **Success means valid layers, not exit code 0** — pin the runtime, and when PyQGIS is available require every layer `isValid()`; otherwise record `not_testable`, never an implicit pass. Two traps make a project that passes every one of those checks still show the wrong map, so check them explicitly:
-  * **Every layer declares a complete `<srs>`, basemaps included, and project reprojection is enabled.** A layer without one is assumed to be in the project CRS and never reprojected. An auth-id-only `<spatialrefsys>` is also broken: QGIS can still report `EPSG:3301` while treating the CRS as invalid and silently painting nothing. Emit WKT or PROJ alongside the identifiers and set `SpatialRefSys/ProjectionsEnabled` to `1`. Prefer building layers through the PyQGIS API, which serializes these fields for you; the trap is specific to hand-written `.qgs` XML.
-  * **A QGIS layer tree stacks the opposite way to a web map.** `presentation.map.layers` is ordered bottom-to-top, while a layer tree paints its *first* entry on top, so write the tree in reverse manifest order with the basemap last. Copying the manifest order verbatim puts opaque analysis fills over the point layers that belong above them, and the points vanish.
-* **Separate analysis semantics from rendering.** Declare semantic presentation roles; don't reinvent layout/colors/UX per run.
-* **Ship a reconfigurable view, and never let it misrepresent the run.** Organise the sidebar into tabs of collapsible sections, give every layer group an on/off control, and expose the analysis parameters and scenario overrides as live controls. Each control opens at the value declared in `presentation.controls` and returning there must reproduce the published numbers; any other position labels itself exploratory and offers a reset. The browser re-applies published rules to values the pipeline measured — it never measures geometry, and a control that changes a shape switches between buffers the pipeline materialised.
-* **Labels must match the operation.** A Euclidean buffer is a "2 km straight-line proxy", not a walking catchment, and column names must say so too. State the measurement basis (nearest edge vs centroid) as an assumption — it changes which features qualify.
-* Cheat-sheet: `references/project-spec.md` defines the full schema; `templates/` gives ready scaffolds; `examples/tartu-development` is a worked reference project matching the acceptance scenario.
+For a bounded one-shot SQL, CRS or conversion question, the relevant domain
+reference is sufficient; a full project artifact and its methodology are not needed.
 
 ## Modules — read the relevant reference(s) before starting work
 
