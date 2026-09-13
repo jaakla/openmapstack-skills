@@ -7,6 +7,7 @@ Read evidence and successful native skill invocations remain distinct.
 from __future__ import annotations
 
 import shlex
+import re
 import json
 import os
 from pathlib import Path
@@ -96,7 +97,11 @@ def claude_events(events, inventory):
                     else:
                         gaps.append("unmapped_skill_invocation")
             elif name == "Read" and isinstance(arguments.get("file_path"), str):
-                observation = _observation(arguments["file_path"], inventory, index, "read", _text(block.get("content")))
+                output = _text(block.get("content"))
+                # The CLI prefixes Read output with line numbers. Strip only
+                # that known decoration, then verify against source bytes.
+                output = re.sub(r"(?m)^[ \t]*\d+(?:\t|→)", "", output)
+                observation = _observation(arguments["file_path"], inventory, index, "read", output)
             elif name not in {"Glob", "Write", "Edit", "TodoWrite"}:
                 # Bash, Grep, nested agents and future tools can load text
                 # through paths this decoder cannot attest.

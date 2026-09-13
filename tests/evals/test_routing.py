@@ -68,6 +68,11 @@ class RoutingEvidenceTests(unittest.TestCase):
         self.assertEqual(result["false_activation_count"], 0)
         self.assertFalse(result["text_bytes_complete"])
 
+    def test_numbered_read_output_verifies_source_bytes(self):
+        trace = claude_trace("Read", {"file_path": self.path}, "1\tskill instructions")
+        observations, _ = claude_events(trace, self.inventory)
+        self.assertEqual(observations[0]["verified_text_bytes"], len("skill instructions"))
+
     def test_missing_and_opaque_telemetry_is_not_testable(self):
         for trace in [[], claude_trace()[:1], claude_trace("Bash", {"command": "python arbitrary.py"})]:
             observed, gaps = claude_events(trace, self.inventory)
