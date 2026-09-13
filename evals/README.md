@@ -13,6 +13,11 @@ the agent's narration.
 
 ## Execution modes and score types
 
+Native skill discovery is a separate integration smoke path:
+`python evals/run.py routing --list`. See [routing smoke tests](routing.md)
+and the [frozen pre-refactor baselines](baselines/README.md). It does not inject
+skill-reading instructions or contribute to project-quality pass rates.
+
 Execution mode describes how a project is produced. `fixture` runs committed,
 deterministic reference projects with no network or LLM calls. `live` starts in
 an empty workspace, copies only explicitly declared input fixtures, invokes an

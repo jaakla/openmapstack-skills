@@ -1,0 +1,438 @@
+{
+  "schema": "openmapstack-refactor-baseline/v1",
+  "label": "v0.3.0",
+  "revision": "d4e1bd3cc6f35049e2cbbd6813a3d10787b6bcfe",
+  "capture_date": "2026-09-13",
+  "skill": {
+    "content_sha256": "sha256:f773b4afb874eb34b5e2d30e7546906a99453b0ec7ce52bc56cd8caedd66fe9b",
+    "files": [
+      {
+        "path": "SKILL.md",
+        "sha256": "sha256:0a0e3e586d24105334b63341e6367f552b52c3a18fb4864fce45916f30e1e52a",
+        "bytes": 16895
+      },
+      {
+        "path": "references/analytics.md",
+        "sha256": "sha256:4932c86b375e4d138fab8e958b4d50e107778435ea60955a96ba6defb31da55d",
+        "bytes": 19282
+      },
+      {
+        "path": "references/data-sources.md",
+        "sha256": "sha256:9c91dc7c895753906a1179bcc0a2bf7de0c0dd6c50f96fb959753844cd75aa4a",
+        "bytes": 20620
+      },
+      {
+        "path": "references/formats-and-crs.md",
+        "sha256": "sha256:cf0779cc17d0cf287bd1a6c003a8ee8ea97f694381e95c717050ab1cb2ed4dbd",
+        "bytes": 11456
+      },
+      {
+        "path": "references/processing.md",
+        "sha256": "sha256:2ff7014897c24c5cfdd850d88c8adda7e91a4b2f745cddb1ecb17200537fd64b",
+        "bytes": 16522
+      },
+      {
+        "path": "references/project-spec.md",
+        "sha256": "sha256:bbfb971ff6e6b26e9dd129af0bf2f3baea06539d9511d534ca1ac6cbf21a9d38",
+        "bytes": 56262
+      },
+      {
+        "path": "references/qgis.md",
+        "sha256": "sha256:c1cd595b08dec57317e496a16ecef6c40c4ec324da030e5703099824a127e53b",
+        "bytes": 23451
+      },
+      {
+        "path": "references/services-and-scale.md",
+        "sha256": "sha256:0cfb6e842374c27a3a9ee8917cd058d54bdcef160c294eda0c3325f86505dead",
+        "bytes": 28222
+      },
+      {
+        "path": "references/spatial-sql.md",
+        "sha256": "sha256:acaf708c51cb1010271983d6ad4cd1117a7d5403fdc47b7b36425bca2077fb9d",
+        "bytes": 7068
+      },
+      {
+        "path": "references/user-data-sources.md",
+        "sha256": "sha256:2713ae5c3a41e5db9bc5a6da2de491ecfc5bf0b4797c5f1475d2ed041329026d",
+        "bytes": 7816
+      },
+      {
+        "path": "references/validation-and-ops.md",
+        "sha256": "sha256:0c5a34eeb29d1ce45ca70b25c167451f9cdee5e0c6c09ae957291bc7147c6fa2",
+        "bytes": 9175
+      },
+      {
+        "path": "references/web-delivery.md",
+        "sha256": "sha256:df977b9c8cfa4cbd737ecf2cefae842e56e577ea41b167751dd4a8a66680c7b5",
+        "bytes": 19018
+      },
+      {
+        "path": "templates/pipeline.py",
+        "sha256": "sha256:06f610fedf570b496a2a794a7fb08c55abe117b61537f9c6b266f1136a2fa0cc",
+        "bytes": 5212
+      },
+      {
+        "path": "templates/presentation.yaml",
+        "sha256": "sha256:e32ace9d362fdd843b0137d6483a1759faab87471db94bf0050744c37b3dd205",
+        "bytes": 5438
+      },
+      {
+        "path": "templates/project.yaml",
+        "sha256": "sha256:9a4486c0c14e34043eea6cb1b3ab305f3b609370d52cd49e3c505beae4342b39",
+        "bytes": 11933
+      },
+      {
+        "path": "templates/validation.yaml",
+        "sha256": "sha256:02cbaef16c24d38f8e96450ef073d54591968b0decfc6b4983dfa16c9a14fa85",
+        "bytes": 3707
+      }
+    ],
+    "entrypoint_bytes": 16895,
+    "project_contract_body_sha256": "sha256:a63ae20975f6762ce0c34c7f047efef65b22edf93f33533738ec33d9da22cadd"
+  },
+  "runtime": {
+    "python": "3.12.3",
+    "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+    "duckdb": "1.5.5"
+  },
+  "fixture": {
+    "source": "git archive of revision; archived runner and cases",
+    "command": "python evals/run.py --mode fixture --json fixture.json",
+    "report_sha256": "sha256:f30af4ccbd1819bb6b0563eb9582606c11e3e597f0ec146de3069429e277b7af",
+    "score_types": {
+      "agent_benchmark": {
+        "trials_run": 0,
+        "graded_trials": 0,
+        "passed": 0,
+        "assertions_failed": 0,
+        "setup_failed": 0,
+        "pass_rate": null,
+        "capability": {
+          "assertions_evaluated": 0,
+          "assertions_not_testable": 0,
+          "unmet_soft_gates": 0,
+          "fully_exercised": false
+        },
+        "dimensions": {}
+      },
+      "contract_ci": {
+        "trials_run": 15,
+        "graded_trials": 15,
+        "passed": 15,
+        "assertions_failed": 0,
+        "setup_failed": 0,
+        "pass_rate": 1.0,
+        "capability": {
+          "assertions_evaluated": 235,
+          "assertions_not_testable": 2,
+          "unmet_soft_gates": 2,
+          "fully_exercised": false
+        },
+        "dimensions": {
+          "reproducibility_compliance": {
+            "passed": 37,
+            "failed": 0
+          },
+          "provenance": {
+            "passed": 38,
+            "failed": 0
+          },
+          "gis_correctness": {
+            "passed": 62,
+            "failed": 0
+          },
+          "validation_integrity": {
+            "passed": 32,
+            "failed": 0
+          },
+          "presentation_contract": {
+            "passed": 20,
+            "failed": 2
+          },
+          "override_handling": {
+            "passed": 36,
+            "failed": 0
+          },
+          "rerun_success": {
+            "passed": 4,
+            "failed": 0
+          },
+          "metamorphic_evidence": {
+            "passed": 4,
+            "failed": 0
+          }
+        }
+      },
+      "integration_visual": {
+        "trials_run": 0,
+        "graded_trials": 0,
+        "passed": 0,
+        "assertions_failed": 0,
+        "setup_failed": 0,
+        "pass_rate": null,
+        "capability": {
+          "assertions_evaluated": 0,
+          "assertions_not_testable": 0,
+          "unmet_soft_gates": 0,
+          "fully_exercised": false
+        },
+        "dimensions": {}
+      },
+      "mutation_tests": {
+        "trials_run": 25,
+        "graded_trials": 25,
+        "passed": 25,
+        "assertions_failed": 0,
+        "setup_failed": 0,
+        "pass_rate": 1.0,
+        "capability": {
+          "assertions_evaluated": 226,
+          "assertions_not_testable": 0,
+          "unmet_soft_gates": 0,
+          "fully_exercised": true
+        },
+        "dimensions": {
+          "override_handling": {
+            "passed": 37,
+            "failed": 0
+          },
+          "reproducibility_compliance": {
+            "passed": 43,
+            "failed": 0
+          },
+          "validation_integrity": {
+            "passed": 41,
+            "failed": 0
+          },
+          "gis_correctness": {
+            "passed": 51,
+            "failed": 0
+          },
+          "provenance": {
+            "passed": 39,
+            "failed": 0
+          },
+          "presentation_contract": {
+            "passed": 3,
+            "failed": 0
+          },
+          "metamorphic_evidence": {
+            "passed": 12,
+            "failed": 0
+          }
+        }
+      }
+    },
+    "outcomes": [
+      {
+        "id": "001-basic-spatial-analysis",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "002-attribute-override",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "003-manual-planned-road",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "004-data-quality-warning",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "005-reproducible-rerun",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "006-presentation-consistency",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "007-mixed-crs-reprojection",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "008-spatial-join-integrity",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "009-boundary-intersection",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "010-polygon-hole-area",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "011-geometry-health",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "012-override-conflict-rejection",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "013-override-ordered-chain",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "014-output-format-parity",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "015-metamorphic-relations",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "901-hallucinated-geometry",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "902-wrong-crs",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "903-dangling-graph",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "904-override-not-applied",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "905-override-from-mismatch",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "906-unpinned-source",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "907-incomplete-pagination",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "908-validation-laundering",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "909-dashboard-only",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "910-qgis-false-success",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "911-mutated-source",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "914-crs-metadata-mismatch",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "915-join-double-count",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "916-contains-vs-intersects",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "917-polygon-hole-filled",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "918-invalid-geometry-accepted",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "919-format-drift",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "920-override-conflict-ignored",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "921-override-ordered-swapped",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "922-qgis-incomplete-crs",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "923-order-dependent-output",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "924-inverted-distance-predicate",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "925-duplicate-sensitive-candidates",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "926-expired-backend-snapshot",
+        "status": "passed",
+        "not_testable": []
+      },
+      {
+        "id": "927-inline-credentials",
+        "status": "passed",
+        "not_testable": []
+      }
+    ]
+  },
+  "native_routing": {
+    "status": "not_testable",
+    "reason": "No pre-existing native-discovery evidence; explicit-injection runs do not measure discovery"
+  },
+  "live_evidence": "v0.3.0-live.json",
+  "paired_task_success": {
+    "status": "not_testable",
+    "reason": "No paired historical arms found"
+  }
+}

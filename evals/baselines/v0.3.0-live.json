@@ -1,0 +1,559 @@
+{
+  "schema": "openmapstack-historical-live-baseline/v1",
+  "source_url": "https://github.com/jaakla/openmapstack-skills/actions/runs/34096158032",
+  "artifact_id": 10011413542,
+  "artifact_name": "eval-benchmark-claude_code-34096158032",
+  "report_sha256": "sha256:9d58500232c901534a8501540a8fb2364e83484372b94e55b7f7e966d510972e",
+  "run_config": {
+    "mode": "live",
+    "agent": "claude_code",
+    "model": "claude-sonnet-4-6",
+    "model_source": "flag",
+    "timeout_s": 1200,
+    "repetitions": 3,
+    "seed": null,
+    "case": null,
+    "run_id": "20260907T073503Z",
+    "artifacts_retained": true,
+    "artifact_root": "evals/results/20260907T073503Z",
+    "skill_commit": "d4e1bd3cc6f35049e2cbbd6813a3d10787b6bcfe",
+    "skill_worktree_dirty": false,
+    "skill_mode": "enabled",
+    "arms": [
+      "oms"
+    ],
+    "price_catalog_date": null,
+    "checker": {
+      "package_version": "0.3.0",
+      "check_api_version": "openmapstack-check-api/v1"
+    },
+    "arm_provenance": [
+      {
+        "schema": "openmapstack-benchmark-arm/v1",
+        "arm": "oms",
+        "skill": {
+          "mode": "enabled",
+          "content_sha256": "sha256:f773b4afb874eb34b5e2d30e7546906a99453b0ec7ce52bc56cd8caedd66fe9b",
+          "commit": "d4e1bd3cc6f35049e2cbbd6813a3d10787b6bcfe",
+          "dirty": false,
+          "entrypoint": "benchmark-context/openmapstack/SKILL.md"
+        },
+        "task_set": {
+          "cases": [
+            "001-basic-spatial-analysis",
+            "002-attribute-override",
+            "003-manual-planned-road",
+            "004-data-quality-warning",
+            "005-reproducible-rerun",
+            "006-presentation-consistency",
+            "070-underspecified-prompt",
+            "071-contradictory-prompt-refusal",
+            "072-do-not-invent",
+            "073-non-english-prompt"
+          ],
+          "sha256": "sha256:f8762a416e4ee6890c33870b2fdc253ae57eb0ff7b5421c3de8bbe7733abe49b"
+        },
+        "checker": {
+          "package": "openmapstack",
+          "package_version": "0.3.0",
+          "check_api_version": "openmapstack-check-api/v1"
+        },
+        "harness": {
+          "name": "openmapstack/evals",
+          "commit": "d4e1bd3cc6f35049e2cbbd6813a3d10787b6bcfe",
+          "dirty": false
+        },
+        "runtime": {
+          "python": "3.12.14",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "duckdb": "1.5.5",
+          "container_image": null
+        },
+        "tool_surface": {
+          "adapter": "claude_code",
+          "agent_version": "2.1.263 (Claude Code)"
+        },
+        "model": {
+          "provider": "anthropic",
+          "id": "claude-sonnet-4-6",
+          "revision": null
+        },
+        "sampling": {
+          "seed": null,
+          "temperature": null,
+          "reasoning": null
+        },
+        "price_catalog_date": null
+      }
+    ]
+  },
+  "agent_benchmark": {
+    "task_success_rate": 0.0,
+    "task_success_rate_95ci": [
+      0.0,
+      0.20388926630434784
+    ],
+    "hard_safety_gate_rate": 0.0,
+    "success_at_1": 0.0,
+    "trials": 30,
+    "graded_trials": 15,
+    "median_duration_s": 66.20107857799997,
+    "p95_duration_s": 1112.7967606270004,
+    "median_tokens": 169313.0,
+    "median_cost_usd": 0.15801845000000003,
+    "setup_failures": 15,
+    "dimensions": {
+      "reproducibility_compliance": {
+        "passed": 3,
+        "failed": 29
+      },
+      "provenance": {
+        "passed": 0,
+        "failed": 18
+      },
+      "gis_correctness": {
+        "passed": 1,
+        "failed": 41
+      },
+      "validation_integrity": {
+        "passed": 0,
+        "failed": 21
+      },
+      "presentation_contract": {
+        "passed": 4,
+        "failed": 44
+      },
+      "override_handling": {
+        "passed": 12,
+        "failed": 32
+      },
+      "rerun_success": {
+        "passed": 0,
+        "failed": 8
+      }
+    }
+  },
+  "paired_arms": null,
+  "outcomes": [
+    {
+      "id": "001-basic-spatial-analysis",
+      "trial": 1,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "project.schema_is",
+        "project.conforms_to_schema",
+        "project.parses",
+        "project.graph_resolves",
+        "project.assumptions_have_rationale",
+        "project.declared_files_exist",
+        "provenance.every_source_has_provider_and_access",
+        "provenance.every_source_pinned",
+        "provenance.license_present_where_required",
+        "provenance.rationale_present",
+        "provenance.semantic_predicate_documented",
+        "geodata.crs_not_used_for_metrics",
+        "geodata.dataset_crs_is",
+        "geodata.row_count",
+        "geodata.geometry_all_valid",
+        "geodata.no_duplicate_ids",
+        "geodata.no_null_ids",
+        "geodata.feature_present",
+        "geodata.feature_present",
+        "geodata.feature_absent",
+        "geodata.feature_absent",
+        "geodata.row_count",
+        "validation.required_all_present",
+        "validation.no_implicit_pass",
+        "validation.run_record_matches",
+        "validation.report_evidence_recomputes",
+        "qgis.static_valid",
+        "qgis.styles_declared",
+        "qgis.every_layer_declares_crs",
+        "qgis.groups_match_manifest",
+        "presentation.layers_use_semantic_roles",
+        "presentation.required_layer_groups_exist",
+        "presentation.controls_match_pipeline",
+        "presentation.edit_targets_reference_real_sources"
+      ]
+    },
+    {
+      "id": "001-basic-spatial-analysis",
+      "trial": 2,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "project.schema_is",
+        "project.conforms_to_schema",
+        "project.parses",
+        "project.graph_resolves",
+        "project.assumptions_have_rationale",
+        "project.declared_files_exist",
+        "provenance.every_source_has_provider_and_access",
+        "provenance.every_source_pinned",
+        "provenance.license_present_where_required",
+        "provenance.rationale_present",
+        "provenance.semantic_predicate_documented",
+        "geodata.crs_not_used_for_metrics",
+        "geodata.dataset_crs_is",
+        "geodata.row_count",
+        "geodata.geometry_all_valid",
+        "geodata.no_duplicate_ids",
+        "geodata.no_null_ids",
+        "geodata.feature_present",
+        "geodata.feature_present",
+        "geodata.feature_absent",
+        "geodata.feature_absent",
+        "geodata.row_count",
+        "validation.required_all_present",
+        "validation.no_implicit_pass",
+        "validation.run_record_matches",
+        "validation.report_evidence_recomputes",
+        "qgis.static_valid",
+        "qgis.styles_declared",
+        "qgis.every_layer_declares_crs",
+        "qgis.groups_match_manifest",
+        "presentation.layers_use_semantic_roles",
+        "presentation.required_layer_groups_exist",
+        "presentation.controls_match_pipeline",
+        "presentation.edit_targets_reference_real_sources"
+      ]
+    },
+    {
+      "id": "001-basic-spatial-analysis",
+      "trial": 3,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "project.schema_is",
+        "project.conforms_to_schema",
+        "project.parses",
+        "project.graph_resolves",
+        "project.assumptions_have_rationale",
+        "project.declared_files_exist",
+        "provenance.every_source_has_provider_and_access",
+        "provenance.every_source_pinned",
+        "provenance.license_present_where_required",
+        "provenance.rationale_present",
+        "provenance.semantic_predicate_documented",
+        "geodata.crs_not_used_for_metrics",
+        "geodata.dataset_crs_is",
+        "geodata.row_count",
+        "geodata.geometry_all_valid",
+        "geodata.no_duplicate_ids",
+        "geodata.no_null_ids",
+        "geodata.feature_present",
+        "geodata.feature_present",
+        "geodata.feature_absent",
+        "geodata.feature_absent",
+        "geodata.row_count",
+        "validation.required_all_present",
+        "validation.no_implicit_pass",
+        "validation.run_record_matches",
+        "validation.report_evidence_recomputes",
+        "qgis.static_valid",
+        "qgis.styles_declared",
+        "qgis.every_layer_declares_crs",
+        "qgis.groups_match_manifest",
+        "presentation.layers_use_semantic_roles",
+        "presentation.required_layer_groups_exist",
+        "presentation.controls_match_pipeline",
+        "presentation.edit_targets_reference_real_sources"
+      ]
+    },
+    {
+      "id": "002-attribute-override",
+      "trial": 1,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "overrides.declared_count",
+        "overrides.every_override_has_provenance",
+        "overrides.evidence_not_placeholder",
+        "overrides.from_value_matches_source",
+        "overrides.application_status",
+        "geodata.feature_field_equals",
+        "geodata.feature_field_equals",
+        "validation.no_prose_only_validation",
+        "overrides.source_files_byte_identical"
+      ]
+    },
+    {
+      "id": "002-attribute-override",
+      "trial": 2,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "overrides.declared_count",
+        "overrides.every_override_has_provenance",
+        "overrides.evidence_not_placeholder",
+        "overrides.from_value_matches_source",
+        "overrides.application_status",
+        "geodata.feature_field_equals",
+        "geodata.feature_field_equals",
+        "validation.no_prose_only_validation",
+        "overrides.source_files_byte_identical"
+      ]
+    },
+    {
+      "id": "002-attribute-override",
+      "trial": 3,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "overrides.declared_count",
+        "overrides.every_override_has_provenance",
+        "overrides.evidence_not_placeholder",
+        "overrides.from_value_matches_source",
+        "overrides.application_status",
+        "geodata.feature_field_equals",
+        "validation.no_prose_only_validation",
+        "overrides.source_files_byte_identical"
+      ]
+    },
+    {
+      "id": "003-manual-planned-road",
+      "trial": 1,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "overrides.declared_count",
+        "overrides.every_override_has_provenance",
+        "overrides.evidence_not_placeholder",
+        "overrides.application_status",
+        "project.graph_resolves",
+        "geodata.feature_present",
+        "presentation.distinguishable_layer_semantics",
+        "presentation.required_layer_groups_exist",
+        "presentation.controls_match_pipeline",
+        "presentation.edit_targets_reference_real_sources"
+      ]
+    },
+    {
+      "id": "003-manual-planned-road",
+      "trial": 2,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "overrides.declared_count",
+        "overrides.every_override_has_provenance",
+        "overrides.evidence_not_placeholder",
+        "overrides.application_status",
+        "project.graph_resolves",
+        "geodata.feature_present",
+        "presentation.distinguishable_layer_semantics",
+        "presentation.required_layer_groups_exist",
+        "presentation.controls_match_pipeline",
+        "presentation.edit_targets_reference_real_sources"
+      ]
+    },
+    {
+      "id": "003-manual-planned-road",
+      "trial": 3,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "overrides.declared_count",
+        "overrides.every_override_has_provenance",
+        "overrides.evidence_not_placeholder",
+        "overrides.application_status",
+        "project.graph_resolves",
+        "geodata.feature_present",
+        "presentation.distinguishable_layer_semantics",
+        "presentation.required_layer_groups_exist",
+        "presentation.controls_match_pipeline",
+        "presentation.edit_targets_reference_real_sources"
+      ]
+    },
+    {
+      "id": "004-data-quality-warning",
+      "trial": 1,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "project.status_is",
+        "project.status_agrees_with_validation_report",
+        "provenance.bounded_api_completeness",
+        "validation.warning_or_failed_propagates_to_status",
+        "validation.no_implicit_pass"
+      ]
+    },
+    {
+      "id": "004-data-quality-warning",
+      "trial": 2,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "project.status_is",
+        "project.status_agrees_with_validation_report",
+        "provenance.bounded_api_completeness",
+        "validation.warning_or_failed_propagates_to_status",
+        "validation.no_implicit_pass"
+      ]
+    },
+    {
+      "id": "004-data-quality-warning",
+      "trial": 3,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "project.status_is",
+        "project.status_agrees_with_validation_report",
+        "provenance.bounded_api_completeness",
+        "validation.warning_or_failed_propagates_to_status",
+        "validation.no_implicit_pass"
+      ]
+    },
+    {
+      "id": "005-reproducible-rerun",
+      "trial": 1,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "rerun.no_chat_dependency",
+        "rerun.clean_execution_succeeded",
+        "rerun.outputs_semantically_equal",
+        "rerun.validation_report_reproducible",
+        "project.one_canonical_pipeline",
+        "overrides.source_files_byte_identical"
+      ]
+    },
+    {
+      "id": "005-reproducible-rerun",
+      "trial": 2,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "005-reproducible-rerun",
+      "trial": 3,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "rerun.no_chat_dependency",
+        "rerun.clean_execution_succeeded",
+        "rerun.outputs_semantically_equal",
+        "rerun.validation_report_reproducible",
+        "project.one_canonical_pipeline",
+        "overrides.source_files_byte_identical"
+      ]
+    },
+    {
+      "id": "006-presentation-consistency",
+      "trial": 1,
+      "status": "assertions_failed",
+      "setup_stage": null,
+      "hard_failures": [
+        "presentation.required_layer_groups_exist",
+        "qgis.styles_declared",
+        "qgis.every_layer_declares_crs",
+        "qgis.groups_match_manifest"
+      ]
+    },
+    {
+      "id": "006-presentation-consistency",
+      "trial": 2,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "006-presentation-consistency",
+      "trial": 3,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "070-underspecified-prompt",
+      "trial": 1,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "070-underspecified-prompt",
+      "trial": 2,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "070-underspecified-prompt",
+      "trial": 3,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "071-contradictory-prompt-refusal",
+      "trial": 1,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "071-contradictory-prompt-refusal",
+      "trial": 2,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "071-contradictory-prompt-refusal",
+      "trial": 3,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "072-do-not-invent",
+      "trial": 1,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "072-do-not-invent",
+      "trial": 2,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "072-do-not-invent",
+      "trial": 3,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "073-non-english-prompt",
+      "trial": 1,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "073-non-english-prompt",
+      "trial": 2,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    },
+    {
+      "id": "073-non-english-prompt",
+      "trial": 3,
+      "status": "setup_failed",
+      "setup_stage": "agent_execution",
+      "hard_failures": []
+    }
+  ],
+  "limitations": [
+    "Historical explicit-injection task quality, not native routing evidence.",
+    "15 setup failures are excluded from the 15 graded trials; no graded trial passed.",
+    "One adapter/model and one arm; no paired comparison, no native routing telemetry.",
+    "No causal attribution to skill wording versus adapter/model/runtime is established by this summary."
+  ]
+}
