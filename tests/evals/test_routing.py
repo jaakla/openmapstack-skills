@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import gzip
+import hashlib
 import os
 import subprocess
 import sys
@@ -104,6 +106,24 @@ class RoutingEvidenceTests(unittest.TestCase):
         sql = next(c for c in cases if c["id"] == "chosen-engine-sql")
         self.assertEqual(sql["expectations"]["single"]["primary"], "open-map-stack")
         self.assertEqual(sql["expectations"]["collection"]["primary"], "spatial-sql")
+
+    def test_retained_live_evidence_hashes_and_event_references_resolve(self):
+        directory = REPO_ROOT / "evals/baselines/native-2026-09-13"
+        report = json.loads((directory / "summary.json").read_text())
+        prompts = {c["id"]: c["prompt"] for c in load_cases()}
+        self.assertFalse(report["cost_complete"])
+        self.assertEqual(len(report["trials"]), 11)
+        for trial in report["trials"]:
+            data = gzip.decompress((directory / trial["raw_events"]).read_bytes())
+            self.assertEqual("sha256:" + hashlib.sha256(data).hexdigest(), trial["raw_events_sha256"])
+            self.assertEqual(trial["prompt"], prompts[trial["case"]])
+            self.assertEqual("sha256:" + hashlib.sha256(trial["prompt"].encode()).hexdigest(), trial["prompt_sha256"])
+            events = json.loads(data)
+            for observation in trial["observations_replayed"]:
+                event = events[observation["event_index"]]
+                self.assertEqual(event["type"], "user")
+            if trial["phase"] == "excluded-pilot":
+                self.assertEqual(trial["status"], "not_testable")
 
 
 class RoutingExecutionTests(unittest.TestCase):
