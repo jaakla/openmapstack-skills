@@ -1,0 +1,11 @@
+{
+  "schema": "openmapstack-collection/v1",
+  "version": "0.4.0",
+  "skills": [
+    {
+      "name": "open-map-stack",
+      "path": "skills/open-map-stack",
+      "shared_references": []
+    }
+  ]
+}

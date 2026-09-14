@@ -232,7 +232,7 @@ def main(argv=None):
     parser.add_argument("--agent", choices=[*SURFACES, "openai_compatible"])
     parser.add_argument("--model")
     parser.add_argument("--image", help="locally available, clean CLI image pinned by digest; never pulled automatically")
-    parser.add_argument("--skill-source", type=Path, default=REPO_ROOT)
+    parser.add_argument("--skill-source", type=Path, default=REPO_ROOT / "skills/open-map-stack")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--timeout", type=int, default=900)
     parser.add_argument("--max-budget-usd", type=float, help="total budget divided across the selected Claude trials; leave headroom for an in-flight response")

@@ -13,6 +13,14 @@ the agent's narration.
 
 ## Execution modes and score types
 
+The 0.4.0 collection layout lives in `skills/`. Use `--collection` with live
+project evals to inject complete selected payloads and emit snapshot/arm v2;
+repeat `--skill NAME` for a subset. Without that flag, the historical v1
+single-skill injection contract is retained. See the
+[consumer migration contract](../docs/openmapbench-interop.md).
+Live behavior is evaluated on the final collection before release; paired
+before/after runs are not a refactoring gate.
+
 Native skill discovery is a separate integration smoke path:
 `python evals/run.py routing --list`. See [routing smoke tests](routing.md)
 and the [frozen pre-refactor baselines](baselines/README.md). It does not inject

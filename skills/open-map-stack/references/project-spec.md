@@ -45,7 +45,7 @@ Not every simple task needs every file, but `project.yaml` is the canonical mani
 The manifest describes *what* the analysis is and *why*, the pipeline describes *how* to run it. Keep this file documented and human-reviewable.
 
 **Normative sources.** Structure — required keys, types, and top-level enums — is
-machine-checked by [`openmapstack/schemas/project-v1.schema.json`](../openmapstack/schemas/project-v1.schema.json),
+machine-checked by [`schemas/project-v1.schema.json`](../schemas/project-v1.schema.json),
 reported as the `manifest.json_schema` check. That file is normative where it and
 this document disagree on *shape*. This document is normative for *semantics*: what
 each field means, the rules that have no structural form (source pinning, override

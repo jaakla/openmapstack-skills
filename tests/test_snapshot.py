@@ -99,9 +99,9 @@ class SnapshotTests(unittest.TestCase):
             create_skill_snapshot(root, out)
 
     def test_repository_skill_root_is_discoverable_and_snapshots(self) -> None:
-        self.assertEqual(find_skill_root(REPO_ROOT / "openmapstack"), REPO_ROOT)
+        self.assertEqual(find_skill_root(REPO_ROOT / "skills/open-map-stack/references"), REPO_ROOT / "skills/open-map-stack")
         out = make_workspace() / "snap"
-        manifest = create_skill_snapshot(REPO_ROOT, out)
+        manifest = create_skill_snapshot(REPO_ROOT / "skills/open-map-stack", out)
         self.assertIn("references/project-spec.md", {entry["path"] for entry in manifest["files"]})
         self.assertNotIn("evals/README.md", {entry["path"] for entry in manifest["files"]})
 

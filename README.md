@@ -4,7 +4,7 @@
 
 Install:
 ```bash
-npx skills add jaakla/openmapstack -g
+npx skills@1.5.26 add jaakla/openmapstack-skills --skill open-map-stack -g
 ```
 
 OpenMapStack gives your favorite AI agent: Claude Code, Codex, Cursor, OpenCode, PI and 50+ other agents a production workflow from **authoritative data discovery** through reusable analysis pipeline.py to interactive web and GIS deliverables. The workflow becomes inspectable and repeatable as well-defined projects in a `yaml` file with pinned sources, explicit assumptions and CRS choices, deterministic processing in a python script, isolated overrides, machine-readable validation, and surfaced provenance.
@@ -15,18 +15,18 @@ It is open-first (both data and code-wise) and cloud-native by default, built on
 
 Core skills:
 
-- [SKILL.md](SKILL.md) — the skill entry point: triggers, global defaults, format and compute decision matrices, anti-patterns, and a quick triage guide.
-- [references/data-sources.md](references/data-sources.md) - lists OSM, Overture, Sentinel/Landsat, regional portals, STAC catalogs and others.
-- [references/services-and-scale.md](references/services-and-scale.md) - depending on case use local installs or hosted/SaaS services for global-scale basemaps, elevation, routing, geocoding, place search, and postcodes.
-- [references/user-data-sources.md](references/user-data-sources.md) - the user's own warehouse data: credentials by reference, read-only discovery, approval-gated snapshots, and the pin classes that make a warehouse table reproducible.
-- [references/formats-and-crs.md](references/formats-and-crs.md) - how to choose formats, conversions, projections, EPSG codes.
-- [references/processing.md](references/processing.md) - when and how to use GDAL/OGR, GeoPandas, xarray, DuckDB, PostGIS, PDAL and other open geo processing tools.
-- [references/analytics.md](references/analytics.md) — do vector/raster analytics, terrain, hydrology, network, point clouds, geocoding etc.
-- [references/web-delivery.md](references/web-delivery.md) — renderer selection for maps, PMTiles, MVT, Martin, TiTiler, MapLibre, deck.gl, kepler.gl, and lonboard formats and engines.
-- [references/qgis.md](references/qgis.md) — QGIS desktop, plugins, PyQGIS, Processing, QGIS MCP.
-- [references/validation-and-ops.md](references/validation-and-ops.md) — validation, manifests, attribution, and deployment checks, including the machine-readable reproducible-project contract.
-- [references/project-spec.md](references/project-spec.md) — the specific`openmapstack-project/v1` schema: compiling any material analysis into a reproducible GIS project (`project.yaml`, pipeline, source provenance, overrides, validation, semantic presentation, QGIS output).
-- [references/project-workflow.md](references/project-workflow.md) — the mandatory material-analysis workflow and delivery rules, loaded when a task needs a reproducible project.
+- [generalist SKILL.md](skills/open-map-stack/SKILL.md) — the skill entry point: triggers, global defaults, format and compute decision matrices, anti-patterns, and a quick triage guide.
+- [references/data-sources.md](skills/open-map-stack/references/data-sources.md) - lists OSM, Overture, Sentinel/Landsat, regional portals, STAC catalogs and others.
+- [references/services-and-scale.md](skills/open-map-stack/references/services-and-scale.md) - depending on case use local installs or hosted/SaaS services for global-scale basemaps, elevation, routing, geocoding, place search, and postcodes.
+- [references/user-data-sources.md](skills/open-map-stack/references/user-data-sources.md) - the user's own warehouse data: credentials by reference, read-only discovery, approval-gated snapshots, and the pin classes that make a warehouse table reproducible.
+- [references/formats-and-crs.md](skills/open-map-stack/references/formats-and-crs.md) - how to choose formats, conversions, projections, EPSG codes.
+- [references/processing.md](skills/open-map-stack/references/processing.md) - when and how to use GDAL/OGR, GeoPandas, xarray, DuckDB, PostGIS, PDAL and other open geo processing tools.
+- [references/analytics.md](skills/open-map-stack/references/analytics.md) — do vector/raster analytics, terrain, hydrology, network, point clouds, geocoding etc.
+- [references/web-delivery.md](skills/open-map-stack/references/web-delivery.md) — renderer selection for maps, PMTiles, MVT, Martin, TiTiler, MapLibre, deck.gl, kepler.gl, and lonboard formats and engines.
+- [references/qgis.md](skills/open-map-stack/references/qgis.md) — QGIS desktop, plugins, PyQGIS, Processing, QGIS MCP.
+- [references/validation-and-ops.md](skills/open-map-stack/references/validation-and-ops.md) — validation, manifests, attribution, and deployment checks, including the machine-readable reproducible-project contract.
+- [references/project-spec.md](skills/open-map-stack/references/project-spec.md) — the specific`openmapstack-project/v1` schema: compiling any material analysis into a reproducible GIS project (`project.yaml`, pipeline, source provenance, overrides, validation, semantic presentation, QGIS output).
+- [references/project-workflow.md](skills/open-map-stack/references/project-workflow.md) — the mandatory material-analysis workflow and delivery rules, loaded when a task needs a reproducible project.
 - [templates/](templates/) — ready scaffolds (`project.yaml`, `pipeline.py`, `presentation.yaml`, `validation.yaml`) for new projects.
 
 Additional materials:
@@ -41,90 +41,61 @@ Some my local Estonia-specific guidance (Maa- ja Ruumiamet, ETAK, EPSG:3301 / L-
 
 ## Install
 
-### Recommended: skills.sh CLI
-
-The recommended way is the [skills CLI](https://github.com/vercel-labs/skills), which works for Claude Code, Cursor, OpenCode, Codex, and 50+ other agents.
-
-Install globally (available in every project):
+The 0.4.0 collection is in development; the release tag and Python package
+must exist before using the release-pinned commands below. From a checkout,
+install the generalist independently:
 
 ```bash
-npx skills add jaakla/openmapstack -g
+npx skills@1.5.26 add . --skill open-map-stack -a codex -y
+python -m pip install '.[geo]'
 ```
 
-Update later with `npx skills update open-map-stack`. Remove with `npx skills remove open-map-stack`.
+Use `-a claude-code` for Claude Code, `-g` for global installation and `--copy`
+for independent copies. Select additional skills by repeating `--skill NAME`;
+`--skill '*'` selects the full collection. Each skill includes local templates,
+project schema, a trimmed worked Tartu example and CLI setup instructions.
+No installed sibling is required. Generated example outputs and downloaded
+source data are omitted; its pipeline needs network access and its documented
+GIS environment.
 
-### Claude Code plugin (optional)
-
-Claude Code users can install the same repository also as a plugin. This adds
-versioned installs, `/plugin update`, and project-scoped installs that a team
-picks up from a repository's `.claude/settings.json`:
+After publication, pin both parts of the coordinated release:
 
 ```bash
-/plugin marketplace add jaakla/openmapstack
+npx skills@1.5.26 add https://github.com/jaakla/openmapstack-skills/tree/v0.4.0/skills/open-map-stack -a codex -y
+python -m pip install 'openmapstack[geo]==0.4.0'
+```
+
+For a floating install use `npx skills@1.5.26 add jaakla/openmapstack-skills
+--skill open-map-stack`. Check installed skills with `npx skills@1.5.26 list`,
+update with `npx skills@1.5.26 update open-map-stack`, and remove with
+`npx skills@1.5.26 remove open-map-stack`. Choose the same project/global scope.
+Updating a floating install advances its version; release-pinned installs
+should be replaced with an explicitly chosen release.
+
+### Claude Code plugin
+
+```text
+/plugin marketplace add jaakla/openmapstack-skills
 /plugin install open-map-stack@open-map-stack
 ```
 
-The repository is its own marketplace, so no separate marketplace repo is
-needed. The plugin wraps the same root `SKILL.md` — nothing is duplicated, and
-the skills-CLI install path above keeps working unchanged.
+The plugin retains its identity and discovers `skills/<name>/SKILL.md`.
+For local development use `claude --plugin-dir /path/to/checkout`; metadata
+validation and component inventory require no paid model run.
 
-### Install the project CLI
+### Manual installation and migration
 
-The skills installer loads the agent instructions; the Python package provides
-the project commands. From a clone of this repository:
+Copy `skills/<name>/` into your agent's skill directory. Do not copy the whole
+collection checkout into a single skill folder. If replacing a 0.3.0 root
+installation, retain the `open-map-stack` name and replace its installed payload;
+do not keep both root and nested copies. Inspect your actual installer lockfile
+and scope before changing anything. Legacy `open-gis` is a different identifier:
+remove it explicitly if it is an unwanted duplicate, rather than silently
+rewriting its lock entry.
 
-```bash
-python3 -m pip install .
-openmapstack --version
-```
-
-For development, the commands can also run directly without installation:
-
-```bash
-python3 -m openmapstack --help
-```
-
-### Manual install (fallback)
-
-If you'd rather not use the CLI, clone directly into your agent's skills directory. For Claude Code:
-
-```bash
-# User-level (every project)
-git clone https://github.com/jaakla/openmapstack.git ~/.claude/skills/open-map-stack
-
-# Project-level (one repo)
-git clone https://github.com/jaakla/openmapstack.git .claude/skills/open-map-stack
-```
-
-### Verify
-
-Start Claude Code and run `/skills open-map-stack` should appear in the list. The expected layout is:
-
-```
-<skills-dir>/open-map-stack/
-├── SKILL.md
-├── references/
-│   ├── analytics.md
-│   ├── data-sources.md
-│   ├── formats-and-crs.md
-│   ├── processing.md
-│   ├── project-spec.md
-│   ├── qgis.md
-│   ├── services-and-scale.md
-│   ├── spatial-sql.md
-│   ├── validation-and-ops.md
-│   └── web-delivery.md
-├── templates/
-│   ├── project.yaml
-│   ├── pipeline.py
-│   ├── presentation.yaml
-│   └── validation.yaml
-├── examples/
-│   └── tartu-development/
-└── .claude-plugin/          # Claude Code plugin + marketplace manifests
-    ├── plugin.json
-    └── marketplace.json
-```
+The CLI is separate from skill installation. Verify `openmapstack --version`
+against the installed skill's `metadata.version`. Before publication, a wheel
+or pinned Git commit from the matching checkout is the supported alternative.
 
 ## Use
 
@@ -261,7 +232,7 @@ and are not executed. The JSON report supplies the exact
 the current `runs.latest.inputs_hash`. Changing the expected check, arguments,
 inputs, or a retained local evidence file invalidates the attestation and
 returns it to warning status. See
-[the project contract](references/project-spec.md#26-validation).
+[the project contract](skills/open-map-stack/references/project-spec.md#26-validation).
 
 Where no golden answer exists at all, `validation.metamorphic[]` declares
 relations that must hold under a controlled perturbation: shuffle a source and
@@ -270,7 +241,7 @@ change, widen an inclusion buffer and no candidate may disappear. Each relation
 states the precondition that makes it valid, is executed by
 `verify --metamorphic` in an isolated copy against the project's own pipeline,
 and reports `not_testable` with the reason when the precondition does not hold
-on the actual data. See [the project contract](references/project-spec.md#26-validation).
+on the actual data. See [the project contract](skills/open-map-stack/references/project-spec.md#26-validation).
 
 `openmapstack source` is the connector pilot for the user's own data
 (DuckDB local files and PostGIS). Credentials are referenced, never stored;
@@ -279,7 +250,7 @@ until `--approve`, is limited by rows and bytes, lands only under
 `data/source/`, and hands back the `pin` block that makes the source
 reproducible. A warehouse table with only a timestamp is not pinned; an
 expired backend snapshot is reported as `not_reproducible`. See
-[user data sources](references/user-data-sources.md).
+[user data sources](skills/open-map-stack/references/user-data-sources.md).
 
 `validate` checks manifest structure, source retrieval/version/licensing data,
 CRS declarations, processing graph resolution, override provenance and files,
@@ -312,4 +283,4 @@ Licensed under the [MIT License](LICENSE).
 
 ## Contributing
 
-Issues and PRs welcome at [github.com/jaakla/openmapstack](https://github.com/jaakla/openmapstack). When adding a new tool or workflow, place it in the matching reference file and add a one-row entry to the relevant decision matrix in [SKILL.md](SKILL.md).
+Issues and PRs welcome at [github.com/jaakla/openmapstack-skills](https://github.com/jaakla/openmapstack-skills). When adding a new tool or workflow, place it in the matching reference file and add a one-row entry to the relevant decision matrix in [generalist SKILL.md](skills/open-map-stack/SKILL.md).

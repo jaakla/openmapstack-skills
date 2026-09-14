@@ -70,6 +70,7 @@ from openmapstack import __version__ as OPENMAPSTACK_VERSION  # noqa: E402
 from openmapstack.api import CHECK_API_VERSION  # noqa: E402
 from openmapstack.checks import AssertionResult, STATUSES  # noqa: E402
 from openmapstack.snapshot import create_skill_snapshot  # noqa: E402
+from openmapstack.collection import create_collection_snapshot  # noqa: E402
 from openmapstack.rerun import (  # noqa: E402
     CLEAN_RERUN_EVIDENCE,
     perform_clean_rerun,
@@ -633,7 +634,7 @@ def _prepare_skill_snapshot(workspace: Path) -> tuple[Path, str]:
     the benchmark records the same inspectable snapshot a user can create.
     """
     destination = workspace / "benchmark-context" / "openmapstack"
-    manifest = create_skill_snapshot(REPO_ROOT, destination)
+    manifest = create_skill_snapshot(REPO_ROOT / "skills/open-map-stack", destination)
     return destination, manifest["content_sha256"]
 
 
@@ -678,6 +679,7 @@ def _arm_record(
     seed: int | None,
     price_catalog_date: str | None,
     trial_results: list[dict[str, Any]],
+    collection_mode: bool = False,
 ) -> dict[str, Any]:
     """The complete provenance tuple that identifies a published arm.
 
@@ -730,7 +732,18 @@ def _arm_record(
         "sampling": sampling,
         "price_catalog_date": price_catalog_date,
     }
-    errors = validation_errors(record, _load_eval_schema("benchmark-arm-v1.schema.json"))
+    schema_file = "benchmark-arm-v1.schema.json"
+    if collection_mode:
+        schema_file = "benchmark-arm-v2.schema.json"
+        record["schema"] = "openmapstack-benchmark-arm/v2"
+        record["configuration"] = {
+            "kind": "plain" if arm == "plain" else "collection",
+            "delivery": "none" if arm == "plain" else "injection",
+            "snapshot_schema": None if arm == "plain" else "openmapstack-skill-snapshot/v2",
+            "skills": skill.get("skills", []),
+            "content_sha256": skill.get("content_sha256"),
+        }
+    errors = validation_errors(record, _load_eval_schema(schema_file))
     if errors:
         raise ValueError(f"benchmark arm record does not validate: {'; '.join(errors)}")
     return record
@@ -1244,7 +1257,22 @@ def run_case(
                     "'disabled'); a benchmark arm must never be inferred",
                 )
             benchmark_context["arm"] = ARM_BY_SKILL_MODE[skill_mode]
-            if skill_mode == "enabled":
+            if skill_mode == "enabled" and benchmark_context.get("collection_mode"):
+                skill_dir = workspace / "benchmark-context/openmapstack"
+                snapshot = create_collection_snapshot(REPO_ROOT, skill_dir, selected=benchmark_context.get("collection_skills"))
+                entrypoints = "\n".join(
+                    f"- {s['name']}: `{Path(os.path.relpath(skill_dir / s['entrypoint'], agent_workdir)).as_posix()}` — {s['description']}"
+                    for s in snapshot["skills"]
+                )
+                prompt = ("Use the appropriate controlled skill guidance for this task. Choose entry points from the list below; "
+                          "read only relevant guidance. The benchmark-context directory is guidance, not project output.\n\n"
+                          + entrypoints + "\n\n---\n\n" + prompt)
+                benchmark_context["skill"] = {
+                    "mode": "enabled", "commit": benchmark_context.get("skill_commit"),
+                    "content_sha256": snapshot["content_sha256"], "entrypoint": None,
+                    "snapshot_schema": snapshot["schema"], "skills": snapshot["skills"],
+                }
+            elif skill_mode == "enabled":
                 skill_dir, skill_digest = _prepare_skill_snapshot(workspace)
                 prompt = _skill_augmented_prompt(prompt, agent_workdir, skill_dir)
                 benchmark_context["skill"] = {
@@ -1718,6 +1746,8 @@ def main(argv: list[str] | None = None) -> int:
         help="override the live-case agent adapter",
     )
     parser.add_argument("--model", help="model passed to the selected live agent")
+    parser.add_argument("--collection", action="store_true", help="use complete skill snapshot v2 and benchmark arm v2 (injected guidance)")
+    parser.add_argument("--skill", action="append", help="select a skill in --collection mode; repeat for a subset (default: all)")
     parser.add_argument(
         "--timeout",
         type=_positive_int,
@@ -1767,6 +1797,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", help="write full machine-readable results to this path")
     parser.add_argument("--list", action="store_true", help="list discovered cases and exit")
     args = parser.parse_args(argv)
+    if args.skill and not args.collection:
+        parser.error("--skill requires --collection")
 
     revision = _git_revision()
     if args.skill_mode is not None and args.arms is not None and ARM_BY_SKILL_MODE[args.skill_mode] != args.arms:
@@ -1802,6 +1834,8 @@ def main(argv: list[str] | None = None) -> int:
         "arms": arms if args.mode == "live" else None,
         "price_catalog_date": args.price_catalog_date,
         "checker": {"package_version": OPENMAPSTACK_VERSION, "check_api_version": CHECK_API_VERSION},
+        "collection_mode": args.collection,
+        "collection_skills": args.skill,
     }
 
     try:
@@ -1900,6 +1934,8 @@ def main(argv: list[str] | None = None) -> int:
                     ),
                     benchmark_context={
                         "run_id": run_id,
+                        "collection_mode": args.collection,
+                        "collection_skills": args.skill,
                         "skill_commit": revision["commit"],
                         "skill_worktree_dirty": revision["dirty"],
                         "environment": _environment(),
@@ -1976,6 +2012,7 @@ def main(argv: list[str] | None = None) -> int:
                 seed=args.seed,
                 price_catalog_date=args.price_catalog_date,
                 trial_results=[r for r in results if r.get("arm") == arm],
+                collection_mode=args.collection,
             )
             for arm in arms
         ]

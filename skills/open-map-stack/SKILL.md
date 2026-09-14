@@ -1,6 +1,8 @@
 ---
 name: open-map-stack
 description: "Use textual agent instructions for GIS and geospatial work: source discovery and provenance, vector/raster/point-cloud pipelines, CRS and metric analysis, spatial SQL, routing and isochrones, QGIS projects, tile generation, and web maps. Use advanced tools and formats such as OSM, Overture, STAC, Sentinel/Landsat, LiDAR, GeoPackage, GeoParquet, COG, PMTiles, WMS/WFS/OGC APIs, Portolan catalogs, GDAL, GeoPandas, DuckDB Spatial, PostGIS, QGIS, MapLibre, and Estonian spatial data including ETAK and EPSG:3301. Open-first, with hosted services when scale or reliability requires them. Do not use for casual map references, simple place lookups, or ordinary travel directions without analytical GIS work."
+metadata:
+  version: "0.4.0"
 ---
 
 # OpenMapStack Toolkit
@@ -17,6 +19,8 @@ report is a view over that project, not the canonical definition of the analysis
 `references/project-workflow.md` for the mandatory workflow and delivery rules,
 and `references/project-spec.md` for the full `openmapstack-project/v1` schema.**
 Use `templates/` and the worked `examples/tartu-development` project.
+For CLI installation and the example's runtime requirements, read
+`references/installation.md`.
 
 Keep authoritative sources real, immutable and pinned; never invent baseline
 geometry without explicit informed consent. Record assumptions and every manual
