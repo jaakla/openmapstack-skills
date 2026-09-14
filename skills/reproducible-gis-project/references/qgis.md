@@ -1,0 +1,493 @@
+# QGIS — Desktop, Plugins, and MCP
+
+QGIS is the open desktop GIS — full cartographic production, the Processing toolbox (a unified front-end for GDAL/GRASS/SAGA/WhiteboxTools/OTB), a mature plugin ecosystem (1500+ plugins), and a PyQGIS scripting API. It also has multiple MCP integrations now, which enable agentic / LLM-driven QGIS workflows.
+
+## When QGIS is the right tool
+
+* Cartographic production — print maps, atlases, styling
+* Visual exploration of unfamiliar data (faster than coding for a one-shot look)
+* Automating workflows that combine many GDAL/GRASS/SAGA/WhiteboxTools/OTB algorithms — the Processing toolbox unifies them
+* Producing client-friendly outputs (a `.qgz` project a non-developer can open and tweak)
+* Field-data collection workflows (with QField)
+* Serving WMS/WFS/WMTS from authored projects (QGIS Server)
+
+## When QGIS is NOT the right tool
+
+* Headless data pipelines — use GDAL/Python/DuckDB directly
+* Cloud-native analytics on remote GeoParquet — DuckDB is faster and cleaner
+* Reproducible research without a desktop user — script with PyQGIS standalone or skip QGIS entirely
+* Real-time / streaming workloads
+
+## Installation
+
+### Linux
+
+```bash
+# Long-term release (recommended for production)
+sudo apt install qgis qgis-plugin-grass
+
+# Latest release via QGIS official repos (better than distro packages, often)
+# See https://qgis.org/resources/installation-guide/
+```
+
+### Windows
+
+There is no reliable one-line package install; use the official installer.
+
+1. Go to the download page: **https://qgis.org/download/**
+2. The page offers a **donation step before the download link**. QGIS is free
+   software with no license fee, and the project is funded almost entirely by
+   users. **Make a small donation** — even a few euros. Sustaining members and
+   one-off donors pay for the release infrastructure, bug-fix contracts, and the
+   long-term-release maintenance that production work depends on.
+3. Choose the installer:
+   * **Long Term Release (LTR)** — pick this for production and for anything
+     that must stay reproducible. Bug fixes only, no feature churn mid-project.
+   * **Latest release** — newer features, shorter support window.
+   * **OSGeo4W network installer** — what qgis.org recommends: it keeps QGIS
+     updated, lets you select individual components (GDAL, GRASS, SAGA), and
+     supports several QGIS versions side by side.
+   * **Standalone installer** (`.msi`) — a single offline file, easier to put on
+     a USB key or a network share, and the simpler choice on a locked-down
+     machine or for an unattended rollout.
+4. Run the installer and follow its instructions. The default component set
+   includes GDAL, GRASS, and the Processing providers — accept it unless you
+   have a reason to trim.
+5. Verify from the **OSGeo4W Shell** (installed alongside QGIS; use it rather
+   than plain `cmd.exe`, since it sets the GDAL/PROJ environment variables):
+
+   ```
+   qgis_process --version
+   ```
+
+Note for scripting on Windows: PyQGIS must run under the Python that ships
+inside the QGIS installation, not a system or `venv` Python. Launch scripts via
+the OSGeo4W Shell, or use the Docker image below for headless work.
+
+### macOS
+
+Download the official `.dmg` from **https://qgis.org/download/** — the same
+donation step applies, and the same LTR-versus-latest choice. Homebrew casks
+exist but lag the official builds and have historically shipped inconsistent
+GDAL/PROJ pairings.
+
+### Cross-platform
+
+```bash
+# conda-forge works on Linux, macOS, and Windows
+conda install -c conda-forge qgis
+```
+
+QGIS bundles its own Python and a pinned GDAL, so PyQGIS cannot be pip-installed into a plain GDAL image. For headless use, run the official QGIS image and pin the tag — never `latest` in a reproducible pipeline:
+
+```bash
+docker run --rm -u "$(id -u):$(id -g)" \
+  -e QT_QPA_PLATFORM=offscreen \
+  -v "$PWD:/workspace" -w /workspace \
+  qgis/qgis:3.44.3 python3 build_project.py
+```
+
+`QT_QPA_PLATFORM=offscreen` is required — without it PyQGIS aborts on a missing display. `examples/tartu-development/pipeline.py` uses exactly this pattern, with a deterministic XML fallback when Docker is unavailable. If you need GDAL alone (no QGIS), use `ghcr.io/osgeo/gdal:alpine-small-latest`; the legacy Docker Hub path `osgeo/gdal` no longer publishes new images.
+
+## Processing toolbox — the unified algorithm front-end
+
+The single most useful feature in QGIS for power users. Exposes algorithms from GDAL, GRASS, SAGA, WhiteboxTools, OTB (Orfeo Toolbox), native QGIS, and any plugin that registers algorithms — all through one consistent dialog and Python API.
+
+### From the GUI
+
+* `Processing → Toolbox` (Ctrl+Alt+T)
+* Search by name across all providers
+* Run any algorithm with a uniform parameter dialog
+* Drag-and-drop into the **Graphical Modeler** to chain algorithms into reusable models (saved as `.model3` files)
+* Hit the "History" button to see the equivalent PyQGIS code for any run — gold for converting GUI exploration to scripts
+
+### From PyQGIS
+
+```python
+import processing
+
+# Any algorithm by ID
+result = processing.run("native:buffer", {
+    "INPUT": "input.gpkg",
+    "DISTANCE": 100,
+    "DISSOLVE": False,
+    "OUTPUT": "buffered.gpkg",
+})
+
+# GDAL via Processing
+processing.run("gdal:warpreproject", {
+    "INPUT": "in.tif",
+    "TARGET_CRS": "EPSG:3301",
+    "RESAMPLING": 1,  # bilinear
+    "OUTPUT": "out.tif",
+})
+
+# WhiteboxTools through Processing (after enabling the WBT provider)
+processing.run("wbt:FillDepressions", {...})
+
+# List all available algorithms
+for alg in QgsApplication.processingRegistry().algorithms():
+    print(alg.id(), "-", alg.displayName())
+```
+
+### Command Line (`qgis_process`)
+
+The standard way to run Processing algorithms headlessly from bash without writing Python. Very useful for CI/CD or makefiles.
+
+```bash
+# List algorithms
+qgis_process plugins
+qgis_process list
+
+# Get help on parameters
+qgis_process help native:buffer
+
+# Run (never write Shapefile as new output — GeoPackage is the desktop default)
+qgis_process run native:buffer --INPUT=points.gpkg --DISTANCE=10 --OUTPUT=buffered.gpkg
+```
+
+### Headless (standalone) PyQGIS
+
+```python
+import sys
+from qgis.core import QgsApplication
+
+QgsApplication.setPrefixPath("/usr", True)
+qgs = QgsApplication([], False)
+qgs.initQgis()
+
+import processing
+from processing.core.Processing import Processing
+Processing.initialize()
+
+# ...run algorithms here...
+
+qgs.exitQgis()
+```
+
+This pattern lets a Python script use the full Processing toolbox without launching the GUI. Useful when DuckDB/GeoPandas don't cover a specific algorithm but Processing does.
+
+## Plugin ecosystem — the parts worth knowing
+
+QGIS has 1500+ plugins; most aren't worth the time. The list below is the high-signal subset organized by purpose.
+
+### Data acquisition
+
+* **QuickMapServices** — instant access to many basemap providers (OSM, ESRI, Google, etc.) including CartoDB and historical maps. The single most-installed plugin.
+* **QuickOSM** — Overpass query builder with sensible presets. Pulls OSM data into QGIS as a layer in seconds.
+* **HCMGIS** — bulk download tools for OSM, country boundaries, basemaps
+* **MetaSearch** *(built-in)* — OGC catalog client; supports CSW, OGC API Records, and STAC for raster discovery
+* **QGIS-STAC plugin** — STAC catalog browsing and item loading directly into QGIS
+* **OpenTopography DEM Downloader** — pulls SRTM and other DEMs for an AOI
+
+### Vector processing
+
+* **mmqgis** — extra vector operations, attribute manipulation, geocoding utilities
+* **MMQGIS Buffer Wedge** and similar geometric extras
+* **Group Stats** — pivot-table-style attribute aggregation
+* **Refactor Fields** *(built-in via Processing)* — field type conversion, renaming
+* **Lat Lon Tools** — coordinate parsing, MGRS conversion, copy/paste coords
+
+### Raster / remote sensing
+
+* **Semi-Automatic Classification Plugin (SCP)** — full Sentinel-2 / Landsat workflow: download, atmospheric correction, classification, change detection. Heavyweight but comprehensive.
+* **Orfeo Toolbox (OTB)** *(via Processing provider)* — segmentation, feature extraction, ML classification on imagery. Originally CNES, very capable.
+* **DZetsaka** — supervised classification with multiple algorithms
+* **Profile Tool** — elevation profile drawing
+* **Serval** — fast raster cell editing
+
+### Terrain & hydrology
+
+* **WhiteboxTools** *(via Processing provider after install)* — comprehensive terrain, hydrology, LiDAR
+* **GRASS** *(via Processing provider, ships with QGIS)* — `r.watershed`, `r.terraflow`, etc.
+* **SAGA** *(via Processing provider)* — broad raster analysis library
+
+### LiDAR / point cloud
+
+* **LAStools** *(via Processing provider after install)* — fast LiDAR processing (some tools require a license for commercial use; `las2las`, `las2dem` etc. are free)
+* QGIS 3.18+ has **native point cloud rendering** (LAS/LAZ + COPC + EPT) — no plugin needed for visualization
+
+### Network analysis
+
+* **QNEAT3** — comprehensive network analysis: shortest path, isochrones, OD matrices on QGIS layers
+* **Network Analysis** *(built-in via Processing)* — basic shortest path
+* **pgRoutingLayer** — bridge to pgRouting in PostGIS
+
+### Cartography
+
+* **qgis2web** — export QGIS map to a static Leaflet / OpenLayers / MapBox GL site. Quick way to get a styled web map.
+* **Qgis2threejs** — export 3D scenes to web (Three.js)
+* **QGIS Resource Sharing** — community-published symbol libraries, color ramps, print templates
+* **MapSwipe Tool** — swipe-compare two layers (great for before/after imagery)
+* **Atlas** *(built-in)* — generate one map per feature in a coverage layer (e.g. parcel atlases, tourist guides)
+
+### Expressions (Built-in)
+
+While not a plugin, the QGIS Expression Engine (`$geometry`, `@row_number`, `aggregate()`) is universally used for styling, labeling, and data-defined overrides. Mastering it reduces the need to pre-compute attributes in DuckDB/Python.
+
+### Time series
+
+* **Time Manager** — animate temporal data (somewhat superseded by QGIS native temporal controller in 3.14+, but still useful for older versions / specific workflows)
+
+### Database / Server / Cloud
+
+* **DB Manager** *(built-in)* — PostGIS, SpatiaLite, GeoPackage browser and SQL console. Underrated.
+* **MapTiler** plugin — direct connection to MapTiler hosted services (paid)
+* **STAC API Browser** — browse STAC catalogs
+
+### Field collection
+
+* **QField** / **QFieldCloud** — companion mobile app for offline field data collection synced back to QGIS projects. Production-grade.
+* **Mergin Maps** — alternative cloud-sync field collection by Lutra Consulting
+
+### Development / power users
+
+* **Plugin Reloader** — hot-reload during plugin development
+* **Plugin Builder** — scaffold a new plugin
+* **Script Runner** — run PyQGIS scripts without opening the Python console
+
+### Plugins that have been replaced — avoid
+
+* **OpenLayers Plugin** — deprecated in favor of QuickMapServices
+* **Time Manager** — partially superseded by built-in temporal controller for simple cases
+* **OpenStreetMap (built-in OSM downloader)** — superseded by QuickOSM
+
+## Default styling and project setup
+
+For a clean baseline, every new project should:
+
+1. Set project CRS deliberately (`Project → Properties → CRS`) — don't drift on the first layer's CRS by accident
+2. For Estonia: `EPSG:3301`
+3. Enable on-the-fly reprojection (it's on by default in QGIS 3+, but worth confirming)
+4. Set project ellipsoid to match (for measurements)
+5. Save styles as `.qml` next to data files for reusability
+
+For generated projects, use a single canonical generator called by every entrypoint. Datasources must be project-relative, and every declared local source must exist after a clean-room run. A successful QGIS/container process exit is insufficient: inspect layer-tree/project ID parity and, when PyQGIS is available, reload the written project and require every layer `isValid()`. Validate categorized renderer values against actual field domains. Pin container tags and mount the project root at the exact path used inside generated scripts. If PyQGIS is unavailable, emit a `not_testable` runtime check instead of a pass.
+
+## QGIS Server
+
+A QGIS project (`.qgz`) becomes a WMS / WFS / WMTS / OGC API Features service via QGIS Server. Lightweight (FastCGI), no separate publishing step — the styled project IS the service.
+
+```bash
+# Docker-based deployment
+docker run -d -p 8080:80 \
+  -v $PWD/projects:/io/data \
+  camptocamp/qgis-server:latest
+```
+
+When useful: an authored cartographic style needs to be served as a tiled web map without re-implementing the styling in MapLibre.
+
+## QGIS MCP — agentic QGIS
+
+There are now several MCP servers that connect QGIS to LLMs, enabling prompt-driven map creation, layer loading, processing algorithm execution, and arbitrary PyQGIS execution.
+
+### Implementations
+
+| Server | Repo | Notes |
+|---|---|---|
+| **QGIS MCP (original)** | `jjsantos01/qgis_mcp` | First implementation, BlenderMCP-inspired. Plugin + Python MCP server. Tested on QGIS 3.22+. |
+| **QGIS MCP (extended)** | `nkarasiak/qgis-mcp` | Broader tool surface organized into groups: system, project, layer, features, selection, style, canvas, render, processing, code, batch, layer_tree, plugins, variables, settings, expression, transform, message_log, layer_property |
+| **QGIS2OllamaMCP** | `anitagraser/QGIS2OllamaMCP` | Anita Graser's fork targeted at local Ollama models rather than Claude. Same pattern. |
+
+All follow the same architecture: a QGIS plugin runs a socket server inside QGIS; an external MCP server (Python) bridges between MCP clients (Claude Desktop, Claude Code) and that socket.
+
+### Architecture
+
+```
+Claude Desktop / Claude Code
+    │  (MCP over stdio)
+    ▼
+qgis_mcp_server.py  (the MCP server, runs externally)
+    │  (TCP socket, default localhost:9876)
+    ▼
+QGIS plugin "QGIS MCP"  (runs inside a QGIS GUI session)
+    │
+    ▼
+PyQGIS API → live QGIS canvas / project / processing toolbox
+```
+
+### Setup outline
+
+1. Clone the plugin repo, copy the `qgis_mcp_plugin` folder into the QGIS plugins directory
+   (Linux: `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/`)
+2. Restart QGIS, enable the plugin, click "Start Server"
+3. Configure the MCP client (`claude_desktop_config.json` or equivalent):
+   ```json
+   {
+     "mcpServers": {
+       "qgis": {
+         "command": "uv",
+         "args": [
+           "--directory", "/path/to/qgis_mcp/src/qgis_mcp",
+           "run", "qgis_mcp_server.py"
+         ]
+       }
+     }
+   }
+   ```
+4. Restart the MCP client; QGIS tools appear
+
+### Typical capabilities exposed
+
+* `ping` / `get_qgis_info` — connectivity check
+* `create_new_project` / `load_project` / save
+* `add_vector_layer` / `add_raster_layer` / `remove_layer`
+* `get_layers` — list current layers
+* `zoom_to_layer`, `set_canvas_extent`
+* `execute_processing` — run any algorithm by ID with a parameter dict
+* `execute_code` — arbitrary PyQGIS execution (powerful, dangerous — see safety)
+* `render_map` — export the canvas to PNG/PDF
+* `get_features`, `select_by_expression`, `set_layer_style`
+
+### When a QGIS MCP shines
+
+* Iterative cartographic styling — "make the buildings darker, drop the labels under zoom 10, add a north arrow"
+* Exploratory data inspection — load a layer, ask questions about its attributes, run a clustering algorithm, render
+* Mixed workflows where the LLM should reason about *what to do next* between processing steps
+* Teaching / demo scenarios
+
+### Safety considerations
+
+`execute_code` runs arbitrary Python in the QGIS process with full filesystem access. The same applies to `add_vector_layer` if it accepts paths to network drives or DB connections. Use only with projects whose data you control. The Merit MCP preview/confirm pattern would be a useful enhancement for any QGIS MCP exposing destructive operations — currently most don't have it.
+
+### When to skip QGIS MCP and use other tools
+
+* Pure batch processing — `processing.run` from a standalone PyQGIS script is more reproducible than going through the MCP socket
+* Headless servers — QGIS MCP requires a running QGIS GUI session
+* Production pipelines — MCP is for interactive workflows, not scheduled jobs
+
+## PyQGIS quick reference
+
+Worth knowing even if mostly using the MCP, because the MCP often expects you to specify processing algorithm IDs and parameter dicts.
+
+```python
+from qgis.core import (
+    QgsProject, QgsVectorLayer, QgsRasterLayer,
+    QgsCoordinateReferenceSystem, QgsPointXY,
+)
+
+# Add a layer to current project
+layer = QgsVectorLayer("buildings.gpkg", "Buildings", "ogr")
+QgsProject.instance().addMapLayer(layer)
+
+# Set project CRS
+QgsProject.instance().setCrs(QgsCoordinateReferenceSystem("EPSG:3301"))
+
+# Iterate features
+for f in layer.getFeatures():
+    geom = f.geometry()
+    attrs = f.attributes()
+    # ...
+
+# Run a processing algorithm
+import processing
+out = processing.run("native:buffer", {
+    "INPUT": layer, "DISTANCE": 100, "OUTPUT": "memory:"
+})["OUTPUT"]
+
+# Style from QML
+layer.loadNamedStyle("style.qml")
+layer.triggerRepaint()
+```
+
+## Reproducible project output (`project.qgz`)
+
+For any multi-stage analysis, generate `project.qgz` as a first-class, layer- and style-perfect companion to the web dashboard (see `project-spec.md` section 5). The QGIS project must **reference the exact generated/derived datasets and override files**, never an independent or disconnected analytical state:
+
+```text
+project.yaml
+    ├── pipeline.py
+    ├── derived datasets (GeoPackage, GeoJSON)
+    ├── dashboard.html (Web map view)
+    └── project.qgz    (QGIS desktop view)
+```
+
+### Essential Rules for Building QGIS Projects
+
+1. **GeoPackage Datasource Syntax:**
+   Always include `|layername=name` in the datasource string for GeoPackages:
+   ```xml
+   <datasource>./data/derived/final-candidates.gpkg|layername=final-candidates</datasource>
+   <provider encoding="UTF-8">ogr</provider>
+   ```
+   *Common Trap:* If you omit `|layername=...`, QGIS cannot resolve the geometry column and loads the table as a non-spatial attribute list ("no-geographical table").
+
+2. **Include an Official Regional Tiled Basemap:**
+   Every QGIS project should include a standard basemap in the `Basemaps` group, and it should be one that answers unauthenticated requests. CARTO's raster XYZ tiles (`basemaps.cartocdn.com/rastertiles/…`) now return an *API KEY REQUIRED* watermark; their MapLibre vector styles remain open, so a web dashboard on CARTO Positron and a QGIS companion on the national basemap are a legitimate pair, not drift.
+   - **Estonia Maa- ja Ruumiamet Baaskaart (WMS basemap in EPSG:3301):**
+     ```xml
+     <maplayer type="raster" maxScale="0" minScale="1e+08">
+       <id>maaamet_basemap_layer</id>
+       <datasource>contextualWMSLegend=0&amp;crs=EPSG:3301&amp;dpiMode=7&amp;featureCount=10&amp;format=image/png&amp;layers=BAASKAART&amp;styles=&amp;url=https://kaart.maaamet.ee/wms/alus</datasource>
+       <layername>Maa- ja Ruumiamet: Baaskaart (WMS)</layername>
+       <srs><!-- full <spatialrefsys> for EPSG:3301, see rule 3 --></srs>
+       <provider>wms</provider>
+       <pipe><rasterrenderer type="singlebandcolordata" opacity="1"/></pipe>
+     </maplayer>
+     ```
+   - **Global OpenStreetMap (XYZ tile layer):**
+     ```xml
+     <maplayer type="raster" maxScale="0" minScale="1e+08">
+       <id>osm_basemap_layer</id>
+       <datasource>type=xyz&amp;url=https://tile.openstreetmap.org/{z}/{x}/{y}.png&amp;zmax=19&amp;zmin=0</datasource>
+       <layername>OpenStreetMap (XYZ)</layername>
+       <srs><!-- full <spatialrefsys> for EPSG:3857, see rule 3 --></srs>
+       <provider>wms</provider>
+       <pipe><rasterrenderer type="singlebandcolordata" opacity="1"/></pipe>
+     </maplayer>
+     ```
+
+3. **Write CRS blocks in full, and enable projections:**
+   A `<spatialrefsys>` carrying only `<srid>`/`<authid>` reads back as an **invalid** CRS. `layer.crs().authid()` still answers `EPSG:3301`, so every static check passes — but QGIS can build no coordinate transform from it, and every layer whose CRS differs from the map's destination CRS silently paints nothing. Emit the whole element:
+   ```xml
+   <srs>
+     <spatialrefsys nativeFormat="Wkt">
+       <wkt>PROJCRS["Estonian Coordinate System of 1997",…,ID["EPSG",3301]]</wkt>
+       <proj4>+proj=lcc +lat_0=57.5175539305556 +lon_0=24 … +units=m +no_defs</proj4>
+       <srsid>1259</srsid><srid>3301</srid><authid>EPSG:3301</authid>
+       <description>Estonian Coordinate System of 1997</description>
+       <projectionacronym>lcc</projectionacronym>
+       <ellipsoidacronym>EPSG:7019</ellipsoidacronym>
+       <geographicflag>false</geographicflag>
+     </spatialrefsys>
+   </srs>
+   ```
+   The document also needs the project property that turns reprojection on; without it `<projectCrs>` is discarded on read, however complete it is:
+   ```xml
+   <properties>
+     <SpatialRefSys><ProjectionsEnabled type="int">1</ProjectionsEnabled></SpatialRefSys>
+   </properties>
+   ```
+   Both traps are specific to hand-written XML — PyQGIS serialises all of this for you. Copy the exact strings from `QgsCoordinateReferenceSystem("EPSG:…").toWkt()` / `.toProj()` rather than hand-typing them.
+
+4. **Headless Generation Pattern (Pure Python, No QGIS Desktop Required):**
+   A `.qgz` file is literally a zip archive containing the `project.qgs` XML document. In pipelines without PyQGIS/desktop dependencies, emit the well-formed XML string directly and zip it:
+   ```python
+   import zipfile
+
+   xml_content = build_qgis_project_xml(...)
+   (project_dir / "project.qgs").write_text(xml_content, encoding="utf-8")
+   with zipfile.ZipFile(project_dir / "project.qgz", "w", zipfile.ZIP_DEFLATED) as z:
+       z.write(project_dir / "project.qgs", "project.qgs")
+   ```
+
+5. **PyQGIS Generation Pattern (When QGIS Runtime is Available):**
+   ```python
+   p = QgsProject.instance()
+   p.setCrs(QgsCoordinateReferenceSystem("EPSG:3301"))
+   layer = QgsVectorLayer("data/derived/final-candidates.gpkg|layername=final-candidates", "Candidate Parcels", "ogr")
+   p.addMapLayer(layer)
+   p.write("project.qgz")
+   ```
+
+6. **Style Synchronization with Web View:**
+   Replicate the web map's categorized symbols (`<renderer-v2 type="categorizedSymbol" attr="...">`), line widths, semi-transparent catchment buffers, and marker colors so the desktop view matches the web dashboard 1:1. Deliberate edits made in editable layers can be saved back to `data/overrides/` to update the pipeline.
+
+
+## Troubleshooting common QGIS pain points
+
+* **"GeoParquet shows up but won't load"** — your GDAL is old. QGIS 3.34+ with GDAL 3.8+ has stable GeoParquet support; older versions are flaky.
+* **"CRS warning on every layer load"** — set the project CRS first, then load layers with matching CRS or with explicit reprojection.
+* **"Processing algorithm not found"** — the relevant provider (GRASS / SAGA / WhiteboxTools / OTB) isn't enabled. `Settings → Options → Processing → Providers`.
+* **"WhiteboxTools provider missing"** — install the WhiteboxTools binary separately, then point the plugin to it.
+* **"Plugin doesn't show up after install"** — restart QGIS; check `Plugins → Manage and Install → Installed`; check the Python console for import errors.
