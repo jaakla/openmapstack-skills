@@ -1,0 +1,97 @@
+# Prompts contain no skill-name, installation-path or activation instructions.
+# The single profile is executable now; collection expectations are the 0.4.0
+# contract, enabled once #34 supplies collection snapshots and arm provenance.
+schema: openmapstack-routing-cases/v1
+cases:
+  - id: bounded-discovery
+    prompt: |
+      Find an authoritative source of building footprints for Estonia suitable
+      for a city-scale analysis. Explain coverage, license, version pinning and
+      how to check completeness. The processing and delivery stack is already chosen.
+    expectations:
+      single: &generalist
+        primary: open-map-stack
+        support: []
+        forbidden: [geospatial-data-discovery, spatial-sql, reproducible-gis-project]
+      collection:
+        primary: geospatial-data-discovery
+        support: []
+        forbidden: [open-map-stack, spatial-sql, reproducible-gis-project]
+  - id: chosen-engine-sql
+    prompt: |
+      We use PostGIS. Review this query for correctness and index use:
+      SELECT p.id FROM parcels p JOIN stops s
+      ON ST_Distance(p.geom, s.geom) < 500;
+      Both geometry columns have SRID 4326. We need parcels within 500 metres
+      of a stop. Explain a corrected query; this is a bounded SQL review.
+    expectations:
+      single: *generalist
+      collection:
+        primary: spatial-sql
+        support: []
+        forbidden: [open-map-stack, geospatial-data-discovery, reproducible-gis-project]
+  - id: compile-existing-analysis
+    prompt: |
+      Convert our existing exploratory GIS analysis into a reproducible,
+      auditable project structure. It loads a pinned local parcels GeoPackage
+      and stop points in EPSG:3301, selects parcels intersecting 500 m buffers,
+      and exports the selected parcels. Keep this algorithm and stack. Provide
+      the manifest and pipeline scaffold, source/override rules, validation and
+      rerun instructions; identify unavailable source details rather than inventing them.
+    expectations:
+      single: *generalist
+      collection:
+        primary: reproducible-gis-project
+        support: []
+        forbidden: [open-map-stack, geospatial-data-discovery, spatial-sql]
+  - id: ambiguous-architecture
+    prompt: |
+      Design a system to assess development sites using parcels, transport access
+      and environmental constraints. We have not chosen sources, compute, storage
+      or presentation. Ask for consequential missing context and explain how the
+      choices fit together before committing to a tool stack.
+    expectations:
+      single: *generalist
+      collection: &architecture
+        primary: open-map-stack
+        support: [geospatial-data-discovery, spatial-sql, reproducible-gis-project]
+        forbidden: []
+  - id: billion-row-architecture
+    prompt: |
+      Design an analytical and web-delivery pipeline for one billion building
+      records updated monthly. The team needs regional queries and browser maps,
+      with limited local hardware. Choose compute placement, storage, partitioning,
+      source pinning and delivery together, and explain the cost/scale trade-offs.
+    expectations:
+      single: *generalist
+      collection: *architecture
+  - id: future-scale-architecture
+    prompt: |
+      Our GIS analysis has 50,000 records today, but will reach continental scale
+      next year. Three analysts already maintain a shared spatial database and
+      need concurrent updates and reproducible reports. Evaluate the architecture
+      using future scale and team constraints as well as today's query speed.
+    expectations:
+      single: *generalist
+      collection: *architecture
+  - id: casual-place-lookup
+    prompt: What country is Tallinn in?
+    expectations:
+      single:
+        primary: null
+        support: []
+        forbidden: [open-map-stack]
+      collection:
+        primary: null
+        support: []
+        forbidden: [open-map-stack, geospatial-data-discovery, spatial-sql, reproducible-gis-project]
+  - id: material-analysis-generalist-only
+    prompt: |
+      Plan a multi-stage analysis of which development parcels intersect a
+      500-metre straight-line buffer around public transport stops. Explain the
+      authoritative inputs, semantic assumptions, immutable data and corrections,
+      canonical pipeline, machine-readable validation, provenance and rerun
+      deliverables needed before the analysis can be considered complete.
+    expectations:
+      single: *generalist
+      collection: *architecture

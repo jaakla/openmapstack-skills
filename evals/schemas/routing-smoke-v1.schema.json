@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmapstack/schemas/routing-smoke-v1.schema.json",
+  "title": "Native discovery smoke evidence, separate from benchmark arms",
+  "type": "object",
+  "required": ["schema", "case", "mode", "profile", "agent", "model", "image", "prompt_sha256", "case_sha256", "expectation", "status", "reason"],
+  "properties": {
+    "schema": {"const": "openmapstack-routing-smoke/v1"},
+    "case": {"type": "string", "minLength": 1},
+    "mode": {"const": "native_discovery"},
+    "profile": {"const": "single"},
+    "agent": {"type": "string", "minLength": 1},
+    "model": {"type": ["string", "null"]},
+    "image": {"type": ["string", "null"]},
+    "prompt_sha256": {"$ref": "#/$defs/hash"},
+    "case_sha256": {"$ref": "#/$defs/hash"},
+    "status": {"enum": ["passed", "failed", "not_testable"]},
+    "reason": {"type": ["string", "null"]},
+    "expectation": {
+      "type": "object",
+      "required": ["primary", "support", "forbidden"],
+      "properties": {
+        "primary": {"type": ["string", "null"]},
+        "support": {"type": "array", "items": {"type": "string"}},
+        "forbidden": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["skill", "path", "kind", "entrypoint", "event_index", "verified_text_bytes"],
+        "properties": {
+          "skill": {"type": "string"},
+          "path": {"type": "string"},
+          "kind": {"enum": ["activation", "read"]},
+          "entrypoint": {"type": "boolean"},
+          "event_index": {"type": "integer", "minimum": 0},
+          "verified_text_bytes": {"type": ["integer", "null"], "minimum": 0}
+        }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "required": ["status", "observed_skills", "unexpected_skills", "telemetry_gaps", "primary_role", "task_success"],
+      "properties": {
+        "status": {"enum": ["passed", "failed", "not_testable"]},
+        "observed_skills": {"type": "array", "items": {"type": "string"}},
+        "unexpected_skills": {"type": "array", "items": {"type": "string"}},
+        "telemetry_gaps": {"type": "array", "items": {"type": "string"}},
+        "primary_role": {"type": "object", "required": ["status"], "properties": {"status": {"const": "not_testable"}}},
+        "task_success": {"type": "object", "required": ["status"], "properties": {"status": {"const": "not_testable"}}}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "passed"}}},
+      "then": {
+        "required": ["selection", "snapshot", "runtime", "returncode"],
+        "properties": {
+          "returncode": {"const": 0},
+          "selection": {"properties": {"status": {"const": "passed"}, "telemetry_gaps": {"maxItems": 0}}}
+        }
+      }
+    }
+  ],
+  "$defs": {"hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}
+}

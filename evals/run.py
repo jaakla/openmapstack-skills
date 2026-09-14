@@ -1693,6 +1693,13 @@ def _write_summary(summary: dict[str, Any], json_path: str | None) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments[:1] == ["routing"]:
+        # Discovery smoke evidence has its own denominator; it is neither
+        # an injected v1 arm nor proof that a generated project is correct.
+        from routing import main as routing_main
+
+        return routing_main(arguments[1:])
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--case",

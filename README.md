@@ -26,6 +26,7 @@ Core skills:
 - [references/qgis.md](references/qgis.md) — QGIS desktop, plugins, PyQGIS, Processing, QGIS MCP.
 - [references/validation-and-ops.md](references/validation-and-ops.md) — validation, manifests, attribution, and deployment checks, including the machine-readable reproducible-project contract.
 - [references/project-spec.md](references/project-spec.md) — the specific`openmapstack-project/v1` schema: compiling any material analysis into a reproducible GIS project (`project.yaml`, pipeline, source provenance, overrides, validation, semantic presentation, QGIS output).
+- [references/project-workflow.md](references/project-workflow.md) — the mandatory material-analysis workflow and delivery rules, loaded when a task needs a reproducible project.
 - [templates/](templates/) — ready scaffolds (`project.yaml`, `pipeline.py`, `presentation.yaml`, `validation.yaml`) for new projects.
 
 Additional materials:

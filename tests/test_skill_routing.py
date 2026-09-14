@@ -10,6 +10,8 @@ fixture evals, which grade produced projects rather than the routing table.
 from __future__ import annotations
 
 import re
+import hashlib
+import json
 import unittest
 from pathlib import Path
 
@@ -40,6 +42,24 @@ class SkillRoutingTests(unittest.TestCase):
         """A reference no agent is told to read is dead weight in the payload."""
         unrouted = sorted(self.references - _routed_references(self.skill) - set(UNROUTED_ALLOWED))
         self.assertEqual(unrouted, [], f"reference(s) nothing in SKILL.md points at: {unrouted}")
+
+    def test_project_workflow_preserves_the_frozen_contract_verbatim(self) -> None:
+        """#33 moves normative guidance; a lost requirement is a regression.
+
+        This guards the initial lossless extraction, not future wording changes.
+        A later intentional behavior change must replace this migration guard
+        with its own focused eval evidence instead of silently updating the hash.
+        """
+        baseline = json.loads((REPO_ROOT / "evals/baselines/pre-refactor.json").read_text())
+        reference = (REPO_ROOT / "references/project-workflow.md").read_text()
+        body = reference.removeprefix("# Reproducible project-first workflow\n")
+        self.assertEqual(
+            "sha256:" + hashlib.sha256(body.encode()).hexdigest(),
+            baseline["skill"]["project_contract_body_sha256"],
+        )
+        self.assertIn("Before compiling or delivering a material analysis", self.skill)
+        self.assertIn("references/project-workflow.md", self.skill)
+        self.assertIn("references/project-spec.md", self.skill)
 
     def test_portolan_routes_to_the_reference_that_documents_it(self) -> None:
         """Consuming a Portolan catalog is discovery, so it must route like it.

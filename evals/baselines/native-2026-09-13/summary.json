@@ -1,0 +1,834 @@
+{
+  "schema": "openmapstack-refactor-routing-evidence/v1",
+  "date": "2026-09-13",
+  "model": "claude-sonnet-4-6",
+  "adapter": "claude_code",
+  "authorized_total_cap_usd": 5,
+  "reported_total_cost_usd": 1.1931952,
+  "authentication": "existing local Claude Pro OAuth; no credential/config file mounted",
+  "cost_complete": false,
+  "unknown_cost_trials": [
+    "before/material-analysis-generalist-only"
+  ],
+  "runtime_build": {
+    "base": "ubuntu@sha256:33ceb71981b602c1a7443a53469e4dba065f7503eab3078a2d7a57a2ab987517",
+    "claude_version": "2.1.270",
+    "claude_binary_sha256": "3a624a5a7cd79bbad4d32bd7db36f1197ecf458bc5bf1e2aed81834a01ad3ef0",
+    "recipe": "Install python3 and ca-certificates in the pinned Ubuntu base; copy only the verified Claude executable into /usr/local/bin/claude. No repository or user state in the image."
+  },
+  "counts": {
+    "before": {
+      "failed": 3,
+      "passed": 2,
+      "not_testable": 3
+    },
+    "after": {
+      "failed": 2
+    },
+    "excluded-pilot": {
+      "not_testable": 1
+    }
+  },
+  "replay_decoder_sha256": "sha256:f72bec11786aa33fdbbf7ac248fc3ac8ba89919c258dd53f7a22b2c39751224c",
+  "limitations": [
+    "One native discovery trial per baseline case; two focused post-extraction cases. No statistical non-regression claim.",
+    "Selection evidence does not establish semantic primary ownership or analytical project correctness.",
+    "The compilation trial exceeded its per-trial budget; it is not_testable, not a pass.",
+    "The pre-extraction material-analysis trial timed out without final cost telemetry; its CLI trial budget was $0.30. Reported cost is a lower bound, not a complete bill.",
+    "Opaque Bash reads make the affected trace partial; verified byte counts remain lower bounds.",
+    "The first UID-mismatch pilot is excluded from routing counts but included in spend.",
+    "Raw traces were captured while the harness was being implemented. Replayed decoding is identified separately; source snapshot and prompt hashes are retained."
+  ],
+  "trials": [
+    {
+      "phase": "excluded-pilot",
+      "case": "chosen-engine-sql",
+      "status": "not_testable",
+      "prompt": "We use PostGIS. Review this query for correctness and index use:\nSELECT p.id FROM parcels p JOIN stops s\nON ST_Distance(p.geom, s.geom) < 500;\nBoth geometry columns have SRID 4326. We need parcels within 500 metres\nof a stop. Explain a corrected query; this is a bounded SQL review.\n",
+      "prompt_sha256": "sha256:c0e184ed3b4736ce961887808d449e63a4e94e14edfbdfd08cb73f303921627c",
+      "case_sha256": "sha256:1a4ac360d1322aa1913f37101db5a4ec25fc8ea8b0cc74c67917847760d038bf",
+      "skill_sha256": "sha256:d486613a00add58e5a2a30ed88b16426363feb56172bc3f3dd7e36c88efee1df",
+      "source_revision": "a9cf23d302761275ddc8d6dbdb3e60cab5100a03",
+      "runtime": {
+        "runtime": {
+          "type": "oms.routing.runtime",
+          "version": "2.1.270 (Claude Code)",
+          "returncode": 0
+        },
+        "reported_cost_usd": 0.171174,
+        "discovered_skills": [
+          "design",
+          "doctor"
+        ],
+        "resolved_model": "claude-sonnet-4-6",
+        "usage": {
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 22988,
+          "cache_read_input_tokens": 0,
+          "output_tokens": 2146,
+          "total_tokens": 25136
+        }
+      },
+      "image": "sha256:e3e0c444925a52e4aae8ca8bc4d4bea49f9041c8813747cd41193904e35bc5d0",
+      "requested_model": "claude-sonnet-4-6",
+      "max_budget_usd": 0.3,
+      "reported_cost_usd": 0.171174,
+      "capture_status": "failed",
+      "capture_telemetry_gaps": [],
+      "selection_replayed": {
+        "status": "not_testable",
+        "observed_skills": [],
+        "unexpected_skills": [],
+        "required_skill_observed": false,
+        "false_activation_count": 0,
+        "false_activation_count_is_lower_bound": true,
+        "unexpected_consumption_count": 0,
+        "verified_unique_text_bytes": 0,
+        "text_bytes_complete": false,
+        "telemetry_gaps": [
+          "controlled_skill_not_discovered"
+        ],
+        "primary_role": {
+          "status": "not_testable",
+          "reason": "tool events establish consumption, not semantic ownership"
+        },
+        "task_success": {
+          "status": "not_testable",
+          "reason": "routing smoke does not grade analytical outcomes; use paired project evals"
+        }
+      },
+      "observations_replayed": [],
+      "raw_events": "excluded-pilot-chosen-engine-sql.events.json.gz",
+      "raw_events_sha256": "sha256:3906e106cdbe686ac4c0e4b68cca69592207298a57d2f85f9d8616fe42c87470",
+      "returncode": 0,
+      "reason": null,
+      "exclusion_reason": "Container UID mismatch made the staged directory unreadable. Startup inventory lacked the controlled skill. Not a routing failure."
+    },
+    {
+      "phase": "before",
+      "case": "chosen-engine-sql",
+      "status": "failed",
+      "prompt": "We use PostGIS. Review this query for correctness and index use:\nSELECT p.id FROM parcels p JOIN stops s\nON ST_Distance(p.geom, s.geom) < 500;\nBoth geometry columns have SRID 4326. We need parcels within 500 metres\nof a stop. Explain a corrected query; this is a bounded SQL review.\n",
+      "prompt_sha256": "sha256:c0e184ed3b4736ce961887808d449e63a4e94e14edfbdfd08cb73f303921627c",
+      "case_sha256": "sha256:1a4ac360d1322aa1913f37101db5a4ec25fc8ea8b0cc74c67917847760d038bf",
+      "skill_sha256": "sha256:d486613a00add58e5a2a30ed88b16426363feb56172bc3f3dd7e36c88efee1df",
+      "source_revision": "a9cf23d302761275ddc8d6dbdb3e60cab5100a03",
+      "runtime": {
+        "runtime": {
+          "type": "oms.routing.runtime",
+          "version": "2.1.270 (Claude Code)",
+          "returncode": 0
+        },
+        "reported_cost_usd": 0.06688920000000001,
+        "discovered_skills": [
+          "open-map-stack",
+          "design",
+          "doctor"
+        ],
+        "resolved_model": "claude-sonnet-4-6",
+        "usage": {
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 5491,
+          "cache_read_input_tokens": 17774,
+          "output_tokens": 1837,
+          "total_tokens": 25104
+        }
+      },
+      "image": "sha256:e3e0c444925a52e4aae8ca8bc4d4bea49f9041c8813747cd41193904e35bc5d0",
+      "requested_model": "claude-sonnet-4-6",
+      "max_budget_usd": 0.3,
+      "reported_cost_usd": 0.06688920000000001,
+      "capture_status": "failed",
+      "capture_telemetry_gaps": [],
+      "selection_replayed": {
+        "status": "failed",
+        "observed_skills": [],
+        "unexpected_skills": [],
+        "required_skill_observed": false,
+        "false_activation_count": 0,
+        "false_activation_count_is_lower_bound": false,
+        "unexpected_consumption_count": 0,
+        "verified_unique_text_bytes": 0,
+        "text_bytes_complete": true,
+        "telemetry_gaps": [],
+        "primary_role": {
+          "status": "not_testable",
+          "reason": "tool events establish consumption, not semantic ownership"
+        },
+        "task_success": {
+          "status": "not_testable",
+          "reason": "routing smoke does not grade analytical outcomes; use paired project evals"
+        }
+      },
+      "observations_replayed": [],
+      "raw_events": "before-chosen-engine-sql.events.json.gz",
+      "raw_events_sha256": "sha256:54fc3bec21b454ec48d95cd4dba009aa5ec97ff60fb0c6f35990940068fbebf7",
+      "returncode": 0,
+      "reason": null
+    },
+    {
+      "phase": "before",
+      "case": "bounded-discovery",
+      "status": "passed",
+      "prompt": "Find an authoritative source of building footprints for Estonia suitable\nfor a city-scale analysis. Explain coverage, license, version pinning and\nhow to check completeness. The processing and delivery stack is already chosen.\n",
+      "prompt_sha256": "sha256:ad60bf6fd36e98466681c8d6f2e04ba0c2127b4badc5abefe4d960b9421334da",
+      "case_sha256": "sha256:581d29d7180a8442d7336ddb176d8e4c1c75f3358a14bba33c6df73d42230edf",
+      "skill_sha256": "sha256:d486613a00add58e5a2a30ed88b16426363feb56172bc3f3dd7e36c88efee1df",
+      "source_revision": "a9cf23d302761275ddc8d6dbdb3e60cab5100a03",
+      "runtime": {
+        "runtime": {
+          "type": "oms.routing.runtime",
+          "version": "2.1.270 (Claude Code)",
+          "returncode": 0
+        },
+        "reported_cost_usd": 0.1760388,
+        "discovered_skills": [
+          "open-map-stack",
+          "design",
+          "doctor"
+        ],
+        "resolved_model": "claude-sonnet-4-6",
+        "usage": {
+          "input_tokens": 6,
+          "cache_creation_input_tokens": 15174,
+          "cache_read_input_tokens": 72926,
+          "output_tokens": 4139,
+          "total_tokens": 92245
+        }
+      },
+      "image": "sha256:e3e0c444925a52e4aae8ca8bc4d4bea49f9041c8813747cd41193904e35bc5d0",
+      "requested_model": "claude-sonnet-4-6",
+      "max_budget_usd": 0.3,
+      "reported_cost_usd": 0.1760388,
+      "capture_status": "passed",
+      "capture_telemetry_gaps": [],
+      "selection_replayed": {
+        "status": "passed",
+        "observed_skills": [
+          "open-map-stack"
+        ],
+        "unexpected_skills": [],
+        "required_skill_observed": true,
+        "false_activation_count": 0,
+        "false_activation_count_is_lower_bound": false,
+        "unexpected_consumption_count": 0,
+        "verified_unique_text_bytes": 25153,
+        "text_bytes_complete": false,
+        "telemetry_gaps": [],
+        "primary_role": {
+          "status": "not_testable",
+          "reason": "tool events establish consumption, not semantic ownership"
+        },
+        "task_success": {
+          "status": "not_testable",
+          "reason": "routing smoke does not grade analytical outcomes; use paired project evals"
+        }
+      },
+      "observations_replayed": [
+        {
+          "skill": "open-map-stack",
+          "path": "SKILL.md",
+          "kind": "activation",
+          "entrypoint": true,
+          "event_index": 7,
+          "verified_text_bytes": null
+        },
+        {
+          "skill": "open-map-stack",
+          "path": "references/data-sources.md",
+          "kind": "read",
+          "entrypoint": false,
+          "event_index": 15,
+          "verified_text_bytes": 25153
+        }
+      ],
+      "raw_events": "before-bounded-discovery.events.json.gz",
+      "raw_events_sha256": "sha256:cfddab78e29065ba3cd3df2daca6baf3138d4bc41301eed177e3ae92f6e24474",
+      "returncode": 0,
+      "reason": null
+    },
+    {
+      "phase": "before",
+      "case": "compile-existing-analysis",
+      "status": "not_testable",
+      "prompt": "Convert our existing exploratory GIS analysis into a reproducible,\nauditable project structure. It loads a pinned local parcels GeoPackage\nand stop points in EPSG:3301, selects parcels intersecting 500 m buffers,\nand exports the selected parcels. Keep this algorithm and stack. Provide\nthe manifest and pipeline scaffold, source/override rules, validation and\nrerun instructions; identify unavailable source details rather than inventing them.\n",
+      "prompt_sha256": "sha256:727457a1eb68fa5445aab238f3d09802e50a81f77f718edefaf49a837e70438a",
+      "case_sha256": "sha256:491d5742758877f86f783a7100e7286daebeca977f20d31acde3b3aa8705c3e4",
+      "skill_sha256": "sha256:d486613a00add58e5a2a30ed88b16426363feb56172bc3f3dd7e36c88efee1df",
+      "source_revision": "a9cf23d302761275ddc8d6dbdb3e60cab5100a03",
+      "runtime": {
+        "runtime": {
+          "type": "oms.routing.runtime",
+          "version": "2.1.270 (Claude Code)",
+          "returncode": 0
+        },
+        "reported_cost_usd": 0.34869720000000004,
+        "discovered_skills": [
+          "open-map-stack",
+          "design",
+          "doctor"
+        ],
+        "resolved_model": "claude-sonnet-4-6",
+        "usage": {
+          "input_tokens": 3,
+          "cache_creation_input_tokens": 2367,
+          "cache_read_input_tokens": 44958,
+          "output_tokens": 572,
+          "total_tokens": 47900
+        }
+      },
+      "image": "sha256:e3e0c444925a52e4aae8ca8bc4d4bea49f9041c8813747cd41193904e35bc5d0",
+      "requested_model": "claude-sonnet-4-6",
+      "max_budget_usd": 0.3,
+      "reported_cost_usd": 0.34869720000000004,
+      "capture_status": "not_testable",
+      "capture_telemetry_gaps": [
+        "agent_or_container_failed",
+        "incomplete_run",
+        "unobserved_read_surface:Bash"
+      ],
+      "selection_replayed": {
+        "status": "not_testable",
+        "observed_skills": [],
+        "unexpected_skills": [],
+        "required_skill_observed": false,
+        "false_activation_count": 0,
+        "false_activation_count_is_lower_bound": true,
+        "unexpected_consumption_count": 0,
+        "verified_unique_text_bytes": 60262,
+        "text_bytes_complete": false,
+        "telemetry_gaps": [
+          "agent_or_container_failed",
+          "incomplete_run",
+          "unobserved_read_surface:Bash"
+        ],
+        "primary_role": {
+          "status": "not_testable",
+          "reason": "tool events establish consumption, not semantic ownership"
+        },
+        "task_success": {
+          "status": "not_testable",
+          "reason": "routing smoke does not grade analytical outcomes; use paired project evals"
+        }
+      },
+      "observations_replayed": [
+        {
+          "skill": "open-map-stack",
+          "path": "references/project-spec.md",
+          "kind": "read",
+          "entrypoint": false,
+          "event_index": 21,
+          "verified_text_bytes": 60262
+        }
+      ],
+      "raw_events": "before-compile-existing-analysis.events.json.gz",
+      "raw_events_sha256": "sha256:67723c60bc8de7505b61cd629029fbd8abc3be686da4cfb4ceeebdea68d65da0",
+      "returncode": 1,
+      "reason": null
+    },
+    {
+      "phase": "before",
+      "case": "ambiguous-architecture",
+      "status": "failed",
+      "prompt": "Design a system to assess development sites using parcels, transport access\nand environmental constraints. We have not chosen sources, compute, storage\nor presentation. Ask for consequential missing context and explain how the\nchoices fit together before committing to a tool stack.\n",
+      "prompt_sha256": "sha256:ddba912b4ae4664af7afbcaadc67f4f2f91149931b4b3bedaffc54f8e571c28c",
+      "case_sha256": "sha256:19bcc52d73a072218a8ea2a5819da1e4abcca15e37b81747b4a9294e768aeab9",
+      "skill_sha256": "sha256:d486613a00add58e5a2a30ed88b16426363feb56172bc3f3dd7e36c88efee1df",
+      "source_revision": "a9cf23d302761275ddc8d6dbdb3e60cab5100a03",
+      "runtime": {
+        "runtime": {
+          "type": "oms.routing.runtime",
+          "version": "2.1.270 (Claude Code)",
+          "returncode": 0
+        },
+        "reported_cost_usd": 0.03787069999999999,
+        "discovered_skills": [
+          "open-map-stack",
+          "design",
+          "doctor"
+        ],
+        "resolved_model": "claude-sonnet-4-6",
+        "usage": {
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 1551,
+          "cache_read_input_tokens": 21679,
+          "output_tokens": 1403,
+          "total_tokens": 24635
+        }
+      },
+      "image": "sha256:e3e0c444925a52e4aae8ca8bc4d4bea49f9041c8813747cd41193904e35bc5d0",
+      "requested_model": "claude-sonnet-4-6",
+      "max_budget_usd": 0.3,
+      "reported_cost_usd": 0.03787069999999999,
+      "capture_status": "failed",
+      "capture_telemetry_gaps": [],
+      "selection_replayed": {
+        "status": "failed",
+        "observed_skills": [],
+        "unexpected_skills": [],
+        "required_skill_observed": false,
+        "false_activation_count": 0,
+        "false_activation_count_is_lower_bound": false,
+        "unexpected_consumption_count": 0,
+        "verified_unique_text_bytes": 0,
+        "text_bytes_complete": true,
+        "telemetry_gaps": [],
+        "primary_role": {
+          "status": "not_testable",
+          "reason": "tool events establish consumption, not semantic ownership"
+        },
+        "task_success": {
+          "status": "not_testable",
+          "reason": "routing smoke does not grade analytical outcomes; use paired project evals"
+        }
+      },
+      "observations_replayed": [],
+      "raw_events": "before-ambiguous-architecture.events.json.gz",
+      "raw_events_sha256": "sha256:085ac149ebbda75ed5daddde18743091e38ae1924352d6344cb1eafc4050a05d",
+      "returncode": 0,
+      "reason": null
+    },
+    {
+      "phase": "before",
+      "case": "billion-row-architecture",
+      "status": "failed",
+      "prompt": "Design an analytical and web-delivery pipeline for one billion building\nrecords updated monthly. The team needs regional queries and browser maps,\nwith limited local hardware. Choose compute placement, storage, partitioning,\nsource pinning and delivery together, and explain the cost/scale trade-offs.\n",
+      "prompt_sha256": "sha256:b76cbff090350dfa51944413c18791e8a51e9b301054100932294dbbe52665e9",
+      "case_sha256": "sha256:899c903b9ceb01f1be66d78807cac52f4390e775239a7b7b972e9382daaa8f98",
+      "skill_sha256": "sha256:d486613a00add58e5a2a30ed88b16426363feb56172bc3f3dd7e36c88efee1df",
+      "source_revision": "a9cf23d302761275ddc8d6dbdb3e60cab5100a03",
+      "runtime": {
+        "runtime": {
+          "type": "oms.routing.runtime",
+          "version": "2.1.270 (Claude Code)",
+          "returncode": 0
+        },
+        "reported_cost_usd": 0.07343469999999999,
+        "discovered_skills": [
+          "open-map-stack",
+          "design",
+          "doctor"
+        ],
+        "resolved_model": "claude-sonnet-4-6",
+        "usage": {
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 1558,
+          "cache_read_input_tokens": 21679,
+          "output_tokens": 3770,
+          "total_tokens": 27009
+        }
+      },
+      "image": "sha256:e3e0c444925a52e4aae8ca8bc4d4bea49f9041c8813747cd41193904e35bc5d0",
+      "requested_model": "claude-sonnet-4-6",
+      "max_budget_usd": 0.3,
+      "reported_cost_usd": 0.07343469999999999,
+      "capture_status": "failed",
+      "capture_telemetry_gaps": [],
+      "selection_replayed": {
+        "status": "failed",
+        "observed_skills": [],
+        "unexpected_skills": [],
+        "required_skill_observed": false,
+        "false_activation_count": 0,
+        "false_activation_count_is_lower_bound": false,
+        "unexpected_consumption_count": 0,
+        "verified_unique_text_bytes": 0,
+        "text_bytes_complete": true,
+        "telemetry_gaps": [],
+        "primary_role": {
+          "status": "not_testable",
+          "reason": "tool events establish consumption, not semantic ownership"
+        },
+        "task_success": {
+          "status": "not_testable",
+          "reason": "routing smoke does not grade analytical outcomes; use paired project evals"
+        }
+      },
+      "observations_replayed": [],
+      "raw_events": "before-billion-row-architecture.events.json.gz",
+      "raw_events_sha256": "sha256:8964cf09529529da85da8f7ebda9f1a5c7c74a5324cbed7d2ed4f1be0b6c37b5",
+      "returncode": 0,
+      "reason": null
+    },
+    {
+      "phase": "before",
+      "case": "casual-place-lookup",
+      "status": "passed",
+      "prompt": "What country is Tallinn in?",
+      "prompt_sha256": "sha256:31b5762eb7e5350e5309aa0b1e239ebd3c6ac486832332531f1dbcd50dc7c4d3",
+      "case_sha256": "sha256:b9454e96e0098c0d4c4c2e31bdc16927dc1cdc91292e0b29abecb88212c217e8",
+      "skill_sha256": "sha256:d486613a00add58e5a2a30ed88b16426363feb56172bc3f3dd7e36c88efee1df",
+      "source_revision": "a9cf23d302761275ddc8d6dbdb3e60cab5100a03",
+      "runtime": {
+        "runtime": {
+          "type": "oms.routing.runtime",
+          "version": "2.1.270 (Claude Code)",
+          "returncode": 0
+        },
+        "reported_cost_usd": 0.0167127,
+        "discovered_skills": [
+          "open-map-stack",
+          "design",
+          "doctor"
+        ],
+        "resolved_model": "claude-sonnet-4-6",
+        "usage": {
+          "input_tokens": 3,
+          "cache_creation_input_tokens": 1505,
+          "cache_read_input_tokens": 21679,
+          "output_tokens": 14,
+          "total_tokens": 23201
+        }
+      },
+      "image": "sha256:e3e0c444925a52e4aae8ca8bc4d4bea49f9041c8813747cd41193904e35bc5d0",
+      "requested_model": "claude-sonnet-4-6",
+      "max_budget_usd": 0.3,
+      "reported_cost_usd": 0.0167127,
+      "capture_status": "passed",
+      "capture_telemetry_gaps": [],
+      "selection_replayed": {
+        "status": "passed",
+        "observed_skills": [],
+        "unexpected_skills": [],
+        "required_skill_observed": true,
+        "false_activation_count": 0,
+        "false_activation_count_is_lower_bound": false,
+        "unexpected_consumption_count": 0,
+        "verified_unique_text_bytes": 0,
+        "text_bytes_complete": true,
+        "telemetry_gaps": [],
+        "primary_role": {
+          "status": "not_testable",
+          "reason": "tool events establish consumption, not semantic ownership"
+        },
+        "task_success": {
+          "status": "not_testable",
+          "reason": "routing smoke does not grade analytical outcomes; use paired project evals"
+        }
+      },
+      "observations_replayed": [],
+      "raw_events": "before-casual-place-lookup.events.json.gz",
+      "raw_events_sha256": "sha256:2f3f294343600ce949241d0b4fcf3028f1df04ae2cb8048f8bebb24573a758d0",
+      "returncode": 0,
+      "reason": null
+    },
+    {
+      "phase": "before",
+      "case": "future-scale-architecture",
+      "status": "not_testable",
+      "prompt": "Our GIS analysis has 50,000 records today, but will reach continental scale\nnext year. Three analysts already maintain a shared spatial database and\nneed concurrent updates and reproducible reports. Evaluate the architecture\nusing future scale and team constraints as well as today's query speed.\n",
+      "prompt_sha256": "sha256:91cd389f63a268823b69a36e90e2af079dc54b2fdbe182b32378a4ad3af995e1",
+      "case_sha256": "sha256:89322ed86e9aacee871ef9815cee673c0f493c4f0e3c6dfda425c9bbb58f09ee",
+      "skill_sha256": "sha256:d486613a00add58e5a2a30ed88b16426363feb56172bc3f3dd7e36c88efee1df",
+      "source_revision": "a9cf23d302761275ddc8d6dbdb3e60cab5100a03",
+      "runtime": {
+        "runtime": {
+          "type": "oms.routing.runtime",
+          "version": "2.1.270 (Claude Code)",
+          "returncode": 0
+        },
+        "reported_cost_usd": 0.1944107,
+        "discovered_skills": [
+          "open-map-stack",
+          "design",
+          "doctor"
+        ],
+        "resolved_model": "claude-sonnet-4-6",
+        "usage": {
+          "input_tokens": 7,
+          "cache_creation_input_tokens": 17952,
+          "cache_read_input_tokens": 97339,
+          "output_tokens": 3764,
+          "total_tokens": 119062
+        }
+      },
+      "image": "sha256:e3e0c444925a52e4aae8ca8bc4d4bea49f9041c8813747cd41193904e35bc5d0",
+      "requested_model": "claude-sonnet-4-6",
+      "max_budget_usd": 0.3,
+      "reported_cost_usd": 0.1944107,
+      "capture_status": "not_testable",
+      "capture_telemetry_gaps": [
+        "unobserved_read_surface:Bash"
+      ],
+      "selection_replayed": {
+        "status": "not_testable",
+        "observed_skills": [
+          "open-map-stack"
+        ],
+        "unexpected_skills": [],
+        "required_skill_observed": true,
+        "false_activation_count": 0,
+        "false_activation_count_is_lower_bound": true,
+        "unexpected_consumption_count": 0,
+        "verified_unique_text_bytes": 36038,
+        "text_bytes_complete": false,
+        "telemetry_gaps": [
+          "unobserved_read_surface:Bash"
+        ],
+        "primary_role": {
+          "status": "not_testable",
+          "reason": "tool events establish consumption, not semantic ownership"
+        },
+        "task_success": {
+          "status": "not_testable",
+          "reason": "routing smoke does not grade analytical outcomes; use paired project evals"
+        }
+      },
+      "observations_replayed": [
+        {
+          "skill": "open-map-stack",
+          "path": "SKILL.md",
+          "kind": "activation",
+          "entrypoint": true,
+          "event_index": 9,
+          "verified_text_bytes": null
+        },
+        {
+          "skill": "open-map-stack",
+          "path": "references/services-and-scale.md",
+          "kind": "read",
+          "entrypoint": false,
+          "event_index": 16,
+          "verified_text_bytes": 28222
+        },
+        {
+          "skill": "open-map-stack",
+          "path": "references/user-data-sources.md",
+          "kind": "read",
+          "entrypoint": false,
+          "event_index": 18,
+          "verified_text_bytes": 7816
+        }
+      ],
+      "raw_events": "before-future-scale-architecture.events.json.gz",
+      "raw_events_sha256": "sha256:12cffb340c3da6d4673705668d4a437ce94d8589e41f7947acd6592d27717c72",
+      "returncode": 0,
+      "reason": null
+    },
+    {
+      "phase": "before",
+      "case": "material-analysis-generalist-only",
+      "status": "not_testable",
+      "prompt": "Plan a multi-stage analysis of which development parcels intersect a\n500-metre straight-line buffer around public transport stops. Explain the\nauthoritative inputs, semantic assumptions, immutable data and corrections,\ncanonical pipeline, machine-readable validation, provenance and rerun\ndeliverables needed before the analysis can be considered complete.\n",
+      "prompt_sha256": "sha256:332632b30a056940df841515648295bd3f55afc482941d000672486ed6fc362b",
+      "case_sha256": "sha256:1c4efbdaf0b36f35ce01dc7554734363d8cd69883e50d12aa98486f56f2916ed",
+      "skill_sha256": "sha256:d486613a00add58e5a2a30ed88b16426363feb56172bc3f3dd7e36c88efee1df",
+      "source_revision": "a9cf23d302761275ddc8d6dbdb3e60cab5100a03",
+      "runtime": {
+        "runtime": {
+          "type": "oms.routing.runtime",
+          "version": "2.1.270 (Claude Code)",
+          "returncode": 0
+        },
+        "reported_cost_usd": null,
+        "discovered_skills": [
+          "open-map-stack",
+          "design",
+          "doctor"
+        ],
+        "resolved_model": "claude-sonnet-4-6",
+        "usage": {}
+      },
+      "image": "sha256:e3e0c444925a52e4aae8ca8bc4d4bea49f9041c8813747cd41193904e35bc5d0",
+      "requested_model": "claude-sonnet-4-6",
+      "max_budget_usd": 0.3,
+      "reported_cost_usd": null,
+      "capture_status": "not_testable",
+      "capture_telemetry_gaps": null,
+      "selection_replayed": {
+        "status": "not_testable",
+        "observed_skills": [
+          "open-map-stack"
+        ],
+        "unexpected_skills": [],
+        "required_skill_observed": true,
+        "false_activation_count": 0,
+        "false_activation_count_is_lower_bound": true,
+        "unexpected_consumption_count": 0,
+        "verified_unique_text_bytes": 113872,
+        "text_bytes_complete": false,
+        "telemetry_gaps": [
+          "incomplete_run"
+        ],
+        "primary_role": {
+          "status": "not_testable",
+          "reason": "tool events establish consumption, not semantic ownership"
+        },
+        "task_success": {
+          "status": "not_testable",
+          "reason": "routing smoke does not grade analytical outcomes; use paired project evals"
+        }
+      },
+      "observations_replayed": [
+        {
+          "skill": "open-map-stack",
+          "path": "SKILL.md",
+          "kind": "activation",
+          "entrypoint": true,
+          "event_index": 7,
+          "verified_text_bytes": null
+        },
+        {
+          "skill": "open-map-stack",
+          "path": "references/project-spec.md",
+          "kind": "read",
+          "entrypoint": false,
+          "event_index": 15,
+          "verified_text_bytes": 60262
+        },
+        {
+          "skill": "open-map-stack",
+          "path": "references/data-sources.md",
+          "kind": "read",
+          "entrypoint": false,
+          "event_index": 17,
+          "verified_text_bytes": 25153
+        },
+        {
+          "skill": "open-map-stack",
+          "path": "references/analytics.md",
+          "kind": "read",
+          "entrypoint": false,
+          "event_index": 21,
+          "verified_text_bytes": 19282
+        },
+        {
+          "skill": "open-map-stack",
+          "path": "references/validation-and-ops.md",
+          "kind": "read",
+          "entrypoint": false,
+          "event_index": 23,
+          "verified_text_bytes": 9175
+        }
+      ],
+      "raw_events": "before-material-analysis-generalist-only.events.json.gz",
+      "raw_events_sha256": "sha256:62230e9c1ccd42d24d87510fb256a7e90b3e56352293fe06a969443d026e5495",
+      "returncode": null,
+      "reason": "timeout"
+    },
+    {
+      "phase": "after",
+      "case": "chosen-engine-sql",
+      "status": "failed",
+      "prompt": "We use PostGIS. Review this query for correctness and index use:\nSELECT p.id FROM parcels p JOIN stops s\nON ST_Distance(p.geom, s.geom) < 500;\nBoth geometry columns have SRID 4326. We need parcels within 500 metres\nof a stop. Explain a corrected query; this is a bounded SQL review.\n",
+      "prompt_sha256": "sha256:c0e184ed3b4736ce961887808d449e63a4e94e14edfbdfd08cb73f303921627c",
+      "case_sha256": "sha256:1a4ac360d1322aa1913f37101db5a4ec25fc8ea8b0cc74c67917847760d038bf",
+      "skill_sha256": "sha256:198ab76a6efdc2dd0a27a96e968785ae2573824393a5ae94933a9ef0a759a2e8",
+      "source_revision": null,
+      "runtime": {
+        "runtime": {
+          "type": "oms.routing.runtime",
+          "version": "2.1.270 (Claude Code)",
+          "returncode": 0
+        },
+        "reported_cost_usd": 0.031045499999999997,
+        "discovered_skills": [
+          "open-map-stack",
+          "design",
+          "doctor"
+        ],
+        "resolved_model": "claude-sonnet-4-6",
+        "usage": {
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 23265,
+          "output_tokens": 1534,
+          "total_tokens": 24801
+        }
+      },
+      "image": "sha256:e3e0c444925a52e4aae8ca8bc4d4bea49f9041c8813747cd41193904e35bc5d0",
+      "requested_model": "claude-sonnet-4-6",
+      "max_budget_usd": 0.3,
+      "reported_cost_usd": 0.031045499999999997,
+      "capture_status": "failed",
+      "capture_telemetry_gaps": [],
+      "selection_replayed": {
+        "status": "failed",
+        "observed_skills": [],
+        "unexpected_skills": [],
+        "required_skill_observed": false,
+        "false_activation_count": 0,
+        "false_activation_count_is_lower_bound": false,
+        "unexpected_consumption_count": 0,
+        "verified_unique_text_bytes": 0,
+        "text_bytes_complete": true,
+        "telemetry_gaps": [],
+        "primary_role": {
+          "status": "not_testable",
+          "reason": "tool events establish consumption, not semantic ownership"
+        },
+        "task_success": {
+          "status": "not_testable",
+          "reason": "routing smoke does not grade analytical outcomes; use paired project evals"
+        }
+      },
+      "observations_replayed": [],
+      "raw_events": "after-chosen-engine-sql.events.json.gz",
+      "raw_events_sha256": "sha256:5a7c545ee853e0f1c52e241bcd60bca3a84051b64186554e35fd1a96d1514e1f",
+      "returncode": 0,
+      "reason": null
+    },
+    {
+      "phase": "after",
+      "case": "material-analysis-generalist-only",
+      "status": "failed",
+      "prompt": "Plan a multi-stage analysis of which development parcels intersect a\n500-metre straight-line buffer around public transport stops. Explain the\nauthoritative inputs, semantic assumptions, immutable data and corrections,\ncanonical pipeline, machine-readable validation, provenance and rerun\ndeliverables needed before the analysis can be considered complete.\n",
+      "prompt_sha256": "sha256:332632b30a056940df841515648295bd3f55afc482941d000672486ed6fc362b",
+      "case_sha256": "sha256:1c4efbdaf0b36f35ce01dc7554734363d8cd69883e50d12aa98486f56f2916ed",
+      "skill_sha256": "sha256:198ab76a6efdc2dd0a27a96e968785ae2573824393a5ae94933a9ef0a759a2e8",
+      "source_revision": null,
+      "runtime": {
+        "runtime": {
+          "type": "oms.routing.runtime",
+          "version": "2.1.270 (Claude Code)",
+          "returncode": 0
+        },
+        "reported_cost_usd": 0.0769217,
+        "discovered_skills": [
+          "open-map-stack",
+          "design",
+          "doctor"
+        ],
+        "resolved_model": "claude-sonnet-4-6",
+        "usage": {
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 1569,
+          "cache_read_input_tokens": 21679,
+          "output_tokens": 3997,
+          "total_tokens": 27247
+        }
+      },
+      "image": "sha256:e3e0c444925a52e4aae8ca8bc4d4bea49f9041c8813747cd41193904e35bc5d0",
+      "requested_model": "claude-sonnet-4-6",
+      "max_budget_usd": 0.3,
+      "reported_cost_usd": 0.0769217,
+      "capture_status": "failed",
+      "capture_telemetry_gaps": [],
+      "selection_replayed": {
+        "status": "failed",
+        "observed_skills": [],
+        "unexpected_skills": [],
+        "required_skill_observed": false,
+        "false_activation_count": 0,
+        "false_activation_count_is_lower_bound": false,
+        "unexpected_consumption_count": 0,
+        "verified_unique_text_bytes": 0,
+        "text_bytes_complete": true,
+        "telemetry_gaps": [],
+        "primary_role": {
+          "status": "not_testable",
+          "reason": "tool events establish consumption, not semantic ownership"
+        },
+        "task_success": {
+          "status": "not_testable",
+          "reason": "routing smoke does not grade analytical outcomes; use paired project evals"
+        }
+      },
+      "observations_replayed": [],
+      "raw_events": "after-material-analysis-generalist-only.events.json.gz",
+      "raw_events_sha256": "sha256:65afd11b975676fdd6dab892226dee5f6ff37923ad004a5ad1f7333499538a38",
+      "returncode": 0,
+      "reason": null
+    }
+  ]
+}
