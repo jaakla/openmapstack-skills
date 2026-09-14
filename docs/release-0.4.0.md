@@ -60,9 +60,11 @@ upgrades successfully.
 The completed collection passed 503 unit tests (29 environment-dependent skips).
 Fixture evals passed 16/16 contract cases and detected 26/26 controlled mutations;
 two contract assertions were `not_testable` and two soft gates were unmet in this
-runtime. Initial local assertion coverage was 68%, below the existing 70% gate,
-with browser tests skipped because Playwright/Chromium were unavailable. CI's
-browser-capable coverage gate remains required.
+runtime. After preparing Playwright 1.62.0 and Chromium 151.0.7922.34, all 56 visual
+assertion unit tests passed, including the 20 browser cases skipped in the
+initial run. Combined assertion coverage reached **77%**, passing the existing
+70% gate. PyQGIS, external PostGIS and optional live-catalog tests still need
+their separate capable environments.
 
 ## Remaining release acceptance (#39)
 

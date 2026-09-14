@@ -71,7 +71,7 @@ def stage_skill(source, workspace, surface):
     if not isinstance(name, str) or not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", name):
         raise ValueError("unsafe skill name")
     if name != "open-map-stack":
-        raise ValueError("this increment supports the single open-map-stack snapshot; collection selection follows in #34")
+        raise ValueError("single profile requires open-map-stack; use --profile collection for other skills")
     relative_root = Path(surface["directory"]) / name
     target = workspace / relative_root
     manifest = create_skill_snapshot(source, target)
