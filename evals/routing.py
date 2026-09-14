@@ -2,7 +2,7 @@
 
 Run through ``python evals/run.py routing --help``. A pinned, clean CLI image
 is required for execution. No host credentials/configuration or repository
-are mounted. Collection snapshot/arm migration remains issue #34.
+are mounted. The collection profile uses complete v2 skill snapshots.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -26,6 +27,7 @@ from jsonschema import Draft202012Validator
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
+from openmapstack.collection import create_collection_snapshot
 from openmapstack.snapshot import create_skill_snapshot, inspect_skill_snapshot
 from adapters.base import parse_json_lines
 from adapters.routing import BOOTSTRAP, SURFACES, credentials, runtime_evidence
@@ -36,7 +38,7 @@ REPORT_SCHEMA = Path(__file__).parent / "schemas/routing-smoke-v1.schema.json"
 # checkout while a long trial is executing.
 HARNESS_HASHES = {
     name: "sha256:" + hashlib.sha256((REPO_ROOT / name).read_bytes()).hexdigest()
-    for name in ("evals/routing.py", "evals/adapters/routing.py", "evals/adapters/claude_code.py", "evals/adapters/codex.py", "openmapstack/snapshot.py")
+    for name in ("evals/routing.py", "evals/adapters/routing.py", "evals/adapters/claude_code.py", "evals/adapters/codex.py", "openmapstack/snapshot.py", "openmapstack/collection.py")
 }
 
 
@@ -84,6 +86,38 @@ def stage_skill(source, workspace, surface):
     return target, manifest, inventory
 
 
+def stage_collection(source, workspace, surface, selected=None):
+    """Copy a complete v2 payload directly into the native discovery surface."""
+    target = workspace / Path(surface["directory"]).parent
+    manifest = create_collection_snapshot(source, target, selected=selected)
+    inventory = {}
+    for skill in manifest["skills"]:
+        prefix = f"skills/{skill['name']}/"
+        for entry in manifest["files"]:
+            if not entry["path"].startswith(prefix) or not entry["path"].endswith(".md"):
+                continue
+            path = target / entry["path"]
+            inventory["/workspace/" + path.relative_to(workspace).as_posix()] = {
+                "skill": skill["name"], "relative": entry["path"][len(prefix):],
+                "text": path.read_text(encoding="utf-8"),
+            }
+    return target, manifest, inventory
+
+
+def inspect_staged(target, profile):
+    if profile != "collection":
+        return inspect_skill_snapshot(target)
+    # Agent settings/cache at the native surface are not installed skill files.
+    # Inspect a copy of the controlled inventory, preserving symlinks so the
+    # snapshot verifier can reject them rather than following them.
+    with tempfile.TemporaryDirectory(prefix="oms-inspect-") as tmp:
+        controlled = Path(tmp) / "snapshot"
+        def ignore(directory, names):
+            return set(names) - {"skills", "collection.json", "snapshot.json"} if Path(directory) == target else set()
+        shutil.copytree(target, controlled, symlinks=True, ignore=ignore)
+        return inspect_skill_snapshot(controlled)
+
+
 def grade_evidence(observations, gaps, expected):
     """Score observed selection only; never infer semantic primary ownership."""
     consumed = sorted({o["skill"] for o in observations if o["entrypoint"]})
@@ -106,7 +140,7 @@ def grade_evidence(observations, gaps, expected):
         "text_bytes_complete": not gaps and all(o["verified_text_bytes"] is not None for o in observations),
         "telemetry_gaps": gaps,
         "primary_role": {"status": "not_testable", "reason": "tool events establish consumption, not semantic ownership"},
-        "task_success": {"status": "not_testable", "reason": "routing smoke does not grade analytical outcomes; use paired project evals"},
+        "task_success": {"status": "not_testable", "reason": "routing smoke does not grade analytical outcomes; use final-state task acceptance"},
     }
 
 
@@ -128,14 +162,14 @@ def container_command(image, workspace, credential, name):
     ]
 
 
-def run_trial(case, *, source, agent, model, image, destination, timeout=900, max_budget_usd=None, credential_file=None):
+def run_trial(case, *, source, agent, model, image, destination, timeout=900, max_budget_usd=None, credential_file=None, profile="single", selected=None):
     destination.mkdir(parents=True, exist_ok=False)
     prompt = case["prompt"]
     record = {
-        "schema": "openmapstack-routing-smoke/v1", "case": case["id"], "mode": "native_discovery",
-        "profile": "single", "agent": agent, "model": model, "image": image,
+        "schema": "openmapstack-routing-smoke/v2" if profile == "collection" else "openmapstack-routing-smoke/v1", "case": case["id"], "mode": "native_discovery",
+        "profile": profile, "agent": agent, "model": model, "image": image,
         "prompt_sha256": sha256(prompt.encode()), "case_sha256": sha256(json.dumps(case, sort_keys=True).encode()),
-        "expectation": case["expectations"]["single"],
+        "expectation": case["expectations"][profile],
         "status": "not_testable", "reason": None,
         "max_budget_usd": max_budget_usd,
         "harness_files": HARNESS_HASHES,
@@ -162,7 +196,15 @@ def run_trial(case, *, source, agent, model, image, destination, timeout=900, ma
         try:
             with tempfile.TemporaryDirectory(prefix="oms-routing-") as temporary:
                 workspace = Path(temporary)
-                target, manifest, inventory = stage_skill(source, workspace, surface)
+                if profile == "collection":
+                    target, manifest, inventory = stage_collection(source, workspace, surface, selected)
+                    entrypoints = ["/workspace/" + (target.relative_to(workspace) / skill["entrypoint"]).as_posix() for skill in manifest["skills"]]
+                    installed = [skill["name"] for skill in manifest["skills"]]
+                else:
+                    target, manifest, inventory = stage_skill(source, workspace, surface)
+                    entrypoints = ["/workspace/" + target.relative_to(workspace).as_posix() + "/SKILL.md"]
+                    installed = ["open-map-stack"]
+                record["installed_skills"] = installed
                 # Persist context outside the writable mount, including the hash
                 # needed to detect changes to the staged copy during execution.
                 record["snapshot"] = manifest
@@ -172,7 +214,7 @@ def run_trial(case, *, source, agent, model, image, destination, timeout=900, ma
                     command.extend(["--max-budget-usd", str(max_budget_usd)])
                 name = "oms-routing-" + uuid.uuid4().hex
                 invocation = container_command(image, workspace, credential, name)
-                payload = {"command": command, "prompt": prompt, "credential": credential, "entrypoint": "/workspace/" + target.relative_to(workspace).as_posix() + "/SKILL.md"}
+                payload = {"command": command, "prompt": prompt, "credential": credential, "entrypoints": entrypoints}
                 try:
                     started = time.monotonic()
                     proc = subprocess.run(invocation, input=json.dumps(payload), text=True, capture_output=True, timeout=timeout, check=False, env=environment)
@@ -187,14 +229,14 @@ def run_trial(case, *, source, agent, model, image, destination, timeout=900, ma
                     raw, unparsed = parse_json_lines(stdout)
                     (destination / "events.json").write_text(json.dumps(raw, indent=2) + "\n")
                     observations, gaps = surface["decode"](raw, inventory)
-                    runtime, runtime_gaps = runtime_evidence(agent, raw, model)
+                    runtime, runtime_gaps = runtime_evidence(agent, raw, model, installed)
                     record.update(runtime)
                     gaps.extend(runtime_gaps)
                     if unparsed:
                         gaps.append("unparsed_stdout")
                     if proc.returncode:
                         gaps.append("agent_or_container_failed")
-                    inspection = inspect_skill_snapshot(target)
+                    inspection = inspect_staged(target, profile)
                     if not inspection["intact"] or inspection["recomputed_sha256"] != manifest["content_sha256"]:
                         gaps.append("controlled_skill_changed")
                     record["observations"] = observations
@@ -220,7 +262,8 @@ def run_trial(case, *, source, agent, model, image, destination, timeout=900, ma
         except (OSError, ValueError, KeyError, IndexError) as exc:
             record["status"] = "not_testable"
             record["reason"] = f"preflight: {type(exc).__name__}: {exc}"
-    Draft202012Validator(json.loads(REPORT_SCHEMA.read_text())).validate(record)
+    schema = REPORT_SCHEMA.with_name("routing-smoke-v2.schema.json") if profile == "collection" else REPORT_SCHEMA
+    Draft202012Validator(json.loads(schema.read_text())).validate(record)
     (destination / "routing.json").write_text(json.dumps(record, indent=2) + "\n")
     return record
 
@@ -232,13 +275,18 @@ def main(argv=None):
     parser.add_argument("--agent", choices=[*SURFACES, "openai_compatible"])
     parser.add_argument("--model")
     parser.add_argument("--image", help="locally available, clean CLI image pinned by digest; never pulled automatically")
-    parser.add_argument("--skill-source", type=Path, default=REPO_ROOT / "skills/open-map-stack")
+    parser.add_argument("--skill-source", type=Path, help="defaults to the collection root or legacy generalist according to profile")
+    parser.add_argument("--profile", choices=["single", "collection"], default="single")
+    parser.add_argument("--skill", action="append", help="select installed skills in the collection profile; defaults to all")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--timeout", type=int, default=900)
     parser.add_argument("--max-budget-usd", type=float, help="total budget divided across the selected Claude trials; leave headroom for an in-flight response")
     parser.add_argument("--credential-file", type=Path, help="explicit Claude OAuth credentials file; only its access token is passed, never persisted")
     args = parser.parse_args(argv)
     cases = load_cases()
+    if args.skill and args.profile != "collection":
+        parser.error("--skill requires --profile collection")
+    source = args.skill_source or (REPO_ROOT if args.profile == "collection" else REPO_ROOT / "skills/open-map-stack")
     if args.list:
         for case in cases:
             print(case["id"])
@@ -257,7 +305,7 @@ def main(argv=None):
     results = []
     spent = 0.0
     for case in selected:
-        result = run_trial(case, source=args.skill_source.resolve(), agent=args.agent, model=args.model, image=args.image, destination=args.out / case["id"], timeout=args.timeout, max_budget_usd=trial_budget, credential_file=args.credential_file)
+        result = run_trial(case, source=source.resolve(), agent=args.agent, model=args.model, image=args.image, destination=args.out / case["id"], timeout=args.timeout, max_budget_usd=trial_budget, credential_file=args.credential_file, profile=args.profile, selected=args.skill)
         results.append(result)
         cost = result.get("reported_cost_usd")
         if args.max_budget_usd:

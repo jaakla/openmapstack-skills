@@ -15,7 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "evals"))
 
 from adapters.routing import SURFACES, claude_events, codex_events, credentials
-from routing import container_command, grade_evidence, load_cases, main, run_trial, stage_skill
+from routing import container_command, grade_evidence, load_cases, main, run_trial, stage_skill, stage_collection
 
 
 def claude_trace(tool="Skill", arguments=None, output="skill instructions", error=False):
@@ -154,6 +154,47 @@ class RoutingExecutionTests(unittest.TestCase):
             self.assertFalse((target / "secret-repository-output").exists())
             self.assertEqual(manifest["file_count"], 2)
             self.assertEqual(len(inventory), 2)
+
+    def test_collection_stages_complete_payload_at_both_native_surfaces(self):
+        for agent, surface in SURFACES.items():
+            target, manifest, inventory = stage_collection(REPO_ROOT, self.root / agent, surface, ["spatial-sql"])
+            self.assertEqual(manifest["schema"], "openmapstack-skill-snapshot/v2")
+            self.assertEqual([s["name"] for s in manifest["skills"]], ["spatial-sql"])
+            path = self.root / agent / surface["directory"] / "spatial-sql"
+            self.assertTrue((path / "examples/tartu-development/pipeline.py").is_file())
+            self.assertIn("/workspace/" + surface["directory"] + "/spatial-sql/SKILL.md", inventory)
+            self.assertFalse((target / "evals").exists())
+
+    def test_collection_selection_control_missing_discovery_and_payload_mutation(self):
+        case = next(c for c in load_cases() if c["id"] == "chosen-engine-sql")
+        for defect in (None, "undiscovered", "wrong-skill", "mutate"):
+            def execute(command, **kwargs):
+                # Snapshot Git provenance subprocesses are local, unpaid reads.
+                if command[0] == "git":
+                    return subprocess.CompletedProcess(command, 1, "", "")
+                payload = json.loads(kwargs["input"])
+                self.assertEqual(payload["prompt"], case["prompt"])
+                self.assertEqual(len(payload["entrypoints"]), 1)
+                self.assertNotIn("expectation", payload)
+                mount = command[command.index("--mount") + 1]
+                workspace = Path(mount.split("src=", 1)[1].split(",dst=", 1)[0])
+                # Native runtimes may create their own settings outside skills.
+                (workspace / ".claude/settings.local.json").write_text("{}")
+                if defect == "mutate":
+                    (workspace / ".claude/skills/spatial-sql/templates/pipeline.py").write_text("tampered")
+                events = [
+                    {"type": "oms.routing.runtime", "version": "test-cli", "returncode": 0},
+                    {"type": "system", "subtype": "init", "skills": [] if defect == "undiscovered" else ["spatial-sql"]},
+                    *claude_trace(arguments={"skill": "open-map-stack" if defect == "wrong-skill" else "spatial-sql"}),
+                ]
+                return subprocess.CompletedProcess(command, 0, "\n".join(json.dumps(e) for e in events), "")
+            with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test"}), patch("routing.subprocess.run", side_effect=execute):
+                record = run_trial(case, source=REPO_ROOT, agent="claude_code", model="exact", image=self.image,
+                                   max_budget_usd=0.2, destination=self.root / str(defect), profile="collection", selected=["spatial-sql"])
+            self.assertEqual(record["schema"], "openmapstack-routing-smoke/v2")
+            expected = "failed" if defect == "wrong-skill" else "not_testable" if defect else "passed"
+            self.assertEqual(record["status"], expected, record)
+
 
     def test_stage_refuses_symlink_and_unsafe_names(self):
         (self.source / "references" / "outside.md").symlink_to(self.source / "SKILL.md")

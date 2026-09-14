@@ -2,8 +2,8 @@
 
 Executable evals that check whether an agent-generated analysis (or a
 hand-authored reference project) reaches the right analytical answer, respects
-the GIS-method guardrails in `SKILL.md`, and reruns reproducibly — with the
-`openmapstack-project/v1` contract in `references/project-spec.md` as the substrate
+the GIS-method guardrails in the installed skills, and reruns reproducibly — with the
+`openmapstack-project/v1` contract in `skills/open-map-stack/references/project-spec.md` as the substrate
 that makes all three independently checkable rather than a matter of trusting
 the agent's narration.
 
@@ -24,7 +24,10 @@ before/after runs are not a refactoring gate.
 Native skill discovery is a separate integration smoke path:
 `python evals/run.py routing --list`. See [routing smoke tests](routing.md)
 and the [frozen pre-refactor baselines](baselines/README.md). It does not inject
-skill-reading instructions or contribute to project-quality pass rates.
+skill-reading instructions or contribute to project-quality pass rates. Use
+`--profile collection` for the completed collection or a standalone specialist.
+The [final-state acceptance checklist](final-state-acceptance.md) defines useful
+outcomes separately from selection and historical comparisons.
 
 Execution mode describes how a project is produced. `fixture` runs committed,
 deterministic reference projects with no network or LLM calls. `live` starts in

@@ -1,6 +1,6 @@
 # openmapstack
 
-**Turn Geospatial questions into reproducible, validated GIS analysis project (with very nice interactive map on web and QGIS).**
+**Four complementary skills for geospatial decisions, data discovery, spatial SQL and reproducible analysis projects.**
 
 Install:
 ```bash
@@ -13,7 +13,21 @@ It is open-first (both data and code-wise) and cloud-native by default, built on
 
 ## What's in this repo
 
-Core skills:
+The 0.4.0 collection has four independently installable skills:
+
+| Skill | Use it for |
+|---|---|
+| [open-map-stack](skills/open-map-stack/SKILL.md) | Ambiguous or multi-stage GIS work; choose sources, compute, storage and delivery together. |
+| [reproducible-gis-project](skills/reproducible-gis-project/SKILL.md) | Compile or maintain the project manifest, canonical pipeline, pinned sources, corrections, validation and reruns. |
+| [geospatial-data-discovery](skills/geospatial-data-discovery/SKILL.md) | Find and assess authoritative data under known requirements. |
+| [spatial-sql](skills/spatial-sql/SKILL.md) | Write, review or optimize spatial SQL on an already chosen engine. |
+
+Each skill has a small entry point and local references loaded as needed. The
+generalist retains bounded-task support and material-analysis requirements when
+installed alone. Optional product help is documented in the installed
+[companion reference](skills/open-map-stack/references/companion-skills.md).
+
+Generalist guidance and canonical resources:
 
 - [generalist SKILL.md](skills/open-map-stack/SKILL.md) — the skill entry point: triggers, global defaults, format and compute decision matrices, anti-patterns, and a quick triage guide.
 - [references/data-sources.md](skills/open-map-stack/references/data-sources.md) - lists OSM, Overture, Sentinel/Landsat, regional portals, STAC catalogs and others.
@@ -67,8 +81,8 @@ python -m pip install 'openmapstack[geo]==0.4.0'
 
 For a floating install use `npx skills@1.5.26 add jaakla/openmapstack-skills
 --skill open-map-stack`. Check installed skills with `npx skills@1.5.26 list`,
-update with `npx skills@1.5.26 update open-map-stack`, and remove with
-`npx skills@1.5.26 remove open-map-stack`. Choose the same project/global scope.
+update with `npx skills@1.5.26 update open-map-stack --project`, and remove with
+`npx skills@1.5.26 remove open-map-stack`. Use `--global` instead of `--project` for a global update; match the scope for list/remove too.
 Updating a floating install advances its version; release-pinned installs
 should be replaced with an explicitly chosen release.
 
@@ -99,15 +113,23 @@ or pinned Git commit from the matching checkout is the supported alternative.
 
 ## Use
 
-The skill auto-activates when you ask Claude about geospatial work — terms like GIS, OpenStreetMap, Overture, Sentinel, Landsat, LiDAR, GeoTIFF, shapefile, GeoPackage, raster/vector tiles, isochrones, spatial joins, EPSG codes, and projections will all trigger it. You don't need to invoke it manually, but sometimes hinting "use open-map-stack skills" may be useful to encourage agents to do it.
+Agents discover the installed skill descriptions and select relevant guidance.
+Selection depends on the agent; explicitly naming a skill can help when you
+want a particular owner. Installing the collection does not require loading
+all four skills for every request.
 
-Example prompts that engage the skill:
+- “We need regional analysis and browser maps for a billion building records; choose the architecture.” → `open-map-stack`.
+- “Keep this analysis and stack, but make it reproducible and auditable.” → `reproducible-gis-project`.
+- “Find authoritative Estonian building footprints; explain coverage, license and a reproducible pin.” → `geospatial-data-discovery`.
+- “Review this PostGIS query for a 500-metre distance test on SRID 4326 geometries.” → `spatial-sql`.
 
-- "Pull all buildings in Tartu from Overture and publish them as a PMTiles layer."
-- "Compute average NDVI for these polygons from Sentinel-2 over the last 12 months."
-- "Reproject this GeoTIFF from EPSG:3301 to EPSG:3857 as a COG."
-- "Set up an OSRM routing server from a Estonia OSM extract."
-- "Build an isochrone API around these points."
+The primary skill can use focused support. A bounded lookup or query review
+does not require a project; material multi-stage analyses retain the complete
+reproducibility contract. Casual place lookups and ordinary non-spatial coding
+are outside the collection's scope.
+
+See [0.4.0 release preparation](docs/release-0.4.0.md) for executed installation
+checks, consumer migration and remaining release acceptance.
 
 ## Project CLI
 
