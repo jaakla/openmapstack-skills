@@ -1,0 +1,47 @@
+{
+  "schema": "openmapstack-collection/v1",
+  "version": "0.4.0",
+  "skills": [
+    {
+      "name": "open-map-stack",
+      "path": "skills/open-map-stack",
+      "shared_references": []
+    },
+    {
+      "name": "reproducible-gis-project",
+      "path": "skills/reproducible-gis-project",
+      "shared_references": [
+        "project-workflow.md",
+        "project-spec.md",
+        "formats-and-crs.md",
+        "user-data-sources.md",
+        "data-sources.md",
+        "validation-and-ops.md",
+        "qgis.md",
+        "installation.md",
+        "companion-skills.md"
+      ]
+    },
+    {
+      "name": "geospatial-data-discovery",
+      "path": "skills/geospatial-data-discovery",
+      "shared_references": [
+        "data-sources.md",
+        "user-data-sources.md",
+        "formats-and-crs.md",
+        "installation.md",
+        "companion-skills.md"
+      ]
+    },
+    {
+      "name": "spatial-sql",
+      "path": "skills/spatial-sql",
+      "shared_references": [
+        "spatial-sql.md",
+        "formats-and-crs.md",
+        "installation.md",
+        "companion-skills.md"
+      ]
+    }
+  ]
+}

@@ -8,13 +8,13 @@ OpenMapStack is a managed agent-skill codebase, not an OpenMapStack GIS analysis
 
 The repository develops and quality-assures a distributable geospatial agent skill:
 
-- `SKILL.md` and `references/` are **product artifacts** consumed by agents in other projects.
+- `skills/<name>/SKILL.md` and each skill's `references/` are **product artifacts** consumed by agents in other projects.
 - `templates/` and `examples/` define and demonstrate the artifacts the skill should cause those agents to produce.
 - `openmapstack/` is executable support code for validating, running, inspecting, and verifying those artifacts.
 - `evals/` measures whether the skill and its supporting contract produce correct, reproducible behavior.
 - `tests/` tests the repository's Python implementation and eval infrastructure.
 
-Do **not** treat `SKILL.md` as maintainer instructions for this repository. Read or edit it when the task concerns the shipped skill behavior, but do not preload or follow its GIS workflow merely because you are modifying this codebase.
+Do **not** treat a shipped `SKILL.md` as maintainer instructions for this repository. Read or edit it when the task concerns the shipped skill behavior, but do not preload or follow its GIS workflow merely because you are modifying this codebase.
 
 ## Sources of truth
 
@@ -22,10 +22,10 @@ Read only what is relevant to the current issue.
 
 | Area | Source of truth |
 |---|---|
-| Shipped agent behavior | `SKILL.md` |
-| Detailed shipped guidance | `references/*.md` |
-| Reproducible project contract | `references/project-spec.md` |
-| Project templates | `templates/` |
+| Shipped agent behavior | `skills/<name>/SKILL.md` |
+| Detailed shipped guidance | `skills/<name>/references/*.md`; shared copies are checked by `scripts/sync_skill_assets.py` |
+| Reproducible project contract | `skills/open-map-stack/references/project-spec.md` |
+| Project templates | `templates/` (canonical); installed copies in each skill |
 | Canonical worked integration example | `examples/tartu-development/` |
 | CLI, schema handling, reusable checks | `openmapstack/` |
 | Eval architecture, cases, scoring, live adapters | `evals/README.md`, `evals/` |

@@ -10,9 +10,11 @@ primary skill, permitted supporting skills and forbidden activation. It covers
 bounded discovery, chosen-engine SQL, existing-analysis compilation, ambiguous
 architecture, billion-row and future-scale architecture, casual place lookup,
 and material analysis with the generalist installed alone. The matrix also
-records the planned four-skill expectations. This increment runs **only the
-single `open-map-stack` snapshot**; #34 owns collection snapshots and versioned
-arm integration before collection comparisons can run.
+records four-skill expectations. `--profile single` retains the historical v1
+single-skill payload and report. `--profile collection` stages complete v2
+payloads and emits `openmapstack-routing-smoke/v2`; repeat `--skill NAME` to
+select a subset, including a standalone specialist. Source defaults follow the
+profile. These are final-state selection checks, not equivalence comparisons.
 
 ## Isolation and execution
 
@@ -36,8 +38,8 @@ images provide UID 1000). The container uses that UID to read/write the bind
 mount without elevated filesystem capabilities. Images are not pulled
 automatically.
 
-The only host mount is a fresh trial directory containing a controlled v1
-snapshot. Expected answers, the harness and the uncontrolled repository remain
+The only host mount is a fresh trial directory containing the controlled
+skill snapshot (v1 single or v2 collection). Expected answers, the harness and the uncontrolled repository remain
 outside the mount. Root/home and admin configuration directories are empty
 tmpfs mounts; the image filesystem is read-only. The agent process receives a
 fixed minimal environment and one named credential. This avoids changing host
@@ -46,7 +48,7 @@ permit reads of the user's installed skills.
 
 Provider-specific surfaces live in `adapters/routing.py`:
 
-- Claude discovers `.claude/skills/open-map-stack` with project settings,
+- Claude discovers `.claude/skills/<name>` with project settings,
   a request to disable bundled skills, strict MCP configuration and **without safe mode**
   (safe mode disables skills). Use `ANTHROPIC_API_KEY`, an existing
   `CLAUDE_CODE_OAUTH_TOKEN`, or explicitly pass `--credential-file` pointing to
@@ -55,7 +57,7 @@ Provider-specific surfaces live in `adapters/routing.py`:
   Startup discovery must include the controlled skill before selection is
   graded. Some CLI built-ins remain visible even when bundled skills are
   disabled; the actual startup inventory is retained as evidence.
-- Codex discovers `.agents/skills/open-map-stack`, ignores user config/rules,
+- Codex discovers `.agents/skills/<name>`, ignores user config/rules,
   and uses a fresh container login from `OPENAI_API_KEY`. Its JSONL decoder
   conservatively reports partial read telemetry, so a matching observed read
   alone cannot produce a complete routing pass.
@@ -84,8 +86,8 @@ tool calls, mere path mentions and missing completions are not positive evidence
 
 Selection checks required and unexpected skill consumption. It does **not**
 prove semantic primary ownership or analytical task success; both remain
-explicitly unscored. Use the existing paired project evals to assess task
-quality, and retain this distinction when the collection contract is added.
+explicitly unscored. Use the [final-state acceptance checklist](final-state-acceptance.md) to assess
+task quality separately from routing. Historical runs are context only.
 
 Verified unique text bytes count source text actually visible in tool output,
 deduplicated by skill/path. They are a lower bound when a response is truncated,
@@ -98,3 +100,17 @@ skill files remain `not_testable` with exit 2. Observed forbidden consumption
 can establish failure even with partial telemetry. A negative case cannot pass
 merely because an adapter supplied no usable event stream. Exit 1 denotes a
 selection failure; exit 0 denotes observed selection success only.
+
+## Final collection selection
+
+Use the same explicit model/image/budget arguments above and add
+`--profile collection`. For example, `--case chosen-engine-sql --skill spatial-sql`
+checks a standalone install; omitting `--skill` installs all four. A subset still
+uses the case's collection expectations, so include its expected owner.
+The runner verifies discovery of every controlled skill, retains the selected
+v2 inventory, and detects edits to any controlled payload file. Runtime settings
+created beside the skills are outside the payload's integrity boundary.
+Neither case expectations nor skill-reading instructions are sent to the agent.
+
+No new paid execution is implied by these commands. Final acceptance scope and
+remaining budget are still pending under #39.

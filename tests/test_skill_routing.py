@@ -16,6 +16,7 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+SKILL_ROOT = REPO_ROOT / "skills/open-map-stack"
 
 #: References SKILL.md is not required to route to, with the reason why.
 UNROUTED_ALLOWED: dict[str, str] = {}
@@ -27,14 +28,14 @@ def _routed_references(skill_text: str) -> set[str]:
 
 class SkillRoutingTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.skill = (REPO_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        self.skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         self.references = {
-            f"references/{path.name}" for path in (REPO_ROOT / "references").glob("*.md")
+            f"references/{path.name}" for path in (SKILL_ROOT / "references").glob("*.md")
         }
 
     def test_every_reference_skill_md_names_exists(self) -> None:
         missing = sorted(
-            name for name in _routed_references(self.skill) if not (REPO_ROOT / name).is_file()
+            name for name in _routed_references(self.skill) if not (SKILL_ROOT / name).is_file()
         )
         self.assertEqual(missing, [], f"SKILL.md routes to missing reference(s): {missing}")
 
@@ -51,7 +52,7 @@ class SkillRoutingTests(unittest.TestCase):
         with its own focused eval evidence instead of silently updating the hash.
         """
         baseline = json.loads((REPO_ROOT / "evals/baselines/pre-refactor.json").read_text())
-        reference = (REPO_ROOT / "references/project-workflow.md").read_text()
+        reference = (SKILL_ROOT / "references/project-workflow.md").read_text()
         body = reference.removeprefix("# Reproducible project-first workflow\n")
         self.assertEqual(
             "sha256:" + hashlib.sha256(body.encode()).hexdigest(),
@@ -70,7 +71,7 @@ class SkillRoutingTests(unittest.TestCase):
         by consequence, against a fixture catalog.
         """
         self.assertIn("Portolan", self.skill)
-        data_sources = (REPO_ROOT / "references/data-sources.md").read_text(encoding="utf-8")
+        data_sources = (SKILL_ROOT / "references/data-sources.md").read_text(encoding="utf-8")
         self.assertIn("## Portolan catalogs", data_sources)
         self.assertIn("AGENTS.md", data_sources)
 

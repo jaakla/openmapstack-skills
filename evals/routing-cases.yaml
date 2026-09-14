@@ -1,6 +1,6 @@
 # Prompts contain no skill-name, installation-path or activation instructions.
-# The single profile is executable now; collection expectations are the 0.4.0
-# contract, enabled once #34 supplies collection snapshots and arm provenance.
+# Both profiles are executable. Collection runs use the complete v2 payload;
+# historical single-skill runs retain their v1 snapshot and report semantics.
 schema: openmapstack-routing-cases/v1
 cases:
   - id: bounded-discovery

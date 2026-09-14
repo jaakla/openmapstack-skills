@@ -1,11 +1,31 @@
 ---
 name: open-map-stack
-description: "Use textual agent instructions for GIS and geospatial work: source discovery and provenance, vector/raster/point-cloud pipelines, CRS and metric analysis, spatial SQL, routing and isochrones, QGIS projects, tile generation, and web maps. Use advanced tools and formats such as OSM, Overture, STAC, Sentinel/Landsat, LiDAR, GeoPackage, GeoParquet, COG, PMTiles, WMS/WFS/OGC APIs, Portolan catalogs, GDAL, GeoPandas, DuckDB Spatial, PostGIS, QGIS, MapLibre, and Estonian spatial data including ETAK and EPSG:3301. Open-first, with hosted services when scale or reliability requires them. Do not use for casual map references, simple place lookups, or ordinary travel directions without analytical GIS work."
+description: "Plan and execute ambiguous or multi-stage GIS work, jointly choosing authoritative sources, compute, storage and delivery for the scale and team. Covers vector/raster/point-cloud analysis, routing, QGIS, tiles and web maps. Use for unresolved geospatial architecture and end-to-end analysis; prefer installed geospatial-data-discovery, spatial-sql or reproducible-gis-project for their bounded tasks. Retains standalone GIS support when specialists are absent. Do not use for casual place lookups, ordinary travel directions or non-spatial coding."
+metadata:
+  version: "0.4.0"
 ---
 
 # OpenMapStack Toolkit
 
 Production-grade geospatial workflows with an open-first stack and pragmatic hosted/SaaS choices when global scale, latency, SLA, or data quality makes local processing a poor fit. Cloud-native by default: STAC for discovery, GeoParquet + COG + PMTiles for storage, DuckDB and PostGIS for compute, MapLibre and Martin for delivery.
+
+## Choose a primary skill
+
+Keep coupled source, compute, storage and delivery decisions together. Prefer
+one primary skill, with focused support only where the task needs it:
+
+| Request | Primary skill when installed |
+|---|---|
+| Unresolved architecture, changing scale/team needs, or end-to-end GIS analysis | `open-map-stack` |
+| Compile or maintain a reproducible project from a chosen workflow | `reproducible-gis-project` |
+| Find and assess data against known requirements, including Portolan catalogs | `geospatial-data-discovery` |
+| Write/review/debug spatial SQL on an already chosen engine | `spatial-sql` |
+
+If a specialist is absent, use this skill's local references for the bounded
+task. Do not require an installation or activate every skill. Material analyses
+retain the complete project contract below, including in a generalist-only
+install. Product-specific help follows `references/companion-skills.md`;
+OpenMapStack retains GIS semantics and cross-stage correctness.
 
 ## Reproducible project-first contract
 
@@ -17,6 +37,8 @@ report is a view over that project, not the canonical definition of the analysis
 `references/project-workflow.md` for the mandatory workflow and delivery rules,
 and `references/project-spec.md` for the full `openmapstack-project/v1` schema.**
 Use `templates/` and the worked `examples/tartu-development` project.
+For CLI installation and the example's runtime requirements, read
+`references/installation.md`.
 
 Keep authoritative sources real, immutable and pinned; never invent baseline
 geometry without explicit informed consent. Record assumptions and every manual
@@ -96,7 +118,7 @@ For simple one-shot questions (single CRS conversion, one `ogr2ogr` invocation),
 * Writing `.qgs` XML by hand with no `<srs>`, an auth-id-only CRS block, or no `ProjectionsEnabled`, or copying the manifest's layer order straight into the layer tree — these produce a project where every layer is valid and every datasource resolves, yet the map shows the wrong place or silently hides a layer
 * Producing Shapefile as new output (column truncation, 2GB limit, no UTF-8, multi-file)
 * Calling `.distance()`, `.buffer()`, or `.area` on geographic CRS (EPSG:4326) — degrees are not meters; unless specific tool explicitly supports wgs84 based geodesic calculations
-* Web Mercator (EPSG:3857) for area or distance calculations — it is not equal-area, and the units are not in meters except at the equator
+* Treating Web Mercator (EPSG:3857) coordinates as undistorted ground measurements — its coordinate units are metres, but ground-distance and area distortion vary with latitude
 * Spatial joins in Python loops when DuckDB / PostGIS / R-tree-backed `sjoin` is one line away
 * Using bbox containment for area queries when features can cross the boundary — use bbox overlap as the scan gate, then an exact spatial predicate
 * Downloading entire datasets when STAC + cloud-native formats allow lazy/range-request access

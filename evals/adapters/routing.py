@@ -180,7 +180,7 @@ def credentials(agent, credential_file=None):
     return name, environment
 
 
-def runtime_evidence(agent, events, requested_model):
+def runtime_evidence(agent, events, requested_model, installed=("open-map-stack",)):
     versions = [e for e in events if e.get("type") == "oms.routing.runtime"]
     runtime = versions[0] if len(versions) == 1 else None
     gaps = []
@@ -193,7 +193,7 @@ def runtime_evidence(agent, events, requested_model):
         model, usage, cost, _, completed = _claude_observability(events, requested_model)
         startup = next((e for e in events if e.get("type") == "system" and e.get("subtype") == "init"), {})
         result.update(discovered_skills=startup.get("skills"), resolved_model=model, usage=usage, reported_cost_usd=cost)
-        if "open-map-stack" not in (startup.get("skills") or []):
+        if not set(installed) <= set(startup.get("skills") or []):
             gaps.append("controlled_skill_not_discovered")
         if not completed:
             gaps.append("incomplete_run")
@@ -214,7 +214,7 @@ def runtime_evidence(agent, events, requested_model):
 BOOTSTRAP = """import json, os, pathlib, pwd, subprocess, sys
 payload=json.load(sys.stdin)
 pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir).mkdir(parents=True,exist_ok=True)
-if not os.access(payload['entrypoint'],os.R_OK):
+if not all(os.access(path,os.R_OK) for path in payload['entrypoints']):
     print('controlled skill entrypoint is not readable',file=sys.stderr)
     sys.exit(2)
 env={'PATH':'/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin','LANG':'C.UTF-8'}

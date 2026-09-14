@@ -146,6 +146,9 @@ def inspect_skill_snapshot(snapshot_dir: str | Path) -> dict[str, Any]:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise SnapshotError(f"cannot read {SNAPSHOT_MANIFEST}: {exc}") from exc
+    if isinstance(manifest, dict) and manifest.get("schema") == "openmapstack-skill-snapshot/v2":
+        from .collection import inspect_collection_snapshot
+        return inspect_collection_snapshot(snapshot_dir)
     if not isinstance(manifest, dict) or manifest.get("schema") != SNAPSHOT_SCHEMA:
         raise SnapshotError(f"{SNAPSHOT_MANIFEST} is not an {SNAPSHOT_SCHEMA} document")
     problems: list[str] = []

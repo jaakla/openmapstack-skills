@@ -1,0 +1,4 @@
+interface:
+  display_name: "Geospatial Data Discovery"
+  short_description: "Find authoritative, reproducibly pinned geodata"
+  default_prompt: "Use $geospatial-data-discovery to find authoritative data for my geospatial requirements."

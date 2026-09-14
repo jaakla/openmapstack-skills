@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spatial SQL"
+  short_description: "Correct and optimize SQL on a chosen spatial engine"
+  default_prompt: "Use $spatial-sql to review my spatial query for correctness and performance."

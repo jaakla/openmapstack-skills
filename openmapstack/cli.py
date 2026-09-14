@@ -172,12 +172,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     snapshot_parser = subparsers.add_parser(
         "skill-snapshot",
-        help="copy SKILL.md, references/, and templates/ into a hashed, inspectable snapshot",
+        help="create or inspect a legacy skill (v1) or complete collection/subset snapshot (v2)",
     )
     snapshot_mode = snapshot_parser.add_mutually_exclusive_group(required=True)
     snapshot_mode.add_argument("--out", type=Path, help="destination directory (must be empty or absent)")
     snapshot_mode.add_argument("--inspect", type=Path, metavar="DIR", help="re-verify an existing snapshot instead of creating one")
     snapshot_parser.add_argument("--source", type=Path, help="skill root holding SKILL.md (default: nearest ancestor of the current directory)")
+    snapshot_parser.add_argument("--format", choices=("v1", "v2"), help="default: v2 for a collection source; v1 for a legacy skill root")
+    snapshot_parser.add_argument("--skill", action="append", help="select a skill for v2; repeat for a subset")
     snapshot_parser.add_argument("--json", action="store_true", help="emit the snapshot manifest or inspection as JSON")
     snapshot_parser.set_defaults(handler=_cmd_skill_snapshot)
 
@@ -612,6 +614,7 @@ def _report_sampled_run(
 
 def _cmd_skill_snapshot(args: argparse.Namespace) -> int:
     from .snapshot import SnapshotError, create_skill_snapshot, find_skill_root, inspect_skill_snapshot
+    from .collection import create_collection_snapshot, find_collection_root
 
     try:
         if args.inspect is not None:
@@ -624,10 +627,13 @@ def _cmd_skill_snapshot(args: argparse.Namespace) -> int:
                 for problem in report["problems"]:
                     print(f"  {problem}")
             return 0 if report["intact"] else 1
-        source = args.source or find_skill_root()
+        source = args.source or find_collection_root() or find_skill_root()
         if source is None:
             raise SnapshotError("no skill root found; pass --source DIR holding SKILL.md, references/, and templates/")
-        manifest = create_skill_snapshot(source, args.out)
+        version = args.format or ("v2" if args.skill or (source / "collection.json").is_file() else "v1")
+        if version == "v1" and args.skill:
+            raise SnapshotError("--skill requires snapshot v2")
+        manifest = create_collection_snapshot(source, args.out, selected=args.skill) if version == "v2" else create_skill_snapshot(source, args.out)
     except SnapshotError as exc:
         if args.json:
             print(_json({"schema": "openmapstack-skill-snapshot-error/v1", "error": str(exc)}))
