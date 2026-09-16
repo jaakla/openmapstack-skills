@@ -917,6 +917,49 @@ class EvalRunnerTests(_RunnerHarness):
         self.assertEqual([result["id"] for result in payload["results"]], ["first", "second"])
 
 
+class CollectionArmTests(_RunnerHarness):
+    def test_collection_injection_exports_v2_without_forcing_all_references(self):
+        self.write_case("collection-live", modes=["live"])
+        observed = []
+
+        class Adapter:
+            executable = "fake-agent"
+
+            def is_available(self):
+                return True
+
+            def run(self, prompt, workspace, **kwargs):
+                snapshot = workspace.parent / "benchmark-context/openmapstack"
+                if snapshot.exists():
+                    manifest = json.loads((snapshot / "snapshot.json").read_text())
+                    observed.append(manifest)
+                    assert manifest["schema"] == "openmapstack-skill-snapshot/v2"
+                    assert (snapshot / "skills/open-map-stack/examples/tartu-development/pipeline.py").is_file()
+                    assert not (snapshot / "evals").exists()
+                    assert "references/project-spec.md" not in prompt
+                (workspace / "marker.txt").write_text("ok\n")
+                return AgentRunResult(agent="codex", model=kwargs.get("model"), workspace=workspace,
+                                      duration_s=0.1, success=True, returncode=0, version="fake 1")
+
+        output = self.root / "collection.json"
+        with patch.object(eval_runner, "_load_adapter", return_value=Adapter()):
+            code, stdout, stderr = self.call_main([
+                "--mode", "live", "--agent", "codex", "--model", "test-model",
+                "--collection", "--skill", "open-map-stack", "--arms", "paired",
+                "--case", "collection-live", "--run-id", "collection-test",
+                "--results-dir", str(self.results_dir), "--json", str(output),
+            ])
+        self.assertEqual(code, 0, (stdout, stderr))
+        self.assertEqual(len(observed), 1)
+        summary = json.loads(output.read_text())
+        records = summary["run_config"]["arm_provenance"]
+        self.assertTrue(all(record["schema"] == "openmapstack-benchmark-arm/v2" for record in records))
+        self.assertEqual({r["configuration"]["kind"] for r in records}, {"plain", "collection"})
+        selected = next(r for r in records if r["arm"] == "oms")["configuration"]
+        self.assertEqual(selected["delivery"], "injection")
+        self.assertEqual([s["name"] for s in selected["skills"]], ["open-map-stack"])
+
+
 class PairedArmTests(_RunnerHarness):
     """Paired plain/oms arms, arm provenance, and task export (issue #13, C2/C3)."""
 

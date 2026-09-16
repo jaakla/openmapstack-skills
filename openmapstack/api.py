@@ -263,6 +263,8 @@ def api_info() -> dict[str, Any]:
         "package_version": __version__,
         "check_api_version": CHECK_API_VERSION,
         "project_schema": PROJECT_SCHEMA,
+        "skill_snapshot_schemas": ["openmapstack-skill-snapshot/v1", "openmapstack-skill-snapshot/v2"],
+        "benchmark_arm_schemas": ["openmapstack-benchmark-arm/v1", "openmapstack-benchmark-arm/v2"],
         "result_schemas": {
             "check": CHECK_RESULT_SCHEMA,
             "verify": VERIFY_RESULT_SCHEMA,

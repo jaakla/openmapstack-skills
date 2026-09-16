@@ -8,8 +8,8 @@ OpenMapStack is a **managed agent-skill product plus its executable QA/support c
 
 ```text
 Shipped guidance/product
-  SKILL.md
-  references/
+  skills/<name>/SKILL.md
+  skills/<name>/references/
   templates/
   examples/
   distribution compatibility (.claude-plugin/, agents/)
@@ -32,8 +32,8 @@ The distinction matters: `SKILL.md` is the product being developed and evaluated
 
 ### Source-of-truth boundaries
 
-- Agent-facing behavior: `SKILL.md` and the relevant file in `references/`.
-- Project contract: `references/project-spec.md`; machine validation is also constrained by `openmapstack/schemas/project-v1.schema.json` and `openmapstack/validation.py`.
+- Agent-facing behavior: `skills/<name>/SKILL.md` and local `references/`.
+- Project contract: `skills/open-map-stack/references/project-spec.md`; machine validation is also constrained by `openmapstack/schemas/project-v1.schema.json` and `openmapstack/validation.py`. Installed shared copies and assets are checked by `scripts/sync_skill_assets.py`; see [distribution decision](decisions/0005-standalone-skill-distribution.md).
 - Automatic `verify` plan and applicability: `docs/verify-applicability.md` plus `openmapstack/verify.py`.
 - Eval semantics: `evals/README.md`, `evals/schemas/`, `evals/run.py`, case definitions, and tests.
 - External check consumption: `docs/openmapbench-interop.md` plus `openmapstack/api.py` and the packaged result schemas; reporting dimensions are owned by `openmapstack.api.DIMENSIONS`.

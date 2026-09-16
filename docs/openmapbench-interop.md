@@ -67,10 +67,45 @@ must store per arm:
 | `sampling` | seed, temperature, reasoning configuration as the adapter reports them (nulls are allowed but must be present) |
 | `price_catalog_date` | the date of the price list used for cost estimates |
 
-`openmapstack skill-snapshot --out DIR --json` produces the controlled
+`openmapstack skill-snapshot --format v1 --source SKILL_ROOT --out DIR --json` produces the controlled
 copy of `SKILL.md`, `references/`, and `templates/` with a per-file
 inventory and content hash (`openmapstack-skill-snapshot/v1`); `--inspect`
 re-verifies one. Symlinks and paths escaping the snapshot root are rejected.
+
+### Collection migration in 0.4.0: snapshot v2 and arm v2
+
+`api-info` advertises `skill_snapshot_schemas` and `benchmark_arm_schemas`.
+Consumers must check the required schema identifier and pin a compatible
+package version; do not reinterpret a v1 record as a collection. The project
+schema and check API remain v1.
+
+```bash
+openmapstack skill-snapshot --source . --out /tmp/oms-collection --json
+openmapstack skill-snapshot --source . --skill open-map-stack --out /tmp/oms-subset --json
+openmapstack skill-snapshot --format v2 --source /path/to/installed-skill --out /tmp/oms-installed --json
+openmapstack skill-snapshot --inspect /tmp/oms-collection --json
+```
+
+A collection source (`collection.json`) defaults to v2; a legacy skill root
+defaults to v1. V2 copies the complete selected skill directories, including
+agent metadata, templates, schemas and worked-example sources, under `skills/`.
+Its manifest records skill names, descriptions, entry points, one coordinated
+version, per-file hashes and an aggregate hash. The generated `collection.json`
+describes only the selected subset. Inspection accepts both versions and checks
+missing/extra/changed files, unsafe paths, symlinks and descriptor consistency.
+
+`evals/run.py --mode live --collection [--skill NAME ...]` uses snapshot v2 and
+`openmapstack-benchmark-arm/v2`. This is **injection**, not native discovery.
+V2 adds `configuration`: `kind` (`plain`, `legacy_single`, `collection`),
+`delivery` (`none`, `injection`, `discovery`), snapshot schema, selected skill
+descriptors and content hash. An unknown hash remains null after setup failure.
+The model/runtime/task/checker provenance fields remain required. External
+discovery harnesses use `delivery=discovery` with their actual adapter evidence.
+The historical runner path without `--collection` continues to emit v1.
+
+The small native runner remains a v1 single-skill smoke path until the final
+collection integration in #39. Its entry point now defaults to
+`skills/open-map-stack`; historical exported roots remain valid explicit sources.
 
 ## 4. Task ownership and paired arms
 

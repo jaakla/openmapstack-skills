@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reproducible GIS Project"
+  short_description: "Compile and verify reproducible GIS projects"
+  default_prompt: "Use $reproducible-gis-project to compile my GIS analysis into a reproducible project."

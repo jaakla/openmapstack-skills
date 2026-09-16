@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Complete selected skill payloads",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "created_at", "collection_version", "source_git", "skills", "files", "file_count", "content_sha256"],
+  "properties": {
+    "schema": {"const": "openmapstack-skill-snapshot/v2"},
+    "created_at": {"type": "string"},
+    "collection_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "source_git": {"type": "object", "required": ["commit", "dirty"], "properties": {"commit": {"type": ["string", "null"]}, "dirty": {"type": ["boolean", "null"]}}, "additionalProperties": false},
+    "skills": {"type": "array", "minItems": 1, "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "description", "version", "entrypoint"],
+      "properties": {"name": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"}, "description": {"type": "string", "minLength": 1}, "version": {"type": "string"}, "entrypoint": {"type": "string", "minLength": 1}}
+    }},
+    "files": {"type": "array", "minItems": 2, "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "bytes": {"type": "integer", "minimum": 0}}
+    }},
+    "file_count": {"type": "integer", "minimum": 2},
+    "content_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  }
+}

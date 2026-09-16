@@ -22,6 +22,11 @@ class ReleaseVersionTests(unittest.TestCase):
 
         self.assertEqual(__version__, package)
         self.assertEqual(plugin, package)
+        collection = json.loads((REPO_ROOT / "collection.json").read_text())
+        self.assertEqual(collection["version"], package)
+        from openmapstack.collection import collection_skills
+        for _, metadata in collection_skills(REPO_ROOT).values():
+            self.assertEqual(metadata["version"], package)
 
 
 if __name__ == "__main__":
