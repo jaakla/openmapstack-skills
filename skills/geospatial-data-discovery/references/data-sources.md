@@ -333,7 +333,7 @@ curl "https://gsavalik.envir.ee/geoserver/etak/wfs?service=WFS&version=2.0.0&req
 &count=5000"
 ```
 
-GeoServer pages 5000 features at a time by default; loop with `startIndex` until a page returns fewer than the page size.
+GeoServer pages 5000 features at a time by default. Add a stable `sortBy` (e.g. `etak_id`), loop with `startIndex`, and stop when the accumulated count equals the `numberMatched` reported in the GeoJSON pages. A short page alone is not proof. Do not use `resultType=hits` as the completeness total on this server: it was capped at `numberMatched="5000"` for a Tartu bbox whose paged GeoJSON reported 22308 (checked 2026-09-16).
 
 ### Estonian OSM admin levels
 
