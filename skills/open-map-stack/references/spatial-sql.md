@@ -77,6 +77,24 @@ WHERE s.geom && a.geom
 
 For meter distances on lon/lat data, use a suitable projected CRS or `geography`. Create GIST indexes on production geometry columns and verify with `EXPLAIN ANALYZE`.
 
+An index serves only the expression it was built on. A GIST index on `geom` is **not** used by `ST_DWithin(p.geom::geography, s.geom::geography, 500)`: the cast is a different expression, and the planner falls back to a nested-loop scan. Choose one consistent option:
+
+```sql
+-- Option 1: store or index the geography expression that the predicate uses
+CREATE INDEX parcels_geog_gix ON parcels USING GIST ((geom::geography));
+SELECT DISTINCT p.id
+FROM stops s
+JOIN parcels p ON ST_DWithin(p.geom::geography, s.geom::geography, 500);
+
+-- Option 2: a metric projected CRS (e.g. EPSG:3301 for Estonia), indexed on the same expression
+CREATE INDEX parcels_3301_gix ON parcels USING GIST (ST_Transform(geom, 3301));
+SELECT DISTINCT p.id
+FROM stops s
+JOIN parcels p ON ST_DWithin(ST_Transform(p.geom, 3301), ST_Transform(s.geom, 3301), 500);
+```
+
+A stored geography or projected column with its own GIST index is usually preferable for repeated queries. Confirm the plan names the intended index with an `Index Cond` on that expression; a `Join Filter` over a sequential scan means the index is not being used.
+
 ### DuckDB Spatial
 
 For Overture and other GeoParquet datasets with a `bbox` struct, use bbox overlap for predicate pushdown:

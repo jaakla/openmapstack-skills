@@ -35,7 +35,7 @@ Project-level checks to run before declaring an analysis complete:
 * **Schema** — `project.yaml` parses and matches `openmapstack-project/v1`.
 * **Source provenance** — every source has `source_url`, `retrieved_at`, a pinned version, a license, and a selection.
 * **Source semantic fitness** — every decision-critical predicate (ownership, active status, access, classification) is backed by an authoritative field/domain; missing values remain unknown rather than being coerced to a passing value.
-* **API completeness** — bounded/paged APIs record matched and returned counts; equality with a page limit is treated as suspicious until pagination or a hits/count request proves completeness.
+* **API completeness** — bounded/paged APIs record matched and returned counts; equality with a page limit is treated as suspicious until complete pagination proves completeness. Take the total from the paged response itself (`numberMatched`, `totalFeatures`, `resultCount` or equivalent) and page until the returned count equals it. A separate hits/count request is not proof on its own: servers may cap it at their feature limit (a round number such as 5000 is itself suspicious) and it can disagree with the paged total.
 * **CRS** — `analysis_crs` is projected/metric, `storage_crs` is documented; no metric ops on EPSG:4326.
 * **Referenced files** — every `data/overrides/*`, output, and `pipeline.py` path exists.
 * **Required validations** — the `validation.required` list all pass.
