@@ -1,0 +1,75 @@
+{
+  "run_id": "run-20260917-131353",
+  "schema": "openmapstack-project/v1",
+  "status": "passed",
+  "started_at": "2026-09-17T13:13:53.014428+00:00",
+  "completed_at": "2026-09-17T13:13:53.286115+00:00",
+  "inputs_hash": "sha256:d2d0f4dec607dd1e9e3e68569450c1cf135d8cc9ff2d80683d6258cbd7711ffd",
+  "outputs_hash": "sha256:aa6e802fd916d6b3f3767399afb4552834d1cf8594954090277afb2124fa755b",
+  "checks": [
+    {
+      "id": "geometry_valid",
+      "status": "passed",
+      "message": "all derived zone geometries valid",
+      "invalid_count": 0,
+      "features_checked": 60
+    },
+    {
+      "id": "crs_known",
+      "status": "passed",
+      "message": "storage CRS of derived outputs is ['EPSG:4326']",
+      "expected": "EPSG:4326",
+      "actual": [
+        "EPSG:4326"
+      ]
+    },
+    {
+      "id": "row_count_gt_zero",
+      "status": "passed",
+      "message": "zone metrics and candidates non-empty",
+      "zone_rows": 60,
+      "candidate_zones": 6
+    },
+    {
+      "id": "no_null_zone_id",
+      "status": "passed",
+      "message": "zone ids complete",
+      "nulls": 0
+    },
+    {
+      "id": "rls_scope_alpha_only",
+      "status": "passed",
+      "message": "tenant-bearing snapshots contain only the RLS-visible tenant",
+      "tenants": [
+        "alpha"
+      ],
+      "expected": [
+        "alpha"
+      ]
+    },
+    {
+      "id": "protected_columns_absent",
+      "status": "passed",
+      "message": "no protected column or inaccessible relation appears in data/source",
+      "findings": []
+    },
+    {
+      "id": "score_components_complete",
+      "status": "passed",
+      "message": "every candidate has all score components",
+      "incomplete": []
+    },
+    {
+      "id": "score_range",
+      "status": "passed",
+      "message": "final scores within [0, 100]",
+      "out_of_range": []
+    },
+    {
+      "id": "eligibility_thresholds",
+      "status": "passed",
+      "message": "candidates satisfy every eligibility threshold",
+      "violations": []
+    }
+  ]
+}

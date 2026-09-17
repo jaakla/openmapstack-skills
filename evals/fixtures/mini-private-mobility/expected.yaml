@@ -1,0 +1,95 @@
+schema: openmapstack-mini-expected/v1
+fixture: mini-private-mobility
+seed: '20260917'
+counts:
+  taxi_zones: 8
+  trip_events:
+    total: 64
+    alpha_visible: 37
+    beta_hidden: 27
+  fleet_positions:
+    total: 10
+    located: 9
+    null_geometry: 1
+  hubs: 2
+  pois: 24
+  market_scores: 7
+  driver_private_rows_hidden: 6
+security:
+  rls_visible_tenant: alpha
+  hidden_tenant: beta
+  protected_columns:
+  - internal_cost
+  - rider_reference
+  inaccessible_relations:
+  - driver-private.parquet
+  market_absent_zones:
+  - 106
+  mixed_crs_inputs:
+    fleet-positions.geojson: EPSG:2263
+alpha_pickups_by_zone:
+  101: 3
+  102: 2
+  103: 4
+  104: 5
+  105: 2
+  106: 3
+  107: 6
+  108: 12
+located_fleet_by_zone:
+  101: 2
+  102: 1
+  103: 1
+  104: 1
+  105: 2
+  106: 1
+  107: 1
+  108: 0
+hub_distance_km_by_zone:
+  '101': 0.0
+  '102': 1.683
+  '103': 3.367
+  '104': 5.05
+  '105': 0.0
+  '106': 1.685
+  '107': 3.37
+  '108': 5.055
+poi_counts_by_zone:
+  '101': 4
+  '102': 2
+  '103': 3
+  '104': 4
+  '105': 3
+  '106': 3
+  '107': 2
+  '108': 3
+eligibility:
+  rule: market score row present AND alpha pickup demand >= 4
+  min_demand: 4
+  eligible_zones:
+  - 103
+  - 104
+  - 107
+  - 108
+scoring:
+  weights:
+    demand: 0.45
+    coverage_gap: 0.3
+    market: 0.15
+    saturation: 0.1
+  demand_score: alpha pickups / max eligible alpha pickups
+  coverage_gap_score: hub_distance_km / max eligible hub_distance_km
+  market_score: (charging_score + parking_score) / 200
+  saturation_score: 1 - competitor_count / max eligible competitor_count
+  final_score: 100 * (0.45*demand + 0.30*coverage_gap + 0.15*market + 0.10*saturation),
+    2 decimals
+ranking:
+- zone: 108
+  score: 98.88
+- zone: 104
+  score: 65.35
+- zone: 107
+  score: 62.38
+- zone: 103
+  score: 45.11
+candidate_zone: 108

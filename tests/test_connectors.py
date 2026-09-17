@@ -72,6 +72,21 @@ class QueryPolicyTests(unittest.TestCase):
     def test_keywords_inside_string_literals_do_not_trip_the_policy(self) -> None:
         self.assertTrue(require_read_only_select("SELECT 'drop' AS word, 'set;' AS other"))
 
+    def test_leading_line_comments_are_allowed_but_cannot_hide_statements(self) -> None:
+        documented = "-- snapshot query: hubs\n-- reader sees tenant 'alpha' rows only;\nSELECT hub_id FROM ops.hubs"
+        self.assertTrue(require_read_only_select(documented).startswith("--"))
+        for bad in (
+            "-- comment\nDROP TABLE x",
+            "SELECT 1 -- trailing;\n; SELECT 2",
+            "-- uses forbidden COPY keyword in prose\nSELECT 1",  # comment prose is not policy-relevant
+        ):
+            try:
+                require_read_only_select(bad)
+                rejected = False
+            except ConnectorError as exc:
+                rejected = exc.code == "query_rejected"
+            self.assertEqual(rejected, bad != "-- uses forbidden COPY keyword in prose\nSELECT 1", msg=bad)
+
     def test_connection_references_resolve_without_recording_secrets(self) -> None:
         scheme, secret = resolve_connection_reference("env:OMS_TEST_DSN", environ={"OMS_TEST_DSN": "postgresql://u:pw@h/db"})
         self.assertEqual((scheme, secret), ("env", "postgresql://u:pw@h/db"))

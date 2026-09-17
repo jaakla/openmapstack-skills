@@ -138,16 +138,22 @@ class QueryPlan:
 
 
 def require_read_only_select(query: str) -> str:
-    """Accept exactly one SELECT/WITH statement with no side-effect keywords."""
+    """Accept exactly one SELECT/WITH statement with no side-effect keywords.
+
+    SQL line comments (``--``) are allowed: they are documentation, not
+    statements, so they are removed before the policy checks and cannot hide
+    or trigger a rejection.
+    """
     if not isinstance(query, str) or not query.strip():
         raise ConnectorError("query must be a non-empty SELECT statement", code="query_rejected")
     text = query.strip().rstrip(";").strip()
     stripped = re.sub(r"'(?:[^']|'')*'", "''", text)  # ignore text inside string literals
-    if ";" in stripped:
+    bare = re.sub(r"--[^\n]*", " ", stripped).strip()  # ignore line comments as well
+    if ";" in bare:
         raise ConnectorError("query must be a single statement", code="query_rejected")
-    if not re.match(r"(?is)^(select|with)\b", text):
+    if not re.match(r"(?is)^(select|with)\b", bare):
         raise ConnectorError("only SELECT (or WITH ... SELECT) queries are allowed", code="query_rejected")
-    match = _FORBIDDEN_KEYWORDS.search(stripped)
+    match = _FORBIDDEN_KEYWORDS.search(bare)
     if match:
         raise ConnectorError(f"query contains a forbidden keyword: {match.group(0).upper()}", code="query_rejected")
     return text

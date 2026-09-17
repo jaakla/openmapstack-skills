@@ -167,3 +167,15 @@ accompanying digest drift in the run record is the signature to suspect.
 Retained live/visual evidence belongs under `evals/results/<run-id>/...` and CI artifacts. Do not treat generated result JSON, screenshots, event streams, or temporary projects as canonical repository state unless a fixture intentionally owns them.
 
 The normalized `agent.json` is vendor-neutral audit data; raw provider events are diagnostics. Assistant final-answer prose is never the correctness oracle.
+
+## PostGIS hides column-granted tables from discovery
+
+PostGIS's `geometry_columns` view filters relations by table-level
+privilege. A reader holding only column-level grants (and row-level
+security policies) on a table — exactly the private-fixture model in
+`examples/nyc-private-mobility/setup/postgis/security.sql` — will not see
+that table in `geometry_columns`, so `PostGISConnector.discover()` omits it
+while snapshotting named columns still works. Do not "fix" this by granting
+whole-table SELECT to satisfy a discovery assertion; the omission is the
+backend telling the truth about the principal's grant shape (observed while
+building issue #43's PostGIS fixture tests).

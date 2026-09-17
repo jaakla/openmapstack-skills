@@ -13,6 +13,8 @@ on:
       - "openmapstack/connectors/**"
       - "openmapstack/sources.py"
       - "tests/test_connectors.py"
+      - "tests/test_private_fixture_postgis.py"
+      - "examples/nyc-private-mobility/**"
       - ".github/workflows/eval-warehouse.yml"
 
 jobs:
@@ -72,3 +74,45 @@ jobs:
           # the tests assert it never appears in any recorded output.
           OPENMAPSTACK_TEST_POSTGIS_DSN: postgresql://reader:ci-only-reader@127.0.0.1:5432/gis
         run: python -m unittest -v tests.test_connectors
+
+  postgis-private-fixture:
+    # Issue #43: the private-database fixture's RLS/column-security boundary
+    # is exercised end to end through the restricted analysis reader.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: northstar_ops
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d northstar_ops"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the CLI with geodata and PostGIS support
+        run: pip install ".[geo,postgis]"
+
+      - name: Prepare controlled DuckDB Spatial directory
+        run: |
+          echo "OPENMAPSTACK_SPATIAL_EXTENSION_DIR=${RUNNER_TEMP}/openmapstack-duckdb-extensions" >> "$GITHUB_ENV"
+          OPENMAPSTACK_SPATIAL_EXTENSION_DIR="${RUNNER_TEMP}/openmapstack-duckdb-extensions" python evals/prepare_spatial.py
+
+      - name: Run the private-fixture security suite (provisions and verifies the fixture)
+        env:
+          # Admin credentials reach the fixture only through provision.py; the
+          # analysis identity is the restricted reader created by security.sql.
+          OPENMAPSTACK_TEST_PRIVATE_POSTGIS_ADMIN_DSN: postgresql://postgres:ci-only-password@127.0.0.1:5433/northstar_ops
+          OPENMAPSTACK_TEST_PRIVATE_POSTGIS_READER_DSN: postgresql://oms_alpha_reader:ci-only-reader@127.0.0.1:5433/northstar_ops
+          OPENMAPSTACK_TEST_PRIVATE_POSTGIS_READER_PASSWORD: ci-only-reader
+        run: python -m unittest -v tests.test_private_fixture_postgis

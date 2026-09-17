@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Northstar Mobility — NYC operations/charging hub candidates (tenant alpha)</title>
+<style>
+body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 60rem; }
+table { border-collapse: collapse; margin: 1rem 0; }
+td, th { border: 1px solid #ccc; padding: .35rem .7rem; text-align: left; }
+.passed { color: #1a7f37; } .warning { color: #9a6700; } .failed { color: #cf222e; }
+.provenance { background: #f6f8fa; border: 1px solid #d0d7de; padding: .5rem 1rem; }
+</style>
+</head>
+<body>
+<h1>Northstar Mobility — NYC operations/charging hub candidates (tenant alpha)</h1>
+<p><strong>Status:</strong> passed · <strong>Tenant:</strong> alpha (RLS-visible)</p>
+<h2>Hub candidates</h2>
+<table>
+<tr><th>Zone</th><th>Name</th><th>Demand (accounts)</th><th>Fleet present</th><th>Hub distance (m)</th><th>Score</th></tr>
+<tr><td>150</td><td>Grid Zone 150</td><td>42</td><td>2</td><td>4184</td><td>74.22</td></tr><tr><td>149</td><td>Grid Zone 149</td><td>40</td><td>3</td><td>4743</td><td>74.13</td></tr><tr><td>148</td><td>Grid Zone 148</td><td>43</td><td>6</td><td>4221</td><td>68.76</td></tr><tr><td>153</td><td>Grid Zone 153</td><td>46</td><td>3</td><td>2371</td><td>65.0</td></tr><tr><td>140</td><td>Grid Zone 140</td><td>41</td><td>5</td><td>1867</td><td>53.58</td></tr><tr><td>155</td><td>Grid Zone 155</td><td>43</td><td>6</td><td>1665</td><td>52.6</td></tr>
+</table>
+<h2>Validation checks</h2>
+<table>
+<tr><th>Check</th><th>Status</th><th>Message</th></tr>
+<tr><td>geometry_valid</td><td class="passed">passed</td><td>all derived zone geometries valid</td></tr><tr><td>crs_known</td><td class="passed">passed</td><td>storage CRS of derived outputs is ['EPSG:4326']</td></tr><tr><td>row_count_gt_zero</td><td class="passed">passed</td><td>zone metrics and candidates non-empty</td></tr><tr><td>no_null_zone_id</td><td class="passed">passed</td><td>zone ids complete</td></tr><tr><td>rls_scope_alpha_only</td><td class="passed">passed</td><td>tenant-bearing snapshots contain only the RLS-visible tenant</td></tr><tr><td>protected_columns_absent</td><td class="passed">passed</td><td>no protected column or inaccessible relation appears in data/source</td></tr><tr><td>score_components_complete</td><td class="passed">passed</td><td>every candidate has all score components</td></tr><tr><td>score_range</td><td class="passed">passed</td><td>final scores within [0, 100]</td></tr><tr><td>eligibility_thresholds</td><td class="passed">passed</td><td>candidates satisfy every eligibility threshold</td></tr>
+</table>
+<h2>Provenance</h2>
+<div class="provenance">
+<ul>
+<li>public-origin reference data (taxi_zones)</li><li>private snapshot data (hubs, fleet_positions, customer_accounts)</li><li>RLS-limited source (hubs, fleet_positions, customer_accounts)</li><li>synthetic business attributes (all fixture tables)</li><li>analysis assumptions (A1-A5)</li>
+</ul>
+<p>All private inputs are pinned local snapshots captured through the restricted
+reader <code>oms_alpha_reader</code>; no live warehouse is queried at analysis time.</p>
+</div>
+</body>
+</html>
