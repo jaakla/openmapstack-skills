@@ -75,7 +75,28 @@ WHERE s.geom && a.geom
   AND ST_Intersects(s.geom, a.geom);
 ```
 
-For meter distances on lon/lat data, use a suitable projected CRS or `geography`. Create GIST indexes on production geometry columns and verify with `EXPLAIN ANALYZE`.
+For meter distances on lon/lat data, use a suitable projected CRS or `geography`. Create GIST indexes on the exact expression the predicate uses, not merely on the stored geometry column (see below), and verify with `EXPLAIN ANALYZE`.
+
+An index serves only the expression it was built on. A GIST index on `geom` is **not** used by `ST_DWithin(p.geom::geography, s.geom::geography, 500)`: the cast is a different expression, and the planner falls back to a nested-loop scan. Choose one consistent option:
+
+```sql
+-- Option 1: index the geography expression the predicate uses (lon/lat, SRID 4326, only)
+CREATE INDEX parcels_geog_gix ON parcels USING GIST ((geom::geography));
+SELECT DISTINCT p.id
+FROM stops s
+JOIN parcels p ON ST_DWithin(p.geom::geography, s.geom::geography, 500);
+
+-- Option 2: a metric projected CRS (e.g. EPSG:3301 for Estonia), indexed on the same expression.
+-- Works from any source CRS.
+CREATE INDEX parcels_3301_gix ON parcels USING GIST (ST_Transform(geom, 3301));
+SELECT DISTINCT p.id
+FROM stops s
+JOIN parcels p ON ST_DWithin(ST_Transform(p.geom, 3301), ST_Transform(s.geom, 3301), 500);
+```
+
+`geom::geography` accepts only lon/lat input: PostGIS rejects the cast for any SRID other than 4326 (SRID 0 is assumed lon/lat), so Option 1 is unavailable on already-projected data. Option 2 has no such restriction, but note that PostGIS declares `ST_Transform` `IMMUTABLE` even though its result depends on `spatial_ref_sys` and the PROJ version; the functional index is therefore accepted, yet it can silently go stale across a PROJ upgrade or a `spatial_ref_sys` edit and needs a `REINDEX` after either. A stored geography or projected column with its own GIST index avoids both caveats and is usually preferable for repeated queries.
+
+Confirm the plan names the intended index with an `Index Cond` on that expression; a `Join Filter` over a sequential scan means the index is not being used.
 
 ### DuckDB Spatial
 
