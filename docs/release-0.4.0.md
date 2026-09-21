@@ -158,10 +158,23 @@ their separate capable environments.
     - `validation-and-ops.md`: completeness comes from the paged response total, not a separate hits request.
     - `data-sources.md`: ETAK paging uses stable `sortBy` plus accumulated count equal to `numberMatched`. The live server returned `numberMatched="5000"` for hits but 22308 when paged (Tartu bbox).
     - Unit suite passed (9 skips); fixture evals 16/16 contract and 26/26 mutations.
+  - **Regression guard for both corrections.** These two fixes are shipped prose,
+    and the layers that would normally protect them do not reach it: the routing
+    eval reports `task_success` as `not_testable` by construction
+    (`evals/routing.py`), and the fixture evals grade produced projects rather
+    than the reference text. `tests/test_guidance_regressions.py` therefore
+    asserts that each corrected statement is still present in every shipped copy
+    and that the retracted advice has not returned. Reverting either sentence
+    fails the unit suite. This is a content guard only: it proves the guidance
+    ships, not that an agent acts on it, which remains the job of the live
+    `chosen-engine-sql` and `bounded-discovery` cases.
   - **Open.**
     - `compile-existing-analysis` has no complete live run: both attempts selected the right skill and then exceeded their caps ($0.50, $1.00). It needs a larger per-trial budget, or an investigation of why scaffold compilation is this expensive (e.g. reading the 60 KB `project-spec.md`).
     - Not in the authorized scope: executed `001` configurations and the four companion contexts.
     - The three bounded cases were not rerun with the full collection after the fix.
+    - Task outcomes above are reviewer judgements against the
+      `final-state-acceptance.md` rubric, not machine-graded scores. No automated
+      layer grades analytical outcomes today.
 - Run and review the [small final-state acceptance set](../evals/final-state-acceptance.md), confirming trial count and available paid budget first. Do not require historical equivalence. Capture truthful native selection and task outcomes for all four skills, standalone fallback and optional companions.
 - Finish required CI and relevant fixture checks on the final commit; run visual/QGIS evidence in the capable environment when needed for final material delivery. Resolve failures before release. Status on `534792f`: push workflows `OpenMapStack fixture evals` (run 35089132445) and `Claude Code plugin manifests` (run 35089132462) passed; `example.yml` passed on identical tree `c269df4`. Visual workflow dispatched on `534792f` passed (run 35092610173): integration_visual 2/2, mutation_tests 2/2.
 - After acceptance, build the coordinated release artifacts and publish only through the maintainer's release process. This implementation does not publish a tag or package.

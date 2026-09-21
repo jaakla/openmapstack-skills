@@ -21,8 +21,8 @@ repeatedly or extend a failed trial without checking remaining budget.
 
 | Existing routing case | Useful outcome to inspect |
 |---|---|
-| `bounded-discovery` | Authoritative source and actual coverage/feature meaning; license and immutable pin strategy; a way to check completeness; no invented availability or unnecessary project scaffold. Check provider claims against current authoritative metadata. |
-| `chosen-engine-sql` | Recognize geometry degrees versus metre distance, correct geodesic/projected predicate, explain an index compatible with that expression, and resolve duplicate parcel IDs from multiple stops. No engine migration or full project required. |
+| `bounded-discovery` | Authoritative source and actual coverage/feature meaning; license and immutable pin strategy; a completeness check that pages to the total reported in the paged response rather than trusting a separate `resultType=hits` request; no invented availability or unnecessary project scaffold. Check provider claims against current authoritative metadata. |
+| `chosen-engine-sql` | Recognize geometry degrees versus metre distance, correct geodesic/projected predicate, explain an index built on the *same expression* the predicate uses (a `geom` index does not serve a `::geography` cast), and resolve duplicate parcel IDs from multiple stops. No engine migration or full project required. |
 | `compile-existing-analysis` | Preserve the supplied algorithm/stack, produce a usable manifest/pipeline scaffold, identify unavailable source details and retain executable correction, validation and rerun requirements. Do not report an unexecuted scaffold as a validated project. |
 | `ambiguous-architecture` | Resolve consequential context and explain coupled source/compute/storage/delivery choices. Specialist activity must support the architecture rather than independently imposing incompatible tools. |
 | `billion-row-architecture` / `future-scale-architecture` | Consider data access, future scale, concurrency, partitioning, operational cost and browser delivery; avoid choosing solely from today's row count. Use one of these as the scale stress case initially. |
