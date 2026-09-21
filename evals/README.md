@@ -1,5 +1,15 @@
 # OpenMapStack eval suite
 
+> **Ownership migration:** deterministic contract/checker regression, mutation
+> coverage and OpenMapStack-specific integration remain canonical here. Generic
+> live agent benchmarking, provider adapters, repeated model comparisons,
+> routing experiments and benchmark task governance are moving to
+> [OpenMapBench #2](https://github.com/jaakla/OpenMapBench/issues/2).
+> The live/routing paths documented below remain transitional until OpenMapBench
+> reaches parity; do not extend them with new generic benchmark infrastructure.
+> See [the interoperability contract](../docs/openmapbench-interop.md).
+
+
 Executable evals that check whether an agent-generated analysis (or a
 hand-authored reference project) reaches the right analytical answer, respects
 the GIS-method guardrails in the installed skills, and reruns reproducibly — with the
