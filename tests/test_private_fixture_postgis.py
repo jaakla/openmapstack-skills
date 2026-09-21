@@ -104,7 +104,7 @@ class StaticFixtureContractTests(unittest.TestCase):
 
     def test_no_credentials_are_committed(self) -> None:
         offenders: list[str] = []
-        for path in (EXAMPLE / "project.yaml", *SETUP.glob("*.sql"), *EXAMPLE.glob("*.py")):
+        for path in (EXAMPLE / "project.yaml", *(EXAMPLE / "setup").rglob("*.sql"), *EXAMPLE.glob("*.py")):
             text = path.read_text(encoding="utf-8")
             for marker in ("postgresql://", "postgres://"):
                 if marker in text:

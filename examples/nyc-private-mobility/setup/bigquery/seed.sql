@@ -1,0 +1,96 @@
+-- Northstar Mobility BigQuery fixture: deterministic seed
+--
+-- Every value derives from FARM_FINGERPRINT('northstar|20260917|' || label),
+-- BigQuery's stable fingerprint, so the fixture is reproducible: no RAND(),
+-- no CURRENT_TIMESTAMP() in fixture rows. Re-running is idempotent (tables
+-- are truncated first).
+--
+--   python provision.py bigquery        (runs after schema.sql)
+--
+-- Volumes: trip_events 4800 over 30 days, zone_daily_demand 1800,
+-- vehicle_daily_metrics 1200, driver_costs 240. Tenants alpha/beta/gamma all
+-- exist; only alpha is visible through the row access policy in security.sql.
+--
+-- Nothing here is a real NYC taxi record: the trip *shape* follows the public
+-- dataset's structure, every business attribute is synthetic, and no output
+-- may present these rows as belonging to a real operator.
+
+CREATE TEMP FUNCTION fixture_rand(label STRING, modulus INT64) AS (
+    -- MOD twice rather than ABS: FARM_FINGERPRINT may return INT64 min,
+    -- which has no positive ABS.
+    MOD(MOD(FARM_FINGERPRINT(CONCAT('northstar|20260917|', label)), modulus) + modulus, modulus)
+);
+
+CREATE TEMP FUNCTION fixture_tenant(label STRING) AS (
+    CASE
+        WHEN MOD(MOD(FARM_FINGERPRINT(CONCAT('northstar|20260917|', label)), 10) + 10, 10) < 6 THEN 'alpha'
+        WHEN MOD(MOD(FARM_FINGERPRINT(CONCAT('northstar|20260917|', label)), 10) + 10, 10) < 9 THEN 'beta'
+        ELSE 'gamma'
+    END
+);
+
+TRUNCATE TABLE `:project`.`:dataset`.trip_events;
+TRUNCATE TABLE `:project`.`:dataset`.zone_daily_demand;
+TRUNCATE TABLE `:project`.`:dataset`.vehicle_daily_metrics;
+TRUNCATE TABLE `:project`.`:restricted_dataset`.driver_costs;
+
+-- -- 4800 trips over 30 days ------------------------------------------------
+INSERT INTO `:project`.`:dataset`.trip_events
+    (trip_id, tenant_id, taxi_zone_id, pickup_date, pickup_ts, trip_distance_km,
+     fare_amount, internal_cost, rider_reference, pickup_point)
+SELECT
+    FORMAT('T-%05d', g),
+    fixture_tenant(CONCAT('trip-tenant-', g)),
+    zone_id,
+    pickup_date,
+    TIMESTAMP_ADD(TIMESTAMP(pickup_date), INTERVAL 6 * 60 + fixture_rand(CONCAT('trip-min-', g), 900) MINUTE),
+    ROUND(0.5 + fixture_rand(CONCAT('trip-km-', g), 2400) / 100.0, 2),
+    CAST(ROUND(3.0 + fixture_rand(CONCAT('trip-fare-', g), 7200) / 100.0, 2) AS NUMERIC),
+    CAST(ROUND(1.0 + fixture_rand(CONCAT('trip-cost-', g), 4200) / 100.0, 2) AS NUMERIC),
+    FORMAT('R-%s', TO_HEX(MD5(CONCAT('northstar|20260917|rider-', CAST(g AS STRING))))),
+    ST_GEOGPOINT(
+        -74.030 + MOD(zone_id - 101, 12) * 0.010
+            + (0.1 + 0.8 * fixture_rand(CONCAT('trip-x-', g), 10000) / 10000.0) * 0.010,
+        40.700 + DIV(zone_id - 101, 12) * 0.015
+            + (0.1 + 0.8 * fixture_rand(CONCAT('trip-y-', g), 10000) / 10000.0) * 0.015
+    )
+FROM (
+    SELECT
+        g,
+        101 + fixture_rand(CONCAT('trip-zone-', g), 60) AS zone_id,
+        DATE_ADD(DATE '2026-08-01', INTERVAL fixture_rand(CONCAT('trip-day-', g), 30) DAY) AS pickup_date
+    FROM UNNEST(GENERATE_ARRAY(1, 4800)) AS g
+);
+
+-- -- daily demand per zone, derived from the trips above ---------------------
+INSERT INTO `:project`.`:dataset`.zone_daily_demand
+    (taxi_zone_id, tenant_id, demand_date, trips, mean_trip_km)
+SELECT
+    taxi_zone_id,
+    tenant_id,
+    pickup_date,
+    COUNT(*),
+    ROUND(AVG(trip_distance_km), 3)
+FROM `:project`.`:dataset`.trip_events
+GROUP BY taxi_zone_id, tenant_id, pickup_date;
+
+-- -- 1200 vehicle-days ------------------------------------------------------
+INSERT INTO `:project`.`:dataset`.vehicle_daily_metrics
+    (vehicle_id, tenant_id, metric_date, active_minutes, energy_kwh)
+SELECT
+    FORMAT('NV-%03d', 100 + fixture_rand(CONCAT('veh-id-', g), 900)),
+    fixture_tenant(CONCAT('veh-tenant-', g)),
+    DATE_ADD(DATE '2026-08-01', INTERVAL fixture_rand(CONCAT('veh-day-', g), 30) DAY),
+    60 + fixture_rand(CONCAT('veh-min-', g), 600),
+    ROUND(5.0 + fixture_rand(CONCAT('veh-kwh-', g), 7000) / 100.0, 2)
+FROM UNNEST(GENERATE_ARRAY(1, 1200)) AS g;
+
+-- -- 240 restricted payroll rows (never granted to the analysis reader) -----
+INSERT INTO `:project`.`:restricted_dataset`.driver_costs
+    (driver_id, tenant_id, payroll_band, hourly_rate_usd)
+SELECT
+    FORMAT('D-%04d', g),
+    fixture_tenant(CONCAT('drv-tenant-', g)),
+    ['A', 'B', 'C'][OFFSET(fixture_rand(CONCAT('drv-band-', g), 3))],
+    CAST(ROUND(18.0 + fixture_rand(CONCAT('drv-rate-', g), 2200) / 100.0, 2) AS NUMERIC)
+FROM UNNEST(GENERATE_ARRAY(1, 240)) AS g;

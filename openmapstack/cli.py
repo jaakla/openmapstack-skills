@@ -143,6 +143,7 @@ def build_parser() -> argparse.ArgumentParser:
     snapshot_parser.add_argument("--timeout", type=float, default=60.0, help="statement timeout in seconds (default: 60)")
     snapshot_parser.add_argument("--max-rows", type=int, default=100_000, help="refuse queries returning more rows (default: 100000)")
     snapshot_parser.add_argument("--max-bytes", type=int, default=256 * 1024 * 1024, help="refuse snapshots larger than this (default: 256 MiB)")
+    snapshot_parser.add_argument("--max-scan-bytes", type=int, default=1024 * 1024 * 1024, help="for backends that bill by bytes scanned, refuse a query whose dry run estimates more (default: 1 GiB)")
     snapshot_parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     snapshot_parser.set_defaults(handler=_cmd_source_snapshot)
 
@@ -770,7 +771,12 @@ def _cmd_source_snapshot(args: argparse.Namespace) -> int:
             args.destination,
             project_root=project_file.parent,
             approve=args.approve,
-            limits=ConnectorLimits(timeout_s=args.timeout, max_rows=args.max_rows, max_bytes=args.max_bytes),
+            limits=ConnectorLimits(
+                timeout_s=args.timeout,
+                max_rows=args.max_rows,
+                max_bytes=args.max_bytes,
+                max_scan_bytes=args.max_scan_bytes,
+            ),
         )
         if args.write_manifest and record.get("materialized"):
             updated = apply_snapshot_to_manifest(project, args.source, record)
@@ -783,6 +789,8 @@ def _cmd_source_snapshot(args: argparse.Namespace) -> int:
         return 0
     plan = record["plan"]
     print(f"{record['backend']} source {args.source!r}: query {plan['query_sha256']} returns {plan['row_count']} row(s), {len(plan['columns'])} column(s)")
+    if plan.get("scan_bytes") is not None:
+        print(f"  backend dry run estimates {plan['scan_bytes']} scanned byte(s), within --max-scan-bytes")
     if not record["materialized"]:
         print(f"DRY RUN: nothing written to {args.destination}; re-run with --approve to materialise")
         return 0

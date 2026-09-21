@@ -197,10 +197,10 @@ class DuckDBLocalConnectorTests(unittest.TestCase):
 
     def test_unsupported_backend_is_refused_not_guessed(self) -> None:
         workspace, project = _duckdb_project()
-        project["sources"]["test_source"]["warehouse"] = {"backend": "bigquery"}
-        project["sources"]["test_source"]["access"]["connection"] = "env:BQ"
+        project["sources"]["test_source"]["warehouse"] = {"backend": "snowflake"}
+        project["sources"]["test_source"]["access"]["connection"] = "env:SNOW"
         with self.assertRaises(ConnectorError) as caught:
-            discover_source(project, "test_source", project_root=workspace, environ={"BQ": "x"})
+            discover_source(project, "test_source", project_root=workspace, environ={"SNOW": "x"})
         self.assertEqual(caught.exception.code, "backend_unsupported")
 
 

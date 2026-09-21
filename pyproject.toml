@@ -24,7 +24,12 @@ visual = ["playwright>=1.40"]
 # `openmapstack source discover/snapshot` against PostGIS. The DuckDB
 # local-file connector needs only [geo].
 postgis = ["psycopg[binary]>=3.1"]
-all = ["openmapstack[geo,visual,postgis]"]
+# `openmapstack source discover/snapshot` against BigQuery. Snapshots are
+# written as GeoParquet through DuckDB, so [geo] is needed to materialise.
+bigquery = ["google-cloud-bigquery>=3.11"]
+# MotherDuck speaks the DuckDB protocol; the extension is loaded at runtime.
+motherduck = ["duckdb>=1.2"]
+all = ["openmapstack[geo,visual,postgis,bigquery,motherduck]"]
 
 [project.scripts]
 openmapstack = "openmapstack.cli:main"

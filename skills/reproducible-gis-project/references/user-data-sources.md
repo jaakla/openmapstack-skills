@@ -1,13 +1,14 @@
 # User data sources — warehouses, credentials, snapshots, clean reruns
 
 Read this when an analysis must read the user's own tables: a PostGIS
-database, a DuckDB file, or a local protected directory of GeoParquet/GeoPackage files that
+database, a BigQuery dataset, a MotherDuck database, a DuckDB file, or a
+local protected directory of GeoParquet/GeoPackage files that
 is not a public download. It covers what `references/data-sources.md` does
 not: data that has an owner, a credential, and no published version.
 
 Treat warehouse access as a **connector and security problem**, not only a
 documentation problem. The rules below are enforced by `openmapstack validate`
-and `openmapstack verify`; the CLI implements them for the two pilot
+and `openmapstack verify`; the CLI implements them for the four verified
 backends, and the rest of this file says what to do by hand elsewhere.
 
 ## The four rules
@@ -30,7 +31,9 @@ backends, and the rest of this file says what to do by hand elsewhere.
    `openmapstack source snapshot` is a dry run by default: it reports the
    schema and row count the query would copy. Only `--approve` writes the
    snapshot, and it writes under `data/source/` only, never over an
-   existing file, and never beyond the row and byte limits.
+   existing file, and never beyond the row and byte limits. On a backend
+   that bills by bytes scanned, the query is dry-run at the backend first
+   and refused before execution if the estimate exceeds `--max-scan-bytes`.
 4. **A warehouse table is pinned only by a pin class.** A timestamp string
    is not a pin. Either the bytes are frozen locally (`local_snapshot`,
    hash-matched) or the backend can serve that exact state again
@@ -52,7 +55,7 @@ sources:
       connection: {ref: "env:PARCELS_DSN"}
       retrieved_at: "2026-08-30T10:00:00Z"
     warehouse:
-      backend: postgis            # duckdb | postgis are the verified pilot backends
+      backend: postgis            # duckdb | postgis | bigquery | motherduck are verified
       account: geo-prod
       database: gis
       schema: cadastre
@@ -74,7 +77,7 @@ sources:
     rationale: The warehouse copy is the department's authoritative parcel layer.
 ```
 
-## The CLI path (DuckDB local files and PostGIS)
+## The CLI path (DuckDB, PostGIS, BigQuery, MotherDuck)
 
 ```bash
 # 1. Read-only discovery: what is there, which column is geometry, which SRID.
@@ -126,21 +129,71 @@ Declaring `pin.class: backend_snapshot` for PostGIS is honest only when an
 external mechanism (a logical replica frozen for the project, a `pg_dump`
 retained under a stated policy) provides the retention you record.
 
+### BigQuery
+
+Declare `warehouse.project`, `warehouse.dataset`, and optionally
+`warehouse.location`: unlike a DSN, the credential names no target.
+`access.connection` resolves to a service-account key file
+(`env:GOOGLE_APPLICATION_CREDENTIALS`) or, as `service:default`, to the
+ambient default credentials. Install `openmapstack[bigquery]`.
+
+BigQuery bills by bytes scanned, so **every statement is dry-run first** and
+refused before execution when the estimate exceeds `--max-scan-bytes`
+(`scan_limit_exceeded`); the executed job also carries
+`maximum_bytes_billed`, so a table that grew since the dry run is refused by
+the service rather than silently billed. The plan records what it would
+scan under `plan.scan_bytes`.
+
+Two BigQuery-specific traps:
+
+- **`Table.num_rows` is not what your reader can see.** Discovery reports it
+  as a row *estimate* and says so; row access policies are applied to
+  queries, not to table metadata. Count with a query before claiming a
+  number, and never present metadata counts as RLS-visible counts.
+- **`GEOGRAPHY` has exactly one CRS.** Values are WGS84 and are written as
+  EPSG:4326 (`OGC:CRS84`) GeoParquet. A `GEOGRAPHY` column needs no CRS
+  guess and must not be reprojected on the way in.
+
+Destination tables, scripting, and `EXPORT DATA` are unreachable: the query
+policy accepts one `SELECT`, and the job configuration is the connector's.
+
+### MotherDuck
+
+Declare `warehouse.database` (the `md:` database) and reference the token as
+`env:MOTHERDUCK_TOKEN`. Install `openmapstack[motherduck]`.
+
+MotherDuck *is* DuckDB, so the connector reuses the `md:` protocol rather
+than a second SQL dialect. The database is attached `READ_ONLY` where the
+installed DuckDB supports it, and when it cannot be, discovery says so in a
+note instead of implying an enforcement that is not there. Session setup —
+`LOAD`, `ATTACH`, `USE`, the token — belongs to the connector and happens
+before any analysis SQL exists; user SQL is a single `SELECT` and can never
+`ATTACH`, `INSTALL`/`LOAD`, `CREATE SECRET`, `COPY` to a file, or run
+DDL/DML.
+
+One honest limitation: a MotherDuck session needs network access, so unlike
+the local DuckDB connector it cannot run with `enable_external_access =
+false`. Confinement rests on the query policy and on the token's own
+permissions — use a token scoped to the database you are reading.
+
 ## Other backends
 
-Only DuckDB and PostGIS are verified. `warehouse.backend` may name another
-system (`bigquery`, `snowflake`, `motherduck`, `databricks`, `redshift`,
-`athena`, `iceberg`, `delta`), but the CLI refuses to connect to it
+DuckDB, PostGIS, BigQuery and MotherDuck are verified. `warehouse.backend`
+may name another system (`snowflake`, `databricks`, `redshift`, `athena`,
+`iceberg`, `delta`), but the CLI refuses to connect to it
 (`backend_unsupported`) rather than guessing its semantics. For those:
 
 - pull the data with the vendor's tooling into `data/source/` and pin it as
   a `local_snapshot`, or
 - use the backend's own snapshot/time-travel identity (Snowflake `AT
-  (STATEMENT => ...)`, BigQuery `FOR SYSTEM_TIME AS OF`, Iceberg/Delta
-  snapshot ids) as a `backend_snapshot`, **recording the retention limit
-  the vendor actually guarantees** (Snowflake Time Travel defaults to one
-  day; BigQuery keeps seven), and expect `verify` to report
-  `not_reproducible` once that passes.
+  (STATEMENT => ...)`, Iceberg/Delta snapshot ids) as a `backend_snapshot`,
+  **recording the retention limit the vendor actually guarantees**
+  (Snowflake Time Travel defaults to one day; BigQuery keeps seven), and
+  expect `verify` to report `not_reproducible` once that passes.
+
+The same caution applies to the verified cloud backends: BigQuery time
+travel is seven days, which is a refresh window, not a reproducibility
+mechanism. Pin the local snapshot.
 
 Never approximate a pin by pasting the current date. The point of the pin
 contract is that a reviewer can tell the difference.

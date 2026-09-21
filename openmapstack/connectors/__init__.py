@@ -15,13 +15,17 @@ The connector surface is deliberately small and defensive:
   half-written file is removed;
 - **only SELECT** -- one statement, no DML/DDL/COPY/ATTACH keywords, no
   statement separators;
+- **scan limits** -- a backend that bills by bytes scanned (BigQuery) is
+  dry-run first and refused before execution when the estimate exceeds
+  ``max_scan_bytes``;
 - **redaction** -- every message a connector emits passes through
   ``openmapstack.sources.redact``.
 
-Two backends are implemented as the reference pair: ``duckdb`` for local
-files (GeoParquet, GeoJSON, GeoPackage, FlatGeobuf, ``.duckdb`` databases)
-and ``postgis`` for PostgreSQL/PostGIS. Other warehouses are documented only
-where their behaviour has been verified; they are not silently accepted.
+Four backends are implemented: ``duckdb`` for local files (GeoParquet,
+GeoJSON, GeoPackage, FlatGeobuf, ``.duckdb`` databases), ``postgis`` for
+PostgreSQL/PostGIS, ``bigquery``, and ``motherduck``. Other warehouses are
+documented only where their behaviour has been verified; they are not
+silently accepted.
 """
 
 from __future__ import annotations
@@ -39,7 +43,7 @@ from ..integrity import sha256_file
 from ..project import get_in, project_path
 from ..sources import CONNECTION_REFERENCE_SCHEMES, redact
 
-BACKENDS = ("duckdb", "postgis")
+BACKENDS = ("duckdb", "postgis", "bigquery", "motherduck")
 
 _FORBIDDEN_KEYWORDS = re.compile(
     r"\b(insert|update|delete|drop|alter|create|copy|grant|revoke|truncate|call|execute|"
@@ -70,9 +74,13 @@ class ConnectorLimits:
     timeout_s: float = 60.0
     max_rows: int = 100_000
     max_bytes: int = 256 * 1024 * 1024
+    #: Bytes a metered backend may scan. Enforced *before* execution from a
+    #: dry-run estimate, and passed to the backend as its own billing cap.
+    #: Backends that do not meter scanned bytes ignore it.
+    max_scan_bytes: int = 1024 * 1024 * 1024
 
     def validate(self) -> None:
-        if self.timeout_s <= 0 or self.max_rows <= 0 or self.max_bytes <= 0:
+        if self.timeout_s <= 0 or self.max_rows <= 0 or self.max_bytes <= 0 or self.max_scan_bytes <= 0:
             raise ConnectorError("limits must all be positive", code="limits_invalid")
 
 
@@ -126,6 +134,8 @@ class QueryPlan:
     query_sha256: str
     schema_sha256: str
     backend_snapshot: dict[str, Any] | None = None
+    #: Bytes the backend estimated it would scan, for backends that meter it.
+    scan_bytes: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -134,6 +144,7 @@ class QueryPlan:
             "query_sha256": self.query_sha256,
             "schema_sha256": self.schema_sha256,
             "backend_snapshot": self.backend_snapshot,
+            "scan_bytes": self.scan_bytes,
         }
 
 
@@ -204,7 +215,14 @@ def resolve_connection_reference(reference: object, *, environ: dict[str, str] |
     raise ConnectorError("keyring: references are not supported by the pilot connectors", code="connection_reference_invalid")
 
 
-def load_connector(backend: str, connection: str, *, project_root: Path):
+def load_connector(backend: str, connection: str, *, project_root: Path, warehouse: dict[str, Any] | None = None):
+    """Build a connector for ``backend``.
+
+    ``warehouse`` is the source's ``warehouse`` block. The cloud backends need
+    it to know *what* to read -- a BigQuery dataset, a MotherDuck database --
+    because unlike a DSN or a directory, their credential names no target.
+    """
+    warehouse = warehouse or {}
     if backend == "duckdb":
         from .duckdb_local import DuckDBLocalConnector
 
@@ -213,10 +231,27 @@ def load_connector(backend: str, connection: str, *, project_root: Path):
         from .postgis import PostGISConnector
 
         return PostGISConnector(connection)
+    if backend == "bigquery":
+        from .bigquery import BigQueryConnector
+
+        return BigQueryConnector(
+            connection,
+            project=_text(warehouse.get("project")),
+            dataset=_text(warehouse.get("dataset")),
+            location=_text(warehouse.get("location")),
+        )
+    if backend == "motherduck":
+        from .motherduck import MotherDuckConnector
+
+        return MotherDuckConnector(connection, database=_text(warehouse.get("database")))
     raise ConnectorError(
         f"backend {backend!r} is not a verified connector; supported: {list(BACKENDS)}",
         code="backend_unsupported",
     )
+
+
+def _text(value: object) -> str | None:
+    return value if isinstance(value, str) and value.strip() else None
 
 
 def _source_block(manifest: dict[str, Any], source_key: str) -> dict[str, Any]:
@@ -234,6 +269,7 @@ def connector_for_source(
     environ: dict[str, str] | None = None,
 ):
     source = _source_block(manifest, source_key)
+    warehouse = source.get("warehouse") if isinstance(source.get("warehouse"), dict) else {}
     backend = get_in(source, "warehouse", "backend")
     if not isinstance(backend, str):
         raise ConnectorError(f"source {source_key!r} declares no warehouse.backend", code="backend_undeclared")
@@ -241,9 +277,9 @@ def connector_for_source(
     if backend == "duckdb" and reference is None:
         # Local files need no credential: the "connection" is the project's
         # own data/source directory.
-        return load_connector(backend, "", project_root=project_root)
+        return load_connector(backend, "", project_root=project_root, warehouse=warehouse)
     _, secret = resolve_connection_reference(reference, environ=environ)
-    return load_connector(backend, secret, project_root=project_root)
+    return load_connector(backend, secret, project_root=project_root, warehouse=warehouse)
 
 
 def discover_source(

@@ -5,23 +5,37 @@ Infrastructure and setup only — provisioning never becomes part of the
 accepted analytical pipeline (`pipeline.py` is the single canonical
 analysis implementation and runs exclusively from pinned local snapshots).
 
-PostGIS (implemented in this skeleton stage):
+Commands:
 
     python provision.py postgis          # schema.sql -> seed.sql -> security.sql
-    python provision.py verify           # sanity-check the security boundary
+    python provision.py bigquery         # + column-security.sql with --policy-tag
+    python provision.py motherduck
+    python provision.py all              # every backend whose credentials are set
+    python provision.py verify           # check each boundary through the reader
     python provision.py destroy          # drop everything this fixture created
 
-BigQuery and MotherDuck provisioning arrive with their connectors (issue #43,
-later steps): `provision.py all` will then cover all three backends.
-
-Credentials:
+Credentials (admin/provisioning first, restricted analysis reader second):
 
     OMS_DEMO_POSTGIS_ADMIN_DSN            admin DSN used by provision/destroy
     OMS_DEMO_POSTGIS_READER_PASSWORD      password for the restricted reader
     OMS_DEMO_POSTGIS_DSN                  restricted reader DSN used by verify
 
+    OMS_DEMO_BIGQUERY_ADMIN_CREDENTIALS   admin service-account key file
+    OMS_DEMO_BIGQUERY_PROJECT             GCP project holding the fixture
+    OMS_DEMO_BIGQUERY_READER_PRINCIPAL    e.g. serviceAccount:oms-alpha-reader@...
+    GOOGLE_APPLICATION_CREDENTIALS        restricted reader key used by verify
+
+    OMS_DEMO_MOTHERDUCK_ADMIN_TOKEN       admin token used by provision/destroy
+    MOTHERDUCK_TOKEN                      read-scoped reader token used by verify
+
 The admin identity must never be used by the OpenMapStack project itself;
-`project.yaml` references only `env:OMS_DEMO_POSTGIS_DSN`.
+`project.yaml` references only the restricted reader
+(`env:OMS_DEMO_POSTGIS_DSN`, `env:GOOGLE_APPLICATION_CREDENTIALS`,
+`env:MOTHERDUCK_TOKEN`).
+
+`all` and `verify` never turn a missing credential into a pass: a backend
+with no credentials configured is reported as skipped, and `verify` exits
+non-zero only for a boundary that is actually wrong.
 """
 
 from __future__ import annotations
@@ -35,8 +49,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SETUP = ROOT / "setup" / "postgis"
+BIGQUERY_SETUP = ROOT / "setup" / "bigquery"
+MOTHERDUCK_SETUP = ROOT / "setup" / "motherduck"
 
 READER_NAME_DEFAULT = "oms_alpha_reader"
+BIGQUERY_DATASET_DEFAULT = "northstar_analytics"
+BIGQUERY_RESTRICTED_DATASET_DEFAULT = "northstar_analytics_restricted"
+BIGQUERY_LOCATION_DEFAULT = "US"
+MOTHERDUCK_DATABASE_DEFAULT = "northstar_market"
 
 
 def _connect(dsn: str):
@@ -210,9 +230,223 @@ def destroy_postgis(admin_dsn: str, reader_name: str) -> None:
     print("postgis fixture destroyed")
 
 
+# -- BigQuery ------------------------------------------------------------------
+
+
+def _bigquery_client(credentials: str, project: str, location: str):
+    try:
+        from google.cloud import bigquery
+    except ImportError as exc:  # pragma: no cover - environment dependent
+        raise SystemExit(
+            "provision.py bigquery requires google-cloud-bigquery: "
+            "pip install 'openmapstack[bigquery]'"
+        ) from exc
+    if credentials:
+        return bigquery.Client.from_service_account_json(credentials, project=project, location=location)
+    return bigquery.Client(project=project, location=location)
+
+
+def _run_bigquery_script(client, path: Path, params: dict[str, str]) -> None:
+    """Submit one setup file as a single BigQuery script job."""
+    sql = substitute_variables(path.read_text(encoding="utf-8"), params)
+    print(f"applying {path.name}")
+    client.query(sql).result()
+
+
+def _bigquery_params(project: str, dataset: str, restricted: str, location: str, principal: str) -> dict[str, str]:
+    return {
+        "project": project,
+        "dataset": dataset,
+        "restricted_dataset": restricted,
+        "location": location,
+        "reader_principal": principal,
+    }
+
+
+def provision_bigquery(
+    credentials: str,
+    project: str,
+    dataset: str,
+    restricted: str,
+    location: str,
+    principal: str,
+    policy_tag: str,
+) -> None:
+    if not principal:
+        raise SystemExit(
+            "refusing to provision without the restricted reader's principal "
+            "(--reader-principal or OMS_DEMO_BIGQUERY_READER_PRINCIPAL); the grants "
+            "in security.sql are the fixture"
+        )
+    client = _bigquery_client(credentials, project, location)
+    params = _bigquery_params(project, dataset, restricted, location, principal)
+    for name in ("schema.sql", "seed.sql", "security.sql"):
+        _run_bigquery_script(client, BIGQUERY_SETUP / name, params)
+    if policy_tag:
+        _run_bigquery_script(client, BIGQUERY_SETUP / "column-security.sql", {**params, "policy_tag": policy_tag})
+        print("column-level security applied to internal_cost and rider_reference")
+    else:
+        # Saying this out loud is the point: a fixture that silently skipped
+        # column security while reporting a clean boundary would be a lie.
+        print(
+            "NOTE  column-level security NOT applied: pass --policy-tag to apply "
+            "column-security.sql; internal_cost and rider_reference stay readable"
+        )
+    print("bigquery fixture provisioned")
+
+
+def verify_bigquery(credentials: str, project: str, dataset: str, restricted: str, location: str) -> tuple[dict, list[str]]:
+    """Check the BigQuery boundary through the restricted reader."""
+    sys.path.insert(0, str(ROOT.parents[1]))
+    from openmapstack.connectors import ConnectorLimits
+    from openmapstack.connectors.bigquery import BigQueryConnector
+
+    connector = BigQueryConnector(credentials or "service=default", project=project, dataset=dataset, location=location)
+    discovery = connector.discover(ConnectorLimits(timeout_s=60.0))
+    print(json.dumps({"backend": "bigquery", "tables": [t.to_dict() for t in discovery.tables]}, indent=2))
+    client = _bigquery_client(credentials, project, location)
+
+    def _scalar(sql: str):
+        return list(client.query(sql).result())[0][0]
+
+    def _denied(sql: str) -> bool:
+        try:
+            list(client.query(sql).result())
+        except Exception:
+            return True
+        return False
+
+    tenants = [
+        row[0]
+        for row in client.query(f"SELECT DISTINCT tenant_id FROM `{project}`.`{dataset}`.trip_events").result()
+    ]
+    trips = _scalar(f"SELECT count(*) FROM `{project}`.`{dataset}`.trip_events")
+    checks = {
+        "trip_events readable": trips > 0,
+        "row access policy shows only tenant alpha": tenants == ["alpha"],
+        "restricted dataset inaccessible": _denied(
+            f"SELECT count(*) FROM `{project}`.`{restricted}`.driver_costs"
+        ),
+    }
+    unconfigured: list[str] = []
+    if _denied(f"SELECT internal_cost FROM `{project}`.`{dataset}`.trip_events LIMIT 1"):
+        checks["protected columns denied"] = True
+    else:
+        # not_testable, never a pass: the taxonomy simply is not there.
+        unconfigured.append("column-level security (no policy tag applied; see column-security.sql)")
+    return checks, unconfigured
+
+
+def destroy_bigquery(credentials: str, project: str, dataset: str, restricted: str, location: str) -> None:
+    client = _bigquery_client(credentials, project, location)
+    for name in (dataset, restricted):
+        client.query(f"DROP SCHEMA IF EXISTS `{project}`.`{name}` CASCADE").result()
+        print(f"dropped dataset {name}")
+    print("bigquery fixture destroyed")
+
+
+# -- MotherDuck ----------------------------------------------------------------
+
+
+def _motherduck_connect(token: str, database: str | None):
+    try:
+        import duckdb
+    except ImportError as exc:  # pragma: no cover - environment dependent
+        raise SystemExit(
+            "provision.py motherduck requires duckdb: pip install 'openmapstack[motherduck]'"
+        ) from exc
+    connection = duckdb.connect(config={"motherduck_token": token})
+    connection.execute("LOAD motherduck")
+    if database:
+        connection.execute(f"ATTACH 'md:{database}'")
+        connection.execute(f"USE {database}")
+    return connection
+
+
+def provision_motherduck(admin_token: str, database: str) -> None:
+    connection = _motherduck_connect(admin_token, None)
+    try:
+        connection.execute(f"CREATE DATABASE IF NOT EXISTS {database}")
+        connection.execute(f"USE {database}")
+        try:
+            connection.execute("LOAD spatial")
+        except Exception:  # pragma: no cover - build dependent
+            raise SystemExit("the motherduck fixture needs DuckDB Spatial (geometry columns in schema.sql)")
+        for name in ("schema.sql", "seed.sql", "security.sql"):
+            print(f"applying {name}")
+            connection.execute((MOTHERDUCK_SETUP / name).read_text(encoding="utf-8"))
+    finally:
+        connection.close()
+    print("motherduck fixture provisioned")
+    print(
+        "NOTE  the read-only boundary is the token, not SQL: create a read-scoped "
+        f"token for {database} in MotherDuck and give the project that one as "
+        "MOTHERDUCK_TOKEN -- never this admin token"
+    )
+
+
+def verify_motherduck(reader_token: str, database: str) -> tuple[dict, list[str]]:
+    """Check the MotherDuck boundary through the reader's own token."""
+    sys.path.insert(0, str(ROOT.parents[1]))
+    from openmapstack.connectors import ConnectorLimits
+    from openmapstack.connectors.motherduck import MotherDuckConnector
+
+    connector = MotherDuckConnector(reader_token, database=database)
+    discovery = connector.discover(ConnectorLimits(timeout_s=60.0))
+    print(json.dumps({"backend": "motherduck", "tables": [t.to_dict() for t in discovery.tables]}, indent=2))
+    by_name = {table.name: table for table in discovery.tables}
+    connection = _motherduck_connect(reader_token, database)
+    try:
+        zones = connection.execute("SELECT count(*) FROM market.zone_market_scores").fetchone()[0]
+        pois = connection.execute("SELECT count(*) FROM market.relevant_pois").fetchone()[0]
+        # A zero-row INSERT is the least invasive read-only probe there is: it
+        # needs write permission but can change nothing if it is allowed.
+        try:
+            connection.execute(
+                "INSERT INTO market.analyst_annotations "
+                "SELECT * FROM market.analyst_annotations WHERE false"
+            )
+            writable = True
+        except Exception:
+            writable = False
+    finally:
+        connection.close()
+    checks = {
+        "zone_market_scores complete (60)": zones == 60,
+        "relevant_pois complete (240)": pois == 240,
+        "analysis views present": "analysis_zone_poi_counts" in by_name,
+        "token is read-only": not writable,
+    }
+    unconfigured: list[str] = []
+    if not discovery.read_only:
+        unconfigured.append("READ_ONLY attach (this DuckDB build could not attach the database read-only)")
+    return checks, unconfigured
+
+
+def destroy_motherduck(admin_token: str, database: str) -> None:
+    connection = _motherduck_connect(admin_token, None)
+    try:
+        connection.execute(f"DROP DATABASE IF EXISTS {database}")
+    finally:
+        connection.close()
+    print(f"motherduck fixture destroyed (database {database})")
+
+
+# -- reporting -----------------------------------------------------------------
+
+
+def report(backend: str, checks: dict, unconfigured: list[str]) -> bool:
+    print(f"{backend}:")
+    for label, ok in checks.items():
+        print(f"  {'PASS' if ok else 'FAIL'}: {label}")
+    for label in unconfigured:
+        print(f"  NOT CONFIGURED: {label}")
+    return all(checks.values())
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=["postgis", "all", "verify", "destroy"])
+    parser.add_argument("command", choices=["postgis", "bigquery", "motherduck", "all", "verify", "destroy"])
     parser.add_argument("--admin-dsn", default=None, help="defaults to OMS_DEMO_POSTGIS_ADMIN_DSN")
     parser.add_argument("--reader-dsn", default=None, help="defaults to OMS_DEMO_POSTGIS_DSN")
     parser.add_argument("--reader-name", default=READER_NAME_DEFAULT)
@@ -221,25 +455,148 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="defaults to OMS_DEMO_POSTGIS_READER_PASSWORD; never committed or logged",
     )
+    parser.add_argument("--bigquery-credentials", default=None, help="defaults to OMS_DEMO_BIGQUERY_ADMIN_CREDENTIALS")
+    parser.add_argument("--bigquery-project", default=None, help="defaults to OMS_DEMO_BIGQUERY_PROJECT")
+    parser.add_argument("--bigquery-dataset", default=BIGQUERY_DATASET_DEFAULT)
+    parser.add_argument("--bigquery-restricted-dataset", default=BIGQUERY_RESTRICTED_DATASET_DEFAULT)
+    parser.add_argument("--bigquery-location", default=BIGQUERY_LOCATION_DEFAULT)
+    parser.add_argument(
+        "--reader-principal",
+        default=None,
+        help="BigQuery grantee, e.g. serviceAccount:oms-alpha-reader@PROJECT.iam.gserviceaccount.com; "
+        "defaults to OMS_DEMO_BIGQUERY_READER_PRINCIPAL",
+    )
+    parser.add_argument(
+        "--policy-tag",
+        default=None,
+        help="Data Catalog policy tag for column-level security; without it the protected columns stay readable",
+    )
+    parser.add_argument("--motherduck-token", default=None, help="admin token; defaults to OMS_DEMO_MOTHERDUCK_ADMIN_TOKEN")
+    parser.add_argument("--motherduck-database", default=MOTHERDUCK_DATABASE_DEFAULT)
     args = parser.parse_args(argv)
 
     admin_dsn = args.admin_dsn or os.environ.get("OMS_DEMO_POSTGIS_ADMIN_DSN", "")
     reader_dsn = args.reader_dsn or os.environ.get("OMS_DEMO_POSTGIS_DSN", "")
     reader_password = args.reader_password or os.environ.get("OMS_DEMO_POSTGIS_READER_PASSWORD", "")
 
-    if args.command in ("postgis", "all"):
+    bigquery_credentials = args.bigquery_credentials or os.environ.get("OMS_DEMO_BIGQUERY_ADMIN_CREDENTIALS", "")
+    bigquery_reader_credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "")
+    bigquery_project = args.bigquery_project or os.environ.get("OMS_DEMO_BIGQUERY_PROJECT", "")
+    reader_principal = args.reader_principal or os.environ.get("OMS_DEMO_BIGQUERY_READER_PRINCIPAL", "")
+    policy_tag = args.policy_tag or os.environ.get("OMS_DEMO_BIGQUERY_POLICY_TAG", "")
+
+    motherduck_admin = args.motherduck_token or os.environ.get("OMS_DEMO_MOTHERDUCK_ADMIN_TOKEN", "")
+    motherduck_reader = os.environ.get("MOTHERDUCK_TOKEN", "")
+
+    def _provision_bigquery() -> None:
+        if not bigquery_project:
+            raise SystemExit("a BigQuery project is required: --bigquery-project or OMS_DEMO_BIGQUERY_PROJECT")
+        provision_bigquery(
+            bigquery_credentials,
+            bigquery_project,
+            args.bigquery_dataset,
+            args.bigquery_restricted_dataset,
+            args.bigquery_location,
+            reader_principal,
+            policy_tag,
+        )
+
+    def _provision_motherduck() -> None:
+        if not motherduck_admin:
+            raise SystemExit("an admin token is required: --motherduck-token or OMS_DEMO_MOTHERDUCK_ADMIN_TOKEN")
+        provision_motherduck(motherduck_admin, args.motherduck_database)
+
+    if args.command == "postgis":
         if not admin_dsn:
             raise SystemExit("an admin DSN is required: --admin-dsn or OMS_DEMO_POSTGIS_ADMIN_DSN")
         provision_postgis(admin_dsn, args.reader_name, reader_password)
         return 0
+    if args.command == "bigquery":
+        _provision_bigquery()
+        return 0
+    if args.command == "motherduck":
+        _provision_motherduck()
+        return 0
+
+    if args.command == "all":
+        # A backend with no credentials is skipped and said to be skipped --
+        # `all` must not look like it provisioned something it never touched.
+        done, skipped = [], []
+        for name, configured, run in (
+            ("postgis", bool(admin_dsn), lambda: provision_postgis(admin_dsn, args.reader_name, reader_password)),
+            ("bigquery", bool(bigquery_project), _provision_bigquery),
+            ("motherduck", bool(motherduck_admin), _provision_motherduck),
+        ):
+            if not configured:
+                skipped.append(name)
+                continue
+            run()
+            done.append(name)
+        print(f"provisioned: {', '.join(done) or 'nothing'}")
+        if skipped:
+            print(f"SKIPPED (no credentials configured): {', '.join(skipped)}")
+        return 0 if done else 1
+
     if args.command == "verify":
-        if not reader_dsn:
-            raise SystemExit("a reader DSN is required: --reader-dsn or OMS_DEMO_POSTGIS_DSN")
-        return verify_postgis(reader_dsn)
+        results, skipped = [], []
+        if reader_dsn:
+            results.append(("postgis", verify_postgis(reader_dsn) == 0))
+        else:
+            skipped.append("postgis")
+        if bigquery_project:
+            checks, unconfigured = verify_bigquery(
+                bigquery_reader_credentials,
+                bigquery_project,
+                args.bigquery_dataset,
+                args.bigquery_restricted_dataset,
+                args.bigquery_location,
+            )
+            results.append(("bigquery", report("bigquery", checks, unconfigured)))
+        else:
+            skipped.append("bigquery")
+        if motherduck_reader:
+            checks, unconfigured = verify_motherduck(motherduck_reader, args.motherduck_database)
+            results.append(("motherduck", report("motherduck", checks, unconfigured)))
+        else:
+            skipped.append("motherduck")
+        if skipped:
+            print(f"NOT VERIFIED (no reader credentials configured): {', '.join(skipped)}")
+        failed = [name for name, ok in results if not ok]
+        if not results:
+            print("verification could not run: no reader credentials configured")
+            return 1
+        if failed:
+            print(f"verification FAILED for: {', '.join(failed)}")
+            return 1
+        print(f"verification passed for: {', '.join(name for name, _ in results)}")
+        return 0
+
     if args.command == "destroy":
-        if not admin_dsn:
-            raise SystemExit("an admin DSN is required: --admin-dsn or OMS_DEMO_POSTGIS_ADMIN_DSN")
-        destroy_postgis(admin_dsn, args.reader_name)
+        destroyed, skipped = [], []
+        if admin_dsn:
+            destroy_postgis(admin_dsn, args.reader_name)
+            destroyed.append("postgis")
+        else:
+            skipped.append("postgis")
+        if bigquery_project:
+            destroy_bigquery(
+                bigquery_credentials,
+                bigquery_project,
+                args.bigquery_dataset,
+                args.bigquery_restricted_dataset,
+                args.bigquery_location,
+            )
+            destroyed.append("bigquery")
+        else:
+            skipped.append("bigquery")
+        if motherduck_admin:
+            destroy_motherduck(motherduck_admin, args.motherduck_database)
+            destroyed.append("motherduck")
+        else:
+            skipped.append("motherduck")
+        print(f"destroyed: {', '.join(destroyed) or 'nothing'}")
+        if skipped:
+            print(f"SKIPPED (no admin credentials configured): {', '.join(skipped)}")
         return 0
     return 2
 
