@@ -362,6 +362,122 @@ class FixtureManifestTests(unittest.TestCase):
         self.assertIn("not a pass", reports["not_configured"])
 
 
+class ThreeSourceExampleTests(unittest.TestCase):
+    """The worked example must actually be three-source, and its scoring must
+    be recomputable from the file it publishes.
+
+    The placeholder stage scored `market_score = 0.0` for every zone and
+    proxied demand from account counts. Both are easy to regress back into
+    without any other check noticing: the pipeline would still run, the
+    validation report would still pass, and the answer would quietly stop
+    using two of the three backends.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.project = yaml.safe_load((EXAMPLE / "project.yaml").read_text(encoding="utf-8"))
+
+    def test_the_manifest_reads_from_all_three_backends(self) -> None:
+        from openmapstack.connectors import BACKENDS
+
+        backends = {source["warehouse"]["backend"] for source in self.project["sources"].values()}
+        self.assertEqual(backends, {"postgis", "bigquery", "motherduck"})
+        for backend in backends:
+            self.assertIn(backend, BACKENDS, "the example may only use verified backends")
+
+    def test_each_warehouse_source_is_pinned_to_local_bytes(self) -> None:
+        """Credential-free rerun is the acceptance gate; a backend_snapshot
+        pin would make it depend on the vendor's retention instead."""
+        for key, source in self.project["sources"].items():
+            with self.subTest(source=key):
+                self.assertEqual(source["pin"]["class"], "local_snapshot")
+                self.assertTrue((EXAMPLE / source["pin"]["path"]).is_file())
+
+    def test_the_cloud_snapshot_queries_are_committed_and_policy_clean(self) -> None:
+        from openmapstack.connectors import require_read_only_select
+
+        for name in ("bigquery-zone-demand.sql", "motherduck-zone-market.sql"):
+            with self.subTest(query=name):
+                text = (EXAMPLE / "queries" / name).read_text(encoding="utf-8")
+                self.assertTrue(require_read_only_select(text))
+                # The tenant boundary is the backend's. A filter here would
+                # hide whether it works.
+                self.assertNotIn("tenant_id", _code(text))
+        market = (EXAMPLE / "queries" / "motherduck-zone-market.sql").read_text(encoding="utf-8")
+        self.assertNotIn("analyst_annotations", _code(market))
+
+    @unittest.skipUnless(DUCKDB_AVAILABLE, "DuckDB Spatial is not available")
+    def test_the_derived_metrics_carry_evidence_from_every_backend(self) -> None:
+        connection = connect_spatial()
+        self.addCleanup(connection.close)
+        path = (EXAMPLE / "data/derived/zone-metrics.parquet").as_posix()
+        columns = {
+            str(name) for name, *_ in connection.execute(f"DESCRIBE SELECT * FROM read_parquet('{path}')").fetchall()
+        }
+        for column in ("trips_total", "trips_peak_day", "trips_stddev_day"):  # BigQuery
+            self.assertIn(column, columns)
+        for column in ("market_score_raw", "charging_pois", "competitor_pois"):  # MotherDuck
+            self.assertIn(column, columns)
+        for column in ("fleet_present", "hub_distance_m"):  # PostGIS
+            self.assertIn(column, columns)
+        distinct_market = connection.execute(
+            f"SELECT count(DISTINCT market_score) FROM read_parquet('{path}') WHERE market_score IS NOT NULL"
+        ).fetchone()[0]
+        self.assertGreater(distinct_market, 1, "market_score is constant -- the A4 placeholder is back")
+
+    @unittest.skipUnless(DUCKDB_AVAILABLE, "DuckDB Spatial is not available")
+    def test_every_published_score_recomputes_from_the_published_columns(self) -> None:
+        """project.yaml claims final_score is recomputable from
+        zone-metrics.parquet alone. This recomputes it from the declared
+        weights and thresholds and refuses any disagreement."""
+        scoring = self.project["scoring"]
+        weights, components, eligibility = scoring["weights"], scoring["components"], scoring["eligibility"]
+        amenity_full = components["amenity_pois_for_full_score"]
+        competitor_full = components["competitor_pois_for_full_pressure"]
+
+        connection = connect_spatial()
+        self.addCleanup(connection.close)
+        path = (EXAMPLE / "data/derived/zone-metrics.parquet").as_posix()
+        rows = connection.execute(
+            "SELECT zone_id, trips_total, hub_distance_m, fleet_present, market_score_raw, "
+            "charging_pois, parking_pois, transit_pois, competitor_pois, market_score, final_score "
+            f"FROM read_parquet('{path}') ORDER BY zone_id"
+        ).fetchall()
+        pool = [
+            row for row in rows
+            if row[1] >= eligibility["trips_total_min"]
+            and row[2] >= eligibility["hub_distance_m_min"]
+            and row[3] <= eligibility["fleet_present_max"]
+        ]
+        self.assertTrue(pool, "no zone satisfies the declared eligibility thresholds")
+        max_demand = max(row[1] for row in pool)
+        max_distance = max(row[2] for row in pool)
+        max_fleet = max(row[3] for row in pool)
+        for row in pool:
+            zone_id, trips, distance, fleet, raw, charging, parking, transit, competitor = row[:9]
+            with self.subTest(zone=zone_id):
+                market = round(
+                    0.5 * raw
+                    + 0.3 * min(1.0, (charging + parking + transit) / amenity_full)
+                    + 0.2 * (1.0 - min(1.0, competitor / competitor_full)),
+                    6,
+                )
+                final = round(
+                    100 * (
+                        weights["demand"] * (trips / max_demand)
+                        + weights["coverage_gap"] * (distance / max_distance)
+                        + weights["market"] * market
+                        + weights["saturation"] * (1.0 - fleet / max_fleet)
+                    ),
+                    2,
+                )
+                self.assertAlmostEqual(market, row[9], places=6)
+                self.assertAlmostEqual(final, row[10], places=6)
+        ineligible = [row[10] for row in rows if row not in pool]
+        self.assertTrue(all(score is None for score in ineligible),
+                        "a zone outside the eligibility thresholds must carry no score")
+
+
 class ProvisionCommandTests(unittest.TestCase):
     """`all` and `verify` must report an unconfigured backend, never pass it."""
 

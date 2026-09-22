@@ -1,10 +1,15 @@
 {
-  "run_id": "run-20260917-130533",
-  "started_at": "2026-09-17T13:05:32.912821+00:00",
-  "completed_at": "2026-09-17T13:05:33.199887+00:00",
+  "run_id": "run-20260922-194831",
+  "started_at": "2026-09-22T19:48:31.599343+00:00",
+  "completed_at": "2026-09-22T19:48:31.922862+00:00",
   "status": "passed",
-  "inputs_hash": "sha256:d2d0f4dec607dd1e9e3e68569450c1cf135d8cc9ff2d80683d6258cbd7711ffd",
-  "outputs_hash": "sha256:aa6e802fd916d6b3f3767399afb4552834d1cf8594954090277afb2124fa755b",
+  "inputs_hash": "sha256:a26b3e85e4dfb85bc9709804324f796381aa2c723e3f58e4bb9903a7ab4de1b6",
+  "outputs_hash": "sha256:af20c65c440950452a316c89096d6e77744a74fd03e5c3431da2e57490753009",
+  "environment": {
+    "python": "3.12.14",
+    "duckdb": "1.5.5",
+    "analysis_crs": "EPSG:32618"
+  },
   "source_manifest": "data/source/manifest.json",
   "validation_report": "validation/latest-report.json",
   "sources": [
@@ -23,6 +28,14 @@
     {
       "key": "taxi_zones",
       "sha256": "sha256:ec256ae4435f1a9013d2589bc0befda6a93b36a238371ac936cf84720aa678ef"
+    },
+    {
+      "key": "zone_demand",
+      "sha256": "sha256:cf16348825701064de41b0290ba98da362b7e0e6b50089e96af428e713ca695b"
+    },
+    {
+      "key": "zone_market",
+      "sha256": "sha256:527a8876161554a3d2162cedc5173af60996d3290ce7fb7887344df537dc13a4"
     }
   ],
   "inputs": [
@@ -40,29 +53,41 @@
     },
     {
       "path": "data/source/manifest.json",
-      "sha256": "sha256:a0d163f3efb74900d474960225bffb4241ac497be80832e5fe24916477d24c3f"
+      "sha256": "sha256:2fdc4c1c6a169966661d573a239a9a46766671fd4d0760c6e56c204e056ea6b3"
     },
     {
       "path": "data/source/taxi_zones.parquet",
       "sha256": "sha256:ec256ae4435f1a9013d2589bc0befda6a93b36a238371ac936cf84720aa678ef"
     },
     {
+      "path": "data/source/zone_demand.parquet",
+      "sha256": "sha256:cf16348825701064de41b0290ba98da362b7e0e6b50089e96af428e713ca695b"
+    },
+    {
+      "path": "data/source/zone_market.parquet",
+      "sha256": "sha256:527a8876161554a3d2162cedc5173af60996d3290ce7fb7887344df537dc13a4"
+    },
+    {
       "path": "pipeline.py",
-      "sha256": "sha256:e3496dc9f1d67a33e7a72914bda7dbba5aafe207d2df5b3f6ab2ad1aae95d782"
+      "sha256": "sha256:5485d49c80ab0b9436be30c5724570d5f2b7a1a6463a0d022fd10188fbd90d88"
     }
   ],
   "outputs": [
     {
       "path": "data/derived/hub-candidates.geojson",
-      "sha256": "sha256:1da8d84a57d549f3103cac2d86ee537c63907c7c4ed3e0077b36e8e9a5531698"
+      "sha256": "sha256:cf34d2dac7c1370b9a772c703183edee1bc15134f1233ed19e178610c9034d35"
     },
     {
       "path": "data/derived/hub-candidates.parquet",
-      "sha256": "sha256:c0fd439b9eed9eb1f4873fa47d95e87990735b2dd10a13b0b2ba81f5ee412a25"
+      "sha256": "sha256:d0ce8552da6a6bd861e4c5bdc9333312c268e896cc49ad53a8c986154ea22a25"
     },
     {
       "path": "data/derived/zone-metrics.parquet",
-      "sha256": "sha256:6b6f54bd8fa4a2e8b1a778da52411400745541f42de9e1f5e2c3f5a34cd1b738"
+      "sha256": "sha256:a1099bb32fb36a1bc15d12d63131aaf8a727b6b5736aa210b7cc7f6752e6ad40"
+    },
+    {
+      "path": "project.qgz",
+      "sha256": "sha256:f872bf545cd45647e5e3b2a10b0408bc43a8dad8a050cba08a818eb3e1b7ef01"
     }
   ]
 }

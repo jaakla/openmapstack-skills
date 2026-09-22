@@ -116,13 +116,26 @@ class StaticFixtureContractTests(unittest.TestCase):
                     offenders.append(f"{path.name}: hardcoded password literal")
         self.assertEqual(offenders, [])
         project = yaml.safe_load((EXAMPLE / "project.yaml").read_text(encoding="utf-8"))
-        for source in project["sources"].values():
-            self.assertEqual(source["access"]["connection"]["ref"], "env:OMS_DEMO_POSTGIS_DSN")
+        # Every source reads through a restricted analysis identity, by
+        # reference. The admin credentials that provision.py uses must never
+        # appear here: a manifest that named one would make the fixture's
+        # whole identity split decorative.
+        analysis_refs = {
+            "env:OMS_DEMO_POSTGIS_DSN",
+            "env:GOOGLE_APPLICATION_CREDENTIALS",
+            "env:MOTHERDUCK_TOKEN",
+        }
+        admin_names = (
+            "ADMIN", "OMS_DEMO_POSTGIS_READER_PASSWORD", "OMS_DEMO_BIGQUERY_READER_PRINCIPAL",
+        )
+        for key, source in project["sources"].items():
+            with self.subTest(source=key):
+                ref = source["access"]["connection"]["ref"]
+                self.assertIn(ref, analysis_refs)
+                for name in admin_names:
+                    self.assertNotIn(name, ref)
         provision = (EXAMPLE / "provision.py").read_text(encoding="utf-8")
         self.assertIn('os.environ.get("OMS_DEMO_POSTGIS_READER_PASSWORD"', provision)
-        project = yaml.safe_load((EXAMPLE / "project.yaml").read_text(encoding="utf-8"))
-        for source in project["sources"].values():
-            self.assertEqual(source["access"]["connection"]["ref"], "env:OMS_DEMO_POSTGIS_DSN")
 
     def test_seed_declares_deterministic_derivation(self) -> None:
         seed = (SETUP / "seed.sql").read_text(encoding="utf-8")
