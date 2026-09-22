@@ -72,6 +72,41 @@ class QueryPolicyTests(unittest.TestCase):
     def test_keywords_inside_string_literals_do_not_trip_the_policy(self) -> None:
         self.assertTrue(require_read_only_select("SELECT 'drop' AS word, 'set;' AS other"))
 
+    def test_a_query_cannot_name_its_own_file_or_url(self) -> None:
+        """The local connector confines file access with `allowed_directories`
+        + `enable_external_access = false`, but that pair is unavailable to a
+        backend that needs the network: `enable_external_access` cannot be
+        re-enabled once a database is running. For MotherDuck the policy is
+        therefore the only thing between an approved snapshot and an arbitrary
+        local file, so it refuses the whole shape, not one function name."""
+        for bad in (
+            "SELECT * FROM read_csv('/etc/passwd')",
+            "SELECT * FROM read_csv_auto('/etc/passwd')",
+            "SELECT * FROM read_parquet('/srv/secrets.parquet')",
+            "SELECT * FROM read_json_auto('https://exfil.example/x.json')",
+            "SELECT * FROM ST_Read('/etc/passwd')",
+            "SELECT * FROM postgres_query('other', 'SELECT 1')",
+            "SELECT * FROM sqlite_scan('/tmp/x.db', 't')",
+            "SELECT * FROM '/etc/passwd.csv'",
+            "SELECT * FROM 'https://exfil.example/x.parquet'",
+            "SELECT a FROM t JOIN 'https://exfil.example/x.csv' u ON true",
+        ):
+            with self.assertRaises(ConnectorError, msg=bad) as caught:
+                require_read_only_select(bad)
+            self.assertEqual(caught.exception.code, "query_rejected", bad)
+
+    def test_ordinary_relational_queries_still_pass(self) -> None:
+        """The refusal above must not cost a legitimate query, including one
+        whose *text* carries the trigger words inside a string literal."""
+        for good in (
+            "SELECT * FROM market.zone_market_scores",
+            "SELECT a FROM x JOIN y ON x.id = y.id",
+            "SELECT taxi_zone_id, trips FROM `project`.`dataset`.zone_daily_demand",
+            "SELECT 'from ''x'' here' AS quoted",
+            "SELECT hub_id FROM ops.hubs WHERE name = 'read_csv from the file'",
+        ):
+            self.assertTrue(require_read_only_select(good), good)
+
     def test_leading_line_comments_are_allowed_but_cannot_hide_statements(self) -> None:
         documented = "-- snapshot query: hubs\n-- reader sees tenant 'alpha' rows only;\nSELECT hub_id FROM ops.hubs"
         self.assertTrue(require_read_only_select(documented).startswith("--"))
@@ -163,13 +198,22 @@ class DuckDBLocalConnectorTests(unittest.TestCase):
         self.assertEqual(sorted(p.name for p in (workspace / "data/source").iterdir()), ["parcels.geojson", "roads.geojson"])
 
     def test_file_access_is_confined_to_the_source_root(self) -> None:
+        """Two layers, and the outer one now answers first: the policy refuses
+        a query that names a file at all, so the session's
+        `allowed_directories` confinement is defence in depth rather than the
+        only thing between a query and the filesystem."""
         workspace, project = _duckdb_project()
         outside = workspace / "outside.parquet"
         (workspace / "data/derived").mkdir()
         for target in (outside, workspace / "data/derived/secret.parquet"):
             with self.assertRaises(ConnectorError, msg=target) as caught:
                 snapshot_source(project, "test_source", f"SELECT * FROM read_parquet('{target.as_posix()}')", "data/source/leak.parquet", project_root=workspace)
-            self.assertEqual(caught.exception.code, "query_failed")
+            self.assertEqual(caught.exception.code, "query_rejected")
+        # The inner layer is still there: a registered view resolves, a path
+        # spelled as an identifier outside the root does not exist as one.
+        with self.assertRaises(ConnectorError) as caught:
+            snapshot_source(project, "test_source", f'SELECT * FROM "{outside.as_posix()}"', "data/source/leak.parquet", project_root=workspace)
+        self.assertEqual(caught.exception.code, "query_failed")
 
     def test_cli_discover_and_snapshot(self) -> None:
         workspace, _ = _duckdb_project()

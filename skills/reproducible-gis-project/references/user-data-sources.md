@@ -24,9 +24,13 @@ backends, and the rest of this file says what to do by hand elsewhere.
 2. **Discovery is read-only.** A connector session opens with
    `default_transaction_read_only = on` and a statement timeout, lists
    tables, geometry columns, SRIDs, and row estimates, and only ever runs
-   a single `SELECT`. DML, DDL, `COPY`, `ATTACH`, `INSTALL`, `SET`, and
-   file-reading table functions are rejected before anything reaches the
-   server.
+   a single `SELECT`. DML, DDL, `COPY`, `ATTACH`, `INSTALL` and `SET` are
+   rejected before anything reaches the server, and so is any query that
+   names a source of its own: `read_csv()`, `read_parquet()`,
+   `read_json_auto()`, `ST_Read()`, `postgres_query()`, `sqlite_scan()` and
+   friends, along with a bare `FROM 'some/path.parquet'` or
+   `FROM 'https://…'`, which DuckDB would resolve as a file or URL. Read the
+   relations the connector exposed.
 3. **Materialising data locally needs explicit approval.**
    `openmapstack source snapshot` is a dry run by default: it reports the
    schema and row count the query would copy. Only `--approve` writes the
@@ -173,8 +177,11 @@ DDL/DML.
 
 One honest limitation: a MotherDuck session needs network access, so unlike
 the local DuckDB connector it cannot run with `enable_external_access =
-false`. Confinement rests on the query policy and on the token's own
-permissions — use a token scoped to the database you are reading.
+false` — and `allowed_directories` does nothing without that switch, which
+DuckDB will not re-enable once a database is running. There is therefore no
+session-level file confinement here: the query policy in rule 2 is what stops
+a query reading a local file, and the token's own scope is what bounds the
+rest. Use a token scoped to the database you are reading.
 
 ## Other backends
 

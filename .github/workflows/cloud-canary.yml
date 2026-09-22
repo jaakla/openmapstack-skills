@@ -41,12 +41,21 @@ jobs:
         env:
           BIGQUERY_PROJECT: ${{ secrets.OMS_CANARY_BIGQUERY_PROJECT }}
           BIGQUERY_KEY: ${{ secrets.OMS_CANARY_BIGQUERY_CREDENTIALS }}
+          BIGQUERY_DATASET: ${{ secrets.OMS_CANARY_BIGQUERY_DATASET }}
           MOTHERDUCK_TOKEN: ${{ secrets.OMS_CANARY_MOTHERDUCK_TOKEN }}
+          MOTHERDUCK_DATABASE: ${{ secrets.OMS_CANARY_MOTHERDUCK_DATABASE }}
         run: |
+          # Every secret the live tests need, not just the credential: with a
+          # credential but no target the tests skip, and a skip reported as
+          # `testable` is exactly the false green this job exists to avoid.
           bigquery=not_testable
           motherduck=not_testable
-          [ -n "$BIGQUERY_PROJECT" ] && [ -n "$BIGQUERY_KEY" ] && bigquery=testable
-          [ -n "$MOTHERDUCK_TOKEN" ] && motherduck=testable
+          if [ -n "$BIGQUERY_PROJECT" ] && [ -n "$BIGQUERY_KEY" ] && [ -n "$BIGQUERY_DATASET" ]; then
+            bigquery=testable
+          fi
+          if [ -n "$MOTHERDUCK_TOKEN" ] && [ -n "$MOTHERDUCK_DATABASE" ]; then
+            motherduck=testable
+          fi
           echo "bigquery=$bigquery" >> "$GITHUB_OUTPUT"
           echo "motherduck=$motherduck" >> "$GITHUB_OUTPUT"
 
@@ -83,6 +92,6 @@ jobs:
             echo "| bigquery | ${{ steps.configured.outputs.bigquery }} |"
             echo "| motherduck | ${{ steps.configured.outputs.motherduck }} |"
             echo
-            echo "\`not_testable\` means no credentials were configured for that backend."
+            echo "\`not_testable\` means the secrets that backend needs were not all configured."
             echo "It is not a pass, and it does not mean the connector works."
           } >> "$GITHUB_STEP_SUMMARY"

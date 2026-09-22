@@ -188,7 +188,13 @@ class BigQueryConnector:
         config = (
             self._job_config(dry_run=True, use_query_cache=False)
             if dry_run
-            else self._job_config(use_query_cache=False, maximum_bytes_billed=int(limits.max_scan_bytes))
+            else self._job_config(
+                use_query_cache=False,
+                maximum_bytes_billed=int(limits.max_scan_bytes),
+                # The service stops the job itself, so a stalled query cannot
+                # outlive the limit even if this process goes away.
+                job_timeout_ms=int(limits.timeout_s * 1000),
+            )
         )
         try:
             return self.client.query(sql, job_config=config)
@@ -196,6 +202,24 @@ class BigQueryConnector:
             raise
         except Exception as exc:  # noqa: BLE001
             raise ConnectorError(f"query failed: {type(exc).__name__}", code="query_failed") from exc
+
+    def _result(self, job: Any, limits: ConnectorLimits, *, max_results: int | None = None, what: str = "query"):
+        """Wait for ``job`` no longer than ``limits.timeout_s``, then cancel it.
+
+        Without the wait bound, ``--timeout`` would describe a limit the
+        connector does not actually impose.
+        """
+        try:
+            if max_results is None:
+                return job.result(timeout=limits.timeout_s)
+            return job.result(timeout=limits.timeout_s, max_results=max_results)
+        except ConnectorError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            if isinstance(exc, TimeoutError) or type(exc).__name__ in {"TimeoutError", "DeadlineExceeded"}:
+                _cancel(job)
+                raise ConnectorError(f"{what} exceeded timeout_s={limits.timeout_s}", code="timeout") from exc
+            raise ConnectorError(f"{what} failed: {type(exc).__name__}", code="query_failed") from exc
 
     def _guarded_dry_run(self, sql: str, limits: ConnectorLimits) -> tuple[Any, int]:
         """Dry-run ``sql`` and refuse it if it would scan too much.
@@ -221,12 +245,7 @@ class BigQueryConnector:
         count_sql = f"SELECT count(*) AS row_count FROM (\n{query}\n) AS q"
         _, count_scanned = self._guarded_dry_run(count_sql, limits)
         count_job = self._run(count_sql, limits, dry_run=False)
-        try:
-            rows = list(count_job.result())
-        except ConnectorError:
-            raise
-        except Exception as exc:  # noqa: BLE001
-            raise ConnectorError(f"row count failed: {type(exc).__name__}", code="query_failed") from exc
+        rows = list(self._result(count_job, limits, what="row count"))
         if not rows:
             raise ConnectorError("row count returned no rows", code="query_failed")
         return QueryPlan(
@@ -247,13 +266,15 @@ class BigQueryConnector:
         columns = _columns_from(getattr(job, "schema", None) or [])
         geography_columns = [column["name"] for column in columns if column["type"] == "GEOGRAPHY"]
         executed = self._run(query, limits, dry_run=False)
-        try:
-            result = executed.result(max_results=int(limits.max_rows))
-            rows = [tuple(_value(row, index, column["name"]) for index, column in enumerate(columns)) for row in result]
-        except ConnectorError:
-            raise
-        except Exception as exc:  # noqa: BLE001
-            raise ConnectorError(f"snapshot failed: {type(exc).__name__}", code="query_failed") from exc
+        # One row beyond the cap, so a table that grew since the plan counted
+        # it is *refused* rather than silently pinned as a truncated subset.
+        result = self._result(executed, limits, max_results=int(limits.max_rows) + 1, what="snapshot")
+        rows = [tuple(_value(row, index, column["name"]) for index, column in enumerate(columns)) for row in result]
+        if len(rows) > limits.max_rows:
+            raise ConnectorError(
+                f"query returned more than max_rows={limits.max_rows}; the source grew since it was planned",
+                code="row_limit_exceeded",
+            )
         try:
             _write_parquet(duck, destination, columns, geography_columns, rows)
         finally:
@@ -262,6 +283,13 @@ class BigQueryConnector:
 
 
 # -- helpers -------------------------------------------------------------------
+
+
+def _cancel(job: Any) -> None:
+    try:
+        job.cancel()
+    except Exception:  # noqa: BLE001 - best effort; the job timeout still applies
+        pass
 
 
 def _partitioning(table: Any) -> str | None:

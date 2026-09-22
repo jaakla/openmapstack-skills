@@ -156,6 +156,19 @@ class VerifiedBackendGuidanceTests(GuidanceCase):
             with self.subTest(path=path):
                 self.assertShips(text, "a MotherDuck session needs network access", path)
                 self.assertShips(text, "READ_ONLY", path)
+                # `allowed_directories` alone does not confine anything; saying
+                # so is what stops a reader assuming a fallback that is absent.
+                self.assertShips(text, "does nothing without that switch", path)
+
+    def test_the_query_policy_documents_what_it_refuses_to_read(self) -> None:
+        """A query that names its own file or URL is the one shape that turns
+        an approved snapshot into an exfiltration path on a backend with no
+        session-level file confinement."""
+        for path, text in _shipped_copies("user-data-sources.md").items():
+            with self.subTest(path=path):
+                for needle in ("read_csv()", "read_parquet()", "ST_Read()"):
+                    self.assertShips(text, needle, path)
+                self.assertShips(text, "relations the connector exposed", path)
 
 
 if __name__ == "__main__":  # pragma: no cover

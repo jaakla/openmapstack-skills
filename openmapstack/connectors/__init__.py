@@ -14,7 +14,8 @@ The connector surface is deliberately small and defensive:
   every query; a query that exceeds any of them is refused, and a
   half-written file is removed;
 - **only SELECT** -- one statement, no DML/DDL/COPY/ATTACH keywords, no
-  statement separators;
+  statement separators, and no table function or bare path that would read a
+  file or a URL of the query's own choosing;
 - **scan limits** -- a backend that bills by bytes scanned (BigQuery) is
   dry-run first and refused before execution when the estimate exceeds
   ``max_scan_bytes``;
@@ -44,6 +45,32 @@ from ..project import get_in, project_path
 from ..sources import CONNECTION_REFERENCE_SCHEMES, redact
 
 BACKENDS = ("duckdb", "postgis", "bigquery", "motherduck")
+
+#: Table functions that read something the *query* names -- a local file, a
+#: URL, or another database -- rather than the relation the connector exposed.
+#: The local DuckDB connector also confines file access with
+#: ``allowed_directories`` + ``enable_external_access = false``, but that pair
+#: is unavailable to any backend that needs the network (MotherDuck reaches
+#: its warehouse over it, and ``enable_external_access`` cannot be re-enabled
+#: once a database is running). So the policy, not the session, is what has to
+#: hold for those backends, and it refuses these before execution.
+_EXTERNAL_READERS = re.compile(
+    r"\b("
+    r"read_csv|read_csv_auto|sniff_csv|read_parquet|parquet_scan|parquet_metadata|parquet_schema|"
+    r"read_json|read_json_auto|read_ndjson|read_ndjson_auto|json_scan|read_xlsx|"
+    r"st_read|st_read_meta|st_readosm|"
+    r"delta_scan|iceberg_scan|iceberg_metadata|iceberg_snapshots|"
+    r"postgres_scan|postgres_scan_pushdown|postgres_query|mysql_scan|mysql_query|"
+    r"sqlite_scan|sqlite_query|external_query"
+    r")\s*\(",
+    re.IGNORECASE,
+)
+
+#: ``FROM 'some/path.parquet'`` and ``FROM 'https://...'``: DuckDB resolves a
+#: bare string in table position as a file or URL, so it is the same hole
+#: without a function name. Detected after string literals are masked, so a
+#: literal that merely *contains* the word "from" cannot trip it.
+_PATH_AS_TABLE = re.compile(r"\b(from|join)\s+''", re.IGNORECASE)
 
 _FORBIDDEN_KEYWORDS = re.compile(
     r"\b(insert|update|delete|drop|alter|create|copy|grant|revoke|truncate|call|execute|"
@@ -167,6 +194,18 @@ def require_read_only_select(query: str) -> str:
     match = _FORBIDDEN_KEYWORDS.search(bare)
     if match:
         raise ConnectorError(f"query contains a forbidden keyword: {match.group(0).upper()}", code="query_rejected")
+    match = _EXTERNAL_READERS.search(bare)
+    if match:
+        raise ConnectorError(
+            f"query reads a source of its own choosing via {match.group(1).lower()}(); "
+            "read the relations the connector exposed",
+            code="query_rejected",
+        )
+    if _PATH_AS_TABLE.search(bare):
+        raise ConnectorError(
+            "query names a file or URL in table position; read the relations the connector exposed",
+            code="query_rejected",
+        )
     return text
 
 

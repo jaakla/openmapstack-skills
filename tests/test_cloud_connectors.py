@@ -21,6 +21,7 @@ from openmapstack.connectors import (
     ConnectorLimits,
     ConnectorUnavailable,
     load_connector,
+    require_read_only_select,
 )
 from openmapstack.connectors.bigquery import BigQueryConnector
 from openmapstack.connectors.motherduck import MotherDuckConnector
@@ -63,13 +64,22 @@ class _Partitioning:
 
 
 class _Job:
-    def __init__(self, schema=None, rows=(), total_bytes_processed=0) -> None:
+    def __init__(self, schema=None, rows=(), total_bytes_processed=0, stalls=False) -> None:
         self.schema = [_Field(name, type_name) for name, type_name in (schema or [])]
         self.total_bytes_processed = total_bytes_processed
         self._rows = list(rows)
+        self._stalls = stalls
+        self.waits: list[float | None] = []
+        self.cancelled = False
 
-    def result(self, max_results=None):
+    def result(self, max_results=None, timeout=None):
+        self.waits.append(timeout)
+        if self._stalls:
+            raise TimeoutError("job did not finish in time")
         return self._rows if max_results is None else self._rows[:max_results]
+
+    def cancel(self):
+        self.cancelled = True
 
 
 class _FakeBigQueryClient:
@@ -207,6 +217,54 @@ class BigQueryScanGuardTests(unittest.TestCase):
             connector.plan(self.QUERY, ConnectorLimits(max_scan_bytes=1_000))
         self.assertEqual(caught.exception.code, "scan_limit_exceeded")
         self.assertTrue(all(call[1].get("dry_run") for call in connector.client.calls))
+
+
+class BigQueryWaitAndGrowthTests(unittest.TestCase):
+    """A limit the connector advertises but does not impose is worse than none."""
+
+    QUERY = "SELECT taxi_zone_id FROM northstar_analytics.zone_daily_demand"
+
+    def test_every_executed_job_is_bounded_by_the_timeout(self) -> None:
+        job = _Job(schema=[("taxi_zone_id", "INT64")], rows=[(1,)], total_bytes_processed=8)
+        count = _Job(schema=[("row_count", "INT64")], rows=[{"row_count": 1}], total_bytes_processed=8)
+        connector = _bigquery(jobs={"SELECT count(*)": count, self.QUERY: job})
+        connector.plan(self.QUERY, ConnectorLimits(timeout_s=12.0))
+        self.assertEqual(count.waits, [12.0], "the row count must not wait forever")
+        billed = [call[1].get("job_timeout_ms") for call in connector.client.calls if not call[1].get("dry_run")]
+        self.assertTrue(billed and all(value == 12_000 for value in billed), billed)
+
+    def test_a_stalled_job_times_out_and_is_cancelled(self) -> None:
+        stalled = _Job(schema=[("row_count", "INT64")], total_bytes_processed=8, stalls=True)
+        connector = _bigquery(
+            jobs={"SELECT count(*)": stalled, self.QUERY: _Job(schema=[("taxi_zone_id", "INT64")], total_bytes_processed=8)}
+        )
+        with self.assertRaises(ConnectorError) as caught:
+            connector.plan(self.QUERY, ConnectorLimits(timeout_s=3.0))
+        self.assertEqual(caught.exception.code, "timeout")
+        self.assertIn("timeout_s=3.0", str(caught.exception))
+        self.assertTrue(stalled.cancelled, "a timed-out job must not be left running")
+
+    @unittest.skipUnless(DUCKDB_AVAILABLE, "DuckDB Spatial is not available")
+    def test_a_source_that_grew_since_the_plan_is_refused_not_truncated(self) -> None:
+        """`snapshot_source` refuses a plan above max_rows, but the table can
+        grow between that count and this execution. Truncating would pin an
+        incomplete subset under a hash that claims to be the whole answer."""
+        rows = [(zone,) for zone in range(1, 6)]
+        job = _Job(schema=[("taxi_zone_id", "INT64")], rows=rows, total_bytes_processed=8)
+        connector = _bigquery(jobs={self.QUERY: job})
+        destination = make_workspace() / "grown.parquet"
+        with self.assertRaises(ConnectorError) as caught:
+            connector.materialize(self.QUERY, destination, ConnectorLimits(max_rows=3))
+        self.assertEqual(caught.exception.code, "row_limit_exceeded")
+        self.assertFalse(destination.exists())
+        self.assertEqual(job.waits, [ConnectorLimits(max_rows=3).timeout_s])
+
+    @unittest.skipUnless(DUCKDB_AVAILABLE, "DuckDB Spatial is not available")
+    def test_a_source_exactly_at_the_cap_still_materialises(self) -> None:
+        rows = [(zone,) for zone in range(1, 4)]
+        connector = _bigquery(jobs={self.QUERY: _Job(schema=[("taxi_zone_id", "INT64")], rows=rows, total_bytes_processed=8)})
+        destination = make_workspace() / "exact.parquet"
+        self.assertEqual(connector.materialize(self.QUERY, destination, ConnectorLimits(max_rows=3)), 3)
 
 
 @unittest.skipUnless(DUCKDB_AVAILABLE, "DuckDB Spatial is not available")
@@ -371,6 +429,24 @@ class MotherDuckTests(unittest.TestCase):
             "SELECT taxi_zone_id FROM market.zone_market_scores", destination, ConnectorLimits(max_rows=2)
         )
         self.assertEqual(rows, 2)
+
+    def test_a_query_that_names_a_file_never_reaches_the_session(self) -> None:
+        """MotherDuck runs with external access on, so the policy gate is what
+        stands between an approved snapshot and an arbitrary local file. This
+        walks the same order `snapshot_source` does -- policy first, connector
+        second -- and asserts the session was never opened."""
+        connector, proxy = self._connector()
+        before = len(proxy.statements)
+        query = "SELECT * FROM read_csv('/etc/passwd')"
+        with self.assertRaises(ConnectorError) as caught:
+            require_read_only_select(query)  # snapshot_source runs this first
+        self.assertEqual(caught.exception.code, "query_rejected")
+        self.assertEqual(len(proxy.statements), before, "a rejected query must issue no statement")
+        # And the connector is reachable for the query the policy does allow.
+        self.assertEqual(
+            connector.plan(require_read_only_select("SELECT * FROM market.zone_market_scores"), ConnectorLimits()).row_count,
+            3,
+        )
 
     def test_a_failing_query_reports_the_failure_without_the_statement(self) -> None:
         connector, _ = self._connector()
