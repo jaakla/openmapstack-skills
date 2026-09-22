@@ -51,6 +51,7 @@ backends:
     datasets: {analysis: northstar_analytics, restricted: northstar_analytics_restricted}
     setup: setup/bigquery/{schema,seed,security}.sql
     relations:
+      - {name: taxi_zones, origin: public, visibility: full}
       - {name: trip_events, origin: mixed, visibility: tenant_alpha_rows}
       - {name: zone_daily_demand, origin: mixed, visibility: tenant_alpha_rows}
       - {name: vehicle_daily_metrics, origin: private, visibility: tenant_alpha_rows}
@@ -69,6 +70,11 @@ backends:
       - {kind: cost, applies_to: every query, rule: dry run refused above max_scan_bytes, enforced_by: the connector, before execution}
     caveats:
       - Table.num_rows ignores row access policies; discovery reports it as an estimate and says so.
+      - >-
+        A dry run over a table with a row access policy returns no byte estimate at all, so the
+        pre-execution scan check cannot run there; the plan records scan_estimated false and the
+        executed job's maximum_bytes_billed is what bounds the cost. taxi_zones has no policy and
+        does report an estimate.
 
   motherduck:
     database: northstar_market

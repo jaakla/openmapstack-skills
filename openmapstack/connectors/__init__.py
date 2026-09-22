@@ -163,6 +163,11 @@ class QueryPlan:
     backend_snapshot: dict[str, Any] | None = None
     #: Bytes the backend estimated it would scan, for backends that meter it.
     scan_bytes: int | None = None
+    #: Whether a pre-execution scan estimate was available at all. A metered
+    #: backend can decline to give one -- BigQuery does for a table with a row
+    #: access policy -- and an unavailable estimate must not read as a cheap
+    #: query. ``None`` here means the backend does not meter scanned bytes.
+    scan_estimated: bool | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -172,6 +177,7 @@ class QueryPlan:
             "schema_sha256": self.schema_sha256,
             "backend_snapshot": self.backend_snapshot,
             "scan_bytes": self.scan_bytes,
+            "scan_estimated": self.scan_estimated,
         }
 
 

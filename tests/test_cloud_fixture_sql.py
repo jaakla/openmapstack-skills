@@ -158,6 +158,18 @@ class BigQueryFixtureContractTests(unittest.TestCase):
                 self.assertEqual(leftovers, [], f"unsubstituted placeholders in {path.name}")
                 self.assertIn(BIGQUERY_PARAMS["dataset"], rendered)
 
+    def test_the_public_reference_table_carries_no_tenant_and_no_policy(self) -> None:
+        """`taxi_zones` is the public-origin layer, and the only analysis table
+        whose dry run returns a byte estimate — BigQuery withholds it wherever
+        a row access policy applies."""
+        schema = _rendered("schema.sql")
+        self.assertIn("taxi_zones", schema)
+        definition = schema.split(".taxi_zones (", 1)[1].split(";", 1)[0]
+        self.assertNotIn("tenant_id", definition)
+        self.assertIn("GEOGRAPHY", definition)
+        security = _code(_rendered("security.sql"))
+        self.assertNotIn("taxi_zones", security, "a policy on taxi_zones would defeat its purpose")
+
     def test_the_protected_columns_exist_to_be_protected(self) -> None:
         schema = _rendered("schema.sql")
         for column in PROTECTED_COLUMNS:
@@ -201,7 +213,19 @@ class BigQueryFixtureContractTests(unittest.TestCase):
         self.assertIn("FARM_FINGERPRINT", body)
         for forbidden in ("RAND()", "CURRENT_TIMESTAMP()", "CURRENT_DATE()", "GENERATE_UUID()"):
             self.assertNotIn(forbidden, body, forbidden)
-        self.assertEqual(body.count("TRUNCATE TABLE"), 4)
+        self.assertEqual(body.count("TRUNCATE TABLE"), 5)
+        # Found by re-running provisioning against the live service: a table
+        # under a row access policy cannot be truncated even by the admin that
+        # created it, so the policies must be dropped before the reseed and
+        # security.sql re-creates them straight after.
+        for table in TENANT_TABLES:
+            self.assertIn(f"DROP ALL ROW ACCESS POLICIES ON `{BIGQUERY_PARAMS['project']}`"
+                          f".`{BIGQUERY_PARAMS['dataset']}`.{table}", body, table)
+        self.assertLess(
+            body.index("DROP ALL ROW ACCESS POLICIES"),
+            body.index("TRUNCATE TABLE"),
+            "policies must be dropped before the first truncate, or the reseed fails",
+        )
 
     def test_no_real_operator_is_implied_by_the_fixture(self) -> None:
         for path in sorted(BIGQUERY.glob("*.sql")):

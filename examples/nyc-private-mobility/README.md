@@ -117,13 +117,19 @@ backend enforces and which are only conventions. In summary:
 ### BigQuery (backend-enforced, with one optional part)
 
 - Row access policies confine the reader to tenant `alpha` on `trip_events`,
-  `zone_daily_demand` and `vehicle_daily_metrics`.
+  `zone_daily_demand` and `vehicle_daily_metrics`. `taxi_zones` is
+  public-origin reference geometry: no tenant column, no policy, fully
+  readable — the same split the PostGIS fixture uses.
 - `northstar_analytics_restricted.driver_costs` is granted to nobody.
 - Column-level security on `internal_cost` and `rider_reference` needs a Data
   Catalog policy tag. Without `--policy-tag` it is **not applied**, and
   `provision.py verify` prints `NOT CONFIGURED` rather than a pass.
 - Every query is dry-run before execution and refused above
   `--max-scan-bytes`; the executed job also carries `maximum_bytes_billed`.
+  On a table with a row access policy BigQuery returns *no* byte estimate, so
+  the pre-execution check cannot run there and the plan says so
+  (`scan_estimated: false`) rather than implying a cheap query. `taxi_zones`
+  carries no policy and does report an estimate.
 - `Table.num_rows` ignores row access policies, so discovery reports it as an
   estimate and never as the reader's visible row count.
 

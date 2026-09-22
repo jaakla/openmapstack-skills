@@ -90,9 +90,11 @@ Owned by `examples/nyc-private-mobility/setup/bigquery/*.sql`.
 - Two datasets, because the inaccessible path is part of the fixture:
   `northstar_analytics` (granted read-only to the reader) and
   `northstar_analytics_restricted` (`driver_costs`, granted to nobody).
-- `trip_events`, `zone_daily_demand`, `vehicle_daily_metrics`, deterministic
-  from `FARM_FINGERPRINT('northstar|20260917|' || label)`. The trip *shape*
-  follows the public NYC dataset; every business attribute is synthetic.
+- `taxi_zones` (public-origin reference geometry, no tenant column and no row
+  access policy), then `trip_events`, `zone_daily_demand` and
+  `vehicle_daily_metrics`, deterministic from
+  `FARM_FINGERPRINT('northstar|20260917|' || label)`. The trip *shape* follows
+  the public NYC dataset; every business attribute is synthetic.
 - Row access policies confine the reader to `tenant_id = 'alpha'` on all
   three tenant-bearing tables.
 - **Column-level security is deliberately optional.** Policy tags are Data
@@ -100,8 +102,12 @@ Owned by `examples/nyc-private-mobility/setup/bigquery/*.sql`.
   in `column-security.sql` and are applied only with `--policy-tag`.
   `provision.py verify` prints `NOT CONFIGURED` when they are absent — the
   one thing it must never do is report an unapplied restriction as a pass.
+- A row access policy makes BigQuery withhold the dry-run byte estimate
+  entirely, and makes the table un-truncatable even for its owner. Both bite
+  in non-obvious ways and are written up in `debugging.md`.
 - Connector `openmapstack/connectors/bigquery.py`: dry-run before every
-  execution, `max_scan_bytes` refused pre-execution (`scan_limit_exceeded`),
+  execution, `max_scan_bytes` refused pre-execution (`scan_limit_exceeded`)
+  where an estimate exists and `scan_estimated: false` where it does not,
   `maximum_bytes_billed` on the executed job, `GEOGRAPHY` normalised to
   EPSG:4326 (`OGC:CRS84`) GeoParquet. `Table.num_rows` is reported as an
   estimate with a note; it ignores row access policies and must never be

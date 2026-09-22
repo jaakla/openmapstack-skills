@@ -221,15 +221,31 @@ class BigQueryConnector:
                 raise ConnectorError(f"{what} exceeded timeout_s={limits.timeout_s}", code="timeout") from exc
             raise ConnectorError(f"{what} failed: {type(exc).__name__}", code="query_failed") from exc
 
-    def _guarded_dry_run(self, sql: str, limits: ConnectorLimits) -> tuple[Any, int]:
+    def _guarded_dry_run(self, sql: str, limits: ConnectorLimits) -> tuple[Any, int | None]:
         """Dry-run ``sql`` and refuse it if it would scan too much.
 
         Nothing is executed and nothing is billed by a dry run, so this is the
         only place a scan limit can be enforced *before* the cost is incurred.
+
+        **An estimate is not always available.** BigQuery reports
+        ``total_bytes_processed = None`` for a query over a table carrying a
+        row access policy -- it will not say how much data it would read when
+        some of that data is filtered from the caller. Verified against the
+        live service; see ``docs/maintainers/debugging.md``.
+
+        Unknown is not zero. Treating a missing estimate as ``0`` would leave
+        the guard silently disabled on exactly the tables a private fixture
+        exists to protect, so it is returned as ``None`` and the caller
+        records that the pre-execution check could not run. The executed job
+        still carries ``maximum_bytes_billed``, which the service enforces --
+        the cap survives, it just stops the query during execution rather than
+        before it.
         """
         job = self._run(sql, limits, dry_run=True)
-        scanned = getattr(job, "total_bytes_processed", None)
-        scanned = int(scanned) if scanned is not None else 0
+        reported = getattr(job, "total_bytes_processed", None)
+        if reported is None:
+            return job, None
+        scanned = int(reported)
         if scanned > limits.max_scan_bytes:
             raise ConnectorError(
                 f"query would scan {scanned} bytes, above max_scan_bytes={limits.max_scan_bytes}",
@@ -244,6 +260,9 @@ class BigQueryConnector:
             raise ConnectorError("the dry run returned no result schema", code="query_failed")
         count_sql = f"SELECT count(*) AS row_count FROM (\n{query}\n) AS q"
         _, count_scanned = self._guarded_dry_run(count_sql, limits)
+        # Either part being unknown makes the total unknown; summing as if the
+        # missing half were zero would understate what the query reads.
+        total_scanned = None if scanned is None or count_scanned is None else scanned + count_scanned
         count_job = self._run(count_sql, limits, dry_run=False)
         rows = list(self._result(count_job, limits, what="row count"))
         if not rows:
@@ -253,7 +272,8 @@ class BigQueryConnector:
             int(_value(rows[0], 0, "row_count")),
             query_digest(query),
             schema_digest(columns),
-            scan_bytes=scanned + count_scanned,
+            scan_bytes=total_scanned,
+            scan_estimated=total_scanned is not None,
         )
 
     def materialize(self, query: str, destination: Path, limits: ConnectorLimits) -> int:
