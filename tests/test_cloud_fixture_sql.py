@@ -158,6 +158,18 @@ class BigQueryFixtureContractTests(unittest.TestCase):
                 self.assertEqual(leftovers, [], f"unsubstituted placeholders in {path.name}")
                 self.assertIn(BIGQUERY_PARAMS["dataset"], rendered)
 
+    def test_the_public_reference_table_carries_no_tenant_and_no_policy(self) -> None:
+        """`taxi_zones` is the public-origin layer, and the only analysis table
+        whose dry run returns a byte estimate — BigQuery withholds it wherever
+        a row access policy applies."""
+        schema = _rendered("schema.sql")
+        self.assertIn("taxi_zones", schema)
+        definition = schema.split(".taxi_zones (", 1)[1].split(";", 1)[0]
+        self.assertNotIn("tenant_id", definition)
+        self.assertIn("GEOGRAPHY", definition)
+        security = _code(_rendered("security.sql"))
+        self.assertNotIn("taxi_zones", security, "a policy on taxi_zones would defeat its purpose")
+
     def test_the_protected_columns_exist_to_be_protected(self) -> None:
         schema = _rendered("schema.sql")
         for column in PROTECTED_COLUMNS:
@@ -171,7 +183,7 @@ class BigQueryFixtureContractTests(unittest.TestCase):
 
     def test_the_reader_is_granted_the_analysis_dataset_and_revoked_the_restricted_one(self) -> None:
         security = _code(_rendered("security.sql"))
-        granted = security.split("GRANT ", 1)[1].split(";", 1)[0]
+        granted = security[security.rindex("GRANT `roles/bigquery.dataViewer`"):].split(";", 1)[0]
         self.assertIn(BIGQUERY_PARAMS["dataset"], granted)
         self.assertNotIn(BIGQUERY_PARAMS["restricted_dataset"], granted)
         revoked = security.split("REVOKE ", 1)[1].split(";", 1)[0]
@@ -183,6 +195,82 @@ class BigQueryFixtureContractTests(unittest.TestCase):
         policies = re.findall(r"ROW ACCESS POLICY\s+(\w+)\s+ON\s+\S+\.(\w+)", security)
         self.assertEqual({table for _, table in policies}, set(TENANT_TABLES))
         self.assertEqual(security.count("FILTER USING (tenant_id = 'alpha')"), len(TENANT_TABLES))
+
+    def test_the_reader_is_granted_only_after_every_policy_exists(self) -> None:
+        """Order is the whole security property here.
+
+        Dropping a row access policy does not restrict an existing grant, it
+        removes the *filter*: a reader holding `dataViewer` while the policies
+        are gone reads every tenant's rows. Measured on the live fixture at
+        4800 rows across 3 tenants instead of 2917 from tenant alpha. So the
+        grant must be the last thing security.sql does, and the seed must not
+        grant at all.
+        """
+        security = _code(_rendered("security.sql"))
+        last_policy = security.rindex("CREATE OR REPLACE ROW ACCESS POLICY")
+        analysis_grant = security.rindex(
+            f"GRANT `roles/bigquery.dataViewer`\nON SCHEMA `{BIGQUERY_PARAMS['project']}`"
+            f".`{BIGQUERY_PARAMS['dataset']}`"
+        )
+        self.assertGreater(
+            analysis_grant, last_policy,
+            "the dataset grant must come after every row access policy, or the reader is "
+            "briefly unfiltered",
+        )
+        seed = _code(_rendered("seed.sql"))
+        self.assertNotIn("GRANT `roles/bigquery.dataViewer`", seed)
+
+    def test_provisioning_confirms_the_lock_out_before_dropping_policies(self) -> None:
+        """The revoke cannot live in seed.sql: it and the drops would be one
+        BigQuery job, and an IAM revoke takes a moment to become effective, so
+        there would be nothing to wait on."""
+        provision = (EXAMPLE / "provision.py").read_text(encoding="utf-8")
+        lock_out = provision.index("lock_out_bigquery_reader(client")
+        seed_apply = provision.index('for name in ("seed.sql", "security.sql")')
+        self.assertLess(lock_out, seed_apply)
+        seed = _code(_rendered("seed.sql"))
+        self.assertNotIn("REVOKE", seed, "the revoke belongs in provisioning, which can wait for it")
+
+    def test_an_unconfirmable_lock_out_is_reported_not_assumed(self) -> None:
+        provision = _load_provision()
+        calls = []
+
+        class _Admin:
+            def query(self, sql):
+                calls.append(sql)
+                return self
+
+            def result(self):
+                return []
+
+        out = io.StringIO()
+        with redirect_stdout(out):
+            provision.lock_out_bigquery_reader(_Admin(), "", "p", "d", "serviceAccount:x@p.iam", "US")
+        self.assertIn("REVOKE", calls[0])
+        self.assertIn("could not be confirmed", out.getvalue())
+
+    def test_a_reader_that_never_loses_access_stops_provisioning(self) -> None:
+        """Refusing is the only safe answer: dropping the policies anyway is
+        precisely the exposure this step exists to prevent."""
+        provision = _load_provision()
+
+        class _Stubborn:
+            """Still answering queries however long the revoke has been in."""
+
+            def query(self, sql):
+                return self
+
+            def result(self):
+                return [1]
+
+        provision._bigquery_client = lambda *args, **kwargs: _Stubborn()
+        out = io.StringIO()
+        with self.assertRaises(SystemExit) as caught, redirect_stdout(out):
+            provision.lock_out_bigquery_reader(
+                _Stubborn(), "reader-key.json", "p", "d", "serviceAccount:x@p.iam", "US", timeout_s=0.1
+            )
+        self.assertIn("refusing to drop", str(caught.exception))
+        self.assertIn("every tenant", str(caught.exception))
 
     def test_column_security_stays_a_separate_explicitly_requested_step(self) -> None:
         """A fixture that implied column security it had not applied would be
@@ -201,7 +289,19 @@ class BigQueryFixtureContractTests(unittest.TestCase):
         self.assertIn("FARM_FINGERPRINT", body)
         for forbidden in ("RAND()", "CURRENT_TIMESTAMP()", "CURRENT_DATE()", "GENERATE_UUID()"):
             self.assertNotIn(forbidden, body, forbidden)
-        self.assertEqual(body.count("TRUNCATE TABLE"), 4)
+        self.assertEqual(body.count("TRUNCATE TABLE"), 5)
+        # Found by re-running provisioning against the live service: a table
+        # under a row access policy cannot be truncated even by the admin that
+        # created it, so the policies must be dropped before the reseed and
+        # security.sql re-creates them straight after.
+        for table in TENANT_TABLES:
+            self.assertIn(f"DROP ALL ROW ACCESS POLICIES ON `{BIGQUERY_PARAMS['project']}`"
+                          f".`{BIGQUERY_PARAMS['dataset']}`.{table}", body, table)
+        self.assertLess(
+            body.index("DROP ALL ROW ACCESS POLICIES"),
+            body.index("TRUNCATE TABLE"),
+            "policies must be dropped before the first truncate, or the reseed fails",
+        )
 
     def test_no_real_operator_is_implied_by_the_fixture(self) -> None:
         for path in sorted(BIGQUERY.glob("*.sql")):

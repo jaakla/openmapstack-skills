@@ -34,7 +34,10 @@ DUCKDB_AVAILABLE = connect_spatial() is not None
 # secret as not_testable rather than as a pass.
 LIVE_BIGQUERY_PROJECT = os.environ.get("OPENMAPSTACK_TEST_BIGQUERY_PROJECT", "")
 LIVE_BIGQUERY_DATASET = os.environ.get("OPENMAPSTACK_TEST_BIGQUERY_DATASET", "")
-LIVE_BIGQUERY_TABLE = os.environ.get("OPENMAPSTACK_TEST_BIGQUERY_TABLE", "zone_daily_demand")
+# A table under a row access policy, and one without: BigQuery treats them
+# very differently when asked what a query would cost.
+LIVE_BIGQUERY_TABLE = os.environ.get("OPENMAPSTACK_TEST_BIGQUERY_TABLE", "trip_events")
+LIVE_BIGQUERY_PUBLIC_TABLE = os.environ.get("OPENMAPSTACK_TEST_BIGQUERY_PUBLIC_TABLE", "taxi_zones")
 LIVE_MOTHERDUCK_TOKEN = os.environ.get("OPENMAPSTACK_TEST_MOTHERDUCK_TOKEN", "")
 LIVE_MOTHERDUCK_DATABASE = os.environ.get("OPENMAPSTACK_TEST_MOTHERDUCK_DATABASE", "")
 
@@ -65,6 +68,8 @@ class _Partitioning:
 
 class _Job:
     def __init__(self, schema=None, rows=(), total_bytes_processed=0, stalls=False) -> None:
+        # total_bytes_processed=None models a real BigQuery response: the
+        # service withholds the estimate for a table with a row access policy.
         self.schema = [_Field(name, type_name) for name, type_name in (schema or [])]
         self.total_bytes_processed = total_bytes_processed
         self._rows = list(rows)
@@ -186,6 +191,7 @@ class BigQueryScanGuardTests(unittest.TestCase):
         }
 
     QUERY = "SELECT taxi_zone_id, trips FROM northstar_analytics.zone_daily_demand"
+    QUERY_SOURCE = "FROM northstar_analytics.zone_daily_demand"
 
     def test_an_oversized_query_is_refused_and_never_executed(self) -> None:
         connector = _bigquery(jobs=self._jobs(5_000))
@@ -203,11 +209,50 @@ class BigQueryScanGuardTests(unittest.TestCase):
         self.assertEqual(plan.row_count, 3)
         self.assertEqual([column["name"] for column in plan.columns], ["taxi_zone_id", "trips"])
         self.assertEqual(plan.scan_bytes, 416)
+        self.assertTrue(plan.scan_estimated)
         self.assertTrue(plan.query_sha256.startswith("sha256:"))
         modes = [(call[1].get("dry_run", False), call[1].get("maximum_bytes_billed")) for call in connector.client.calls]
         self.assertEqual(modes[0], (True, None), "the user query is dry-run before anything runs")
         self.assertTrue(any(billed == 1_000 for _, billed in modes), "executed jobs carry maximum_bytes_billed")
         self.assertFalse(any(call[1].get("use_query_cache", True) for call in connector.client.calls))
+
+    def test_an_unavailable_estimate_is_not_read_as_a_free_query(self) -> None:
+        """BigQuery returns no byte estimate for a table under a row access
+        policy. Treating that as 0 would leave the guard silently disabled on
+        exactly the tables a private fixture exists to protect, so the plan
+        records that the check could not run and the executed job's billing
+        cap is what bounds the cost."""
+        # A real row access policy suppresses the estimate for every
+        # statement over that table, the count included.
+        jobs = {
+            "SELECT count(*)": _Job(
+                schema=[("row_count", "INT64")], rows=[{"row_count": 1}], total_bytes_processed=None
+            ),
+            self.QUERY_SOURCE: _Job(
+                schema=[("taxi_zone_id", "INT64"), ("trips", "INT64")],
+                rows=[(1, 10)],
+                total_bytes_processed=None,
+            ),
+        }
+        connector = _bigquery(jobs=jobs)
+        plan = connector.plan(self.QUERY, ConnectorLimits(max_scan_bytes=1))
+        self.assertIsNone(plan.scan_bytes)
+        self.assertFalse(plan.scan_estimated)
+        self.assertIs(plan.to_dict()["scan_estimated"], False)
+        billed = [call[1].get("maximum_bytes_billed") for call in connector.client.calls if not call[1].get("dry_run")]
+        self.assertTrue(billed and all(value == 1 for value in billed), "the billing cap must still be applied")
+
+    def test_a_half_known_estimate_stays_unknown(self) -> None:
+        """One statement reporting bytes and the other not does not average out
+        to a number: summing as if the missing half were zero would understate
+        what the query reads."""
+        jobs = self._jobs(400)
+        jobs["SELECT count(*)"] = _Job(
+            schema=[("row_count", "INT64")], rows=[{"row_count": 3}], total_bytes_processed=None
+        )
+        plan = _bigquery(jobs=jobs).plan(self.QUERY, ConnectorLimits())
+        self.assertIsNone(plan.scan_bytes)
+        self.assertFalse(plan.scan_estimated)
 
     def test_the_count_query_is_guarded_too(self) -> None:
         jobs = self._jobs(100)
@@ -343,6 +388,10 @@ class _SessionProxy:
         text = statement.strip().lower()
         if text == "load motherduck":
             return self
+        if text.startswith("set motherduck_token"):
+            # A real session only accepts this *after* the extension loads;
+            # the proxy records it so the ordering can be asserted.
+            return self
         if text.startswith("attach 'md:"):
             if "read_only" in text and not self._read_only_attach:
                 raise RuntimeError("this build cannot attach md: read-only")
@@ -429,6 +478,37 @@ class MotherDuckTests(unittest.TestCase):
             "SELECT taxi_zone_id FROM market.zone_market_scores", destination, ConnectorLimits(max_rows=2)
         )
         self.assertEqual(rows, 2)
+
+    def test_the_token_is_applied_after_the_extension_loads_not_at_connect(self) -> None:
+        """`motherduck_token` is registered by the MotherDuck extension, so it
+        cannot be a connect-time option -- DuckDB answers "options were not
+        recognized". The working order is LOAD, SET, ATTACH, and getting it
+        wrong made the connector unusable against a real account."""
+        connector, proxy = self._connector()
+        connector.discover(ConnectorLimits())
+        order = [statement.strip().lower() for statement in proxy.statements]
+        load = next(i for i, st in enumerate(order) if st == "load motherduck")
+        token = next(i for i, st in enumerate(order) if st.startswith("set motherduck_token"))
+        attach = next(i for i, st in enumerate(order) if st.startswith("attach 'md:"))
+        self.assertLess(load, token, "the token option does not exist until the extension loads")
+        self.assertLess(token, attach, "the attach authenticates with the token")
+
+    def test_a_rejected_token_does_not_appear_in_the_error(self) -> None:
+        class _RejectsToken:
+            def execute(self, statement, parameters=None):
+                if statement.strip().lower().startswith("set motherduck_token"):
+                    raise RuntimeError(f"invalid credentials: {statement}")
+                return self
+
+            def close(self):
+                pass
+
+        secret = "md_token_hunter2"
+        connector = MotherDuckConnector(secret, database="northstar_market", connect=lambda token: _RejectsToken())
+        with self.assertRaises(ConnectorError) as caught:
+            connector.discover(ConnectorLimits())
+        self.assertEqual(caught.exception.code, "connection_failed")
+        self.assertNotIn(secret, str(caught.exception))
 
     def test_a_query_that_names_a_file_never_reaches_the_session(self) -> None:
         """MotherDuck runs with external access on, so the policy gate is what
@@ -532,18 +612,40 @@ class LiveBigQueryCanaryTests(unittest.TestCase):
         self.assertTrue(discovery.read_only)
         self.assertTrue(discovery.tables, "the live fixture dataset is empty")
 
+    def _select(self, table: str) -> str:
+        return f"SELECT * FROM `{LIVE_BIGQUERY_PROJECT}`.`{LIVE_BIGQUERY_DATASET}`.{table}"
+
     def test_the_scan_guard_refuses_before_the_query_runs(self) -> None:
-        query = f"SELECT * FROM `{LIVE_BIGQUERY_PROJECT}`.`{LIVE_BIGQUERY_DATASET}`.{LIVE_BIGQUERY_TABLE}"
+        """On a table the service will price -- one with no row access policy."""
         with self.assertRaises(ConnectorError) as caught:
-            self._connector().plan(query, ConnectorLimits(max_scan_bytes=1))
+            self._connector().plan(self._select(LIVE_BIGQUERY_PUBLIC_TABLE), ConnectorLimits(max_scan_bytes=1))
         self.assertEqual(caught.exception.code, "scan_limit_exceeded")
 
     def test_a_small_query_plans_with_a_real_byte_estimate(self) -> None:
-        query = f"SELECT * FROM `{LIVE_BIGQUERY_PROJECT}`.`{LIVE_BIGQUERY_DATASET}`.{LIVE_BIGQUERY_TABLE}"
-        plan = self._connector().plan(query, ConnectorLimits())
+        plan = self._connector().plan(self._select(LIVE_BIGQUERY_PUBLIC_TABLE), ConnectorLimits())
+        self.assertTrue(plan.scan_estimated)
         self.assertIsNotNone(plan.scan_bytes)
         self.assertGreater(plan.scan_bytes, 0)
         self.assertGreaterEqual(plan.row_count, 0)
+
+    def test_a_row_access_policy_suppresses_the_estimate_and_the_plan_says_so(self) -> None:
+        """The behaviour that made this canary worth running: BigQuery returns
+        no byte estimate for a query over a table with a row access policy, so
+        the pre-execution guard cannot run there. The plan must report that
+        rather than imply a cheap query."""
+        plan = self._connector().plan(self._select(LIVE_BIGQUERY_TABLE), ConnectorLimits())
+        self.assertIsNone(plan.scan_bytes)
+        self.assertFalse(plan.scan_estimated)
+        self.assertGreater(plan.row_count, 0)
+
+    def test_the_reader_sees_fewer_rows_than_the_table_metadata_claims(self) -> None:
+        """`Table.num_rows` ignores row access policies. Proving the gap on a
+        live fixture is the only way to know the caveat is still true."""
+        connector = self._connector()
+        discovery = connector.discover(ConnectorLimits())
+        metadata = {table.name: table.row_estimate for table in discovery.tables}
+        counted = connector.plan(self._select(LIVE_BIGQUERY_TABLE), ConnectorLimits()).row_count
+        self.assertLess(counted, metadata[LIVE_BIGQUERY_TABLE])
 
 
 @unittest.skipUnless(LIVE_MOTHERDUCK_TOKEN and LIVE_MOTHERDUCK_DATABASE, "no live MotherDuck fixture configured")
@@ -555,6 +657,25 @@ class LiveMotherDuckCanaryTests(unittest.TestCase):
         discovery = self._connector().discover(ConnectorLimits())
         self.assertTrue(discovery.tables, "the live market database is empty")
         self.assertTrue(any(table.name == "zone_market_scores" for table in discovery.tables))
+
+    def test_the_read_only_attach_actually_refuses_a_write(self) -> None:
+        """The connector claims the session is read-only because it attaches
+        READ_ONLY. Against a real MotherDuck that claim is worth proving: the
+        analysis token may well be writable, and then this attach is the only
+        thing standing between analysis and the warehouse."""
+        connector = self._connector()
+        discovery = connector.discover(ConnectorLimits())
+        self.assertTrue(discovery.read_only, "MotherDuck accepted the READ_ONLY attach")
+        session = connector._session()
+        try:
+            with self.assertRaises(Exception) as caught:
+                session.execute(
+                    "INSERT INTO market.analyst_annotations "
+                    "SELECT * FROM market.analyst_annotations WHERE false"
+                )
+            self.assertIn("read-only", str(caught.exception).lower())
+        finally:
+            session.close()
 
     def test_a_snapshot_materialises_from_the_live_database(self) -> None:
         destination = make_workspace() / "live-market.parquet"

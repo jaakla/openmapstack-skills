@@ -151,6 +151,17 @@ class VerifiedBackendGuidanceTests(GuidanceCase):
                 self.assertShips(text, "scan_limit_exceeded", path)
                 self.assertShips(text, "is not what your reader can see", path)
 
+    def test_the_scan_guard_admits_where_it_cannot_run(self) -> None:
+        """Measured on the live service: BigQuery returns no byte estimate for
+        a table under a row access policy. Guidance that promised the guard
+        unconditionally would teach an agent to read a missing estimate as a
+        cheap query."""
+        for path, text in _shipped_copies("user-data-sources.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "The estimate is not always available", path)
+                self.assertShips(text, "scan_estimated", path)
+                self.assertShips(text, "Do not read a missing", path)
+
     def test_the_motherduck_confinement_limit_is_stated_not_implied_away(self) -> None:
         for path, text in _shipped_copies("user-data-sources.md").items():
             with self.subTest(path=path):

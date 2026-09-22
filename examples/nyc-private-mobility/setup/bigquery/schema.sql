@@ -31,6 +31,20 @@ OPTIONS (
     labels = [('fixture', 'openmapstack-nyc-private-mobility')]
 );
 
+-- Public-origin zone reference, the BigQuery counterpart of ops.taxi_zones.
+-- It carries no tenant_id and gets no row access policy: public reference
+-- data is fully readable, exactly as it is in the PostGIS fixture. It is also
+-- the only table here whose dry run returns a byte estimate, because BigQuery
+-- withholds that estimate for any table under a row access policy.
+CREATE TABLE IF NOT EXISTS `:project`.`:dataset`.taxi_zones (
+    zone_id     INT64 NOT NULL,
+    borough     STRING NOT NULL,
+    zone_name   STRING NOT NULL,
+    zone_source STRING NOT NULL,
+    zone_area   GEOGRAPHY NOT NULL
+)
+OPTIONS (description = 'Public-origin zone reference geometry; no tenant, no row access policy.');
+
 -- Historical trips. internal_cost and rider_reference are the protected
 -- columns: the analysis must never publish them, and column-level security
 -- withholds them outright when a policy tag is configured

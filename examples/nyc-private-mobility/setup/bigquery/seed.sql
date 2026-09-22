@@ -29,10 +29,59 @@ CREATE TEMP FUNCTION fixture_tenant(label STRING) AS (
     END
 );
 
+-- A row access policy makes its table unwritable even for the admin that
+-- created it ("User does not have full access ... due to row access policies"),
+-- so a re-run drops the policies here and security.sql re-creates them in the
+-- step immediately after. Dropping when none exist is a no-op, so this is
+-- equally correct on a first run. The PostGIS seed clears its policies for the
+-- same reason.
+--
+-- The reader must already be locked out before these run. On a
+-- re-provisioned fixture it still holds the dataset grant from the previous
+-- run, and dropping a policy does not restrict an existing grant -- it
+-- removes the *filter*, so the reader would see every tenant's rows rather
+-- than none of them. Measured on the live fixture: 4800 rows across 3
+-- tenants instead of 2917 from tenant alpha.
+--
+-- `provision.py` revokes the grant and waits until the reader is actually
+-- denied before it applies this file, the way it tears the PostGIS role down
+-- before re-applying that fixture's SQL. The revoke cannot live here: it and
+-- the drops below are one BigQuery job, and an IAM revoke takes a moment to
+-- take effect, so there would be nothing to wait on.
+--
+-- security.sql then grants the reader LAST, after every policy exists. The
+-- sequence fails closed: at every point the reader either has no access at
+-- all, or has access with the row filter in force. A seed that aborts half
+-- way leaves the fixture locked, never open.
+DROP ALL ROW ACCESS POLICIES ON `:project`.`:dataset`.trip_events;
+DROP ALL ROW ACCESS POLICIES ON `:project`.`:dataset`.zone_daily_demand;
+DROP ALL ROW ACCESS POLICIES ON `:project`.`:dataset`.vehicle_daily_metrics;
+
+TRUNCATE TABLE `:project`.`:dataset`.taxi_zones;
 TRUNCATE TABLE `:project`.`:dataset`.trip_events;
 TRUNCATE TABLE `:project`.`:dataset`.zone_daily_demand;
 TRUNCATE TABLE `:project`.`:dataset`.vehicle_daily_metrics;
 TRUNCATE TABLE `:project`.`:restricted_dataset`.driver_costs;
+
+-- -- 60 synthetic grid zones over the NYC study bbox -----------------------
+-- The same grid the PostGIS fixture builds, so taxi_zone_id 101..160 means
+-- the same polygon in every backend.
+INSERT INTO `:project`.`:dataset`.taxi_zones (zone_id, borough, zone_name, zone_source, zone_area)
+SELECT
+    101 + g,
+    'Manhattan',
+    CONCAT('Grid Zone ', CAST(101 + g AS STRING)),
+    'synthetic-grid',
+    ST_GEOGFROMTEXT(FORMAT(
+        'POLYGON((%f %f, %f %f, %f %f, %f %f, %f %f))',
+        x0, y0, x0 + 0.010, y0, x0 + 0.010, y0 + 0.015, x0, y0 + 0.015, x0, y0))
+FROM (
+    SELECT
+        g,
+        -74.030 + MOD(g, 12) * 0.010 AS x0,
+        40.700 + DIV(g, 12) * 0.015 AS y0
+    FROM UNNEST(GENERATE_ARRAY(0, 59)) AS g
+);
 
 -- -- 4800 trips over 30 days ------------------------------------------------
 INSERT INTO `:project`.`:dataset`.trip_events

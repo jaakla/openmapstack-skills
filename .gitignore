@@ -34,3 +34,9 @@ assertion-coverage.json
 assertion-coverage.xml
 .*venv/
 venv/
+
+# Fixture credentials. The template is .env.example; a real .env never lands
+# in the repository, and the project manifests reference env: names only.
+.env
+.env.*
+!.env.example

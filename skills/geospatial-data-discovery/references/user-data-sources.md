@@ -148,6 +148,14 @@ refused before execution when the estimate exceeds `--max-scan-bytes`
 the service rather than silently billed. The plan records what it would
 scan under `plan.scan_bytes`.
 
+**The estimate is not always available.** For a query over a table with a row
+access policy, BigQuery returns no byte estimate at all — it will not say how
+much it would read when some of that data is filtered from you. The
+pre-execution check cannot run there: `plan.scan_bytes` is null,
+`plan.scan_estimated` is false, the CLI warns, and `maximum_bytes_billed` on
+the executed job is what bounds the cost instead. Do not read a missing
+estimate as a cheap query.
+
 Two BigQuery-specific traps:
 
 - **`Table.num_rows` is not what your reader can see.** Discovery reports it

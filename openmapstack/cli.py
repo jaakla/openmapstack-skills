@@ -791,6 +791,11 @@ def _cmd_source_snapshot(args: argparse.Namespace) -> int:
     print(f"{record['backend']} source {args.source!r}: query {plan['query_sha256']} returns {plan['row_count']} row(s), {len(plan['columns'])} column(s)")
     if plan.get("scan_bytes") is not None:
         print(f"  backend dry run estimates {plan['scan_bytes']} scanned byte(s), within --max-scan-bytes")
+    elif plan.get("scan_estimated") is False:
+        print(
+            "  WARNING  the backend gave no dry-run byte estimate, so --max-scan-bytes could not be "
+            "checked before execution; the executed job's billing cap is what bounds the cost"
+        )
     if not record["materialized"]:
         print(f"DRY RUN: nothing written to {args.destination}; re-run with --approve to materialise")
         return 0

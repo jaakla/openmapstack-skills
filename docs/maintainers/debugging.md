@@ -203,3 +203,96 @@ session and writing Parquet through a second local connection, the way
 `connectors/postgis.py` already does. It has not been tried against a live
 MotherDuck, where the client may need the local filesystem for its own cache;
 that is the open question to answer before adopting it.
+
+## A BigQuery row access policy suppresses the dry-run byte estimate
+
+`total_bytes_processed` comes back as **`None`**, not a number and not zero,
+for any query over a table carrying a row access policy — on the dry run *and*
+on the executed job, for the table's owner as much as for a restricted reader.
+BigQuery will not say how much data a query would read when some of that data
+is filtered from the caller. Measured on the live `northstar_analytics`
+fixture: `trip_events` (policy) → `None`, `driver_costs` (no policy) → `8077`.
+
+The consequence is easy to get wrong, and shipped wrong once: reading `None`
+as `0` leaves `max_scan_bytes` silently disabled on exactly the tables a
+private fixture exists to protect. `_guarded_dry_run` returns `None` instead,
+`QueryPlan.scan_estimated` records that the check could not run, and the
+executed job's `maximum_bytes_billed` — which the service enforces — is what
+bounds the cost. Unknown is not free.
+
+`taxi_zones` exists in the BigQuery fixture partly for this: it is the one
+analysis-dataset table with no row access policy, so it is the only one whose
+dry run returns a number, which is what the live canary needs to prove the
+guard still bites.
+
+## Re-seeding a BigQuery table under a row access policy fails
+
+`TRUNCATE TABLE` returns `User does not have full access for table … due to
+row access policies` — for the admin that created both the table and the
+policy. So `seed.sql` is not idempotent once `security.sql` has run, and a
+second `provision.py bigquery` fails on the first truncate.
+
+`seed.sql` therefore issues `DROP ALL ROW ACCESS POLICIES` for each
+tenant-bearing table before truncating, and `security.sql` re-creates them in
+the step straight after. Dropping when none exist is a no-op, so a first run
+is unaffected. The PostGIS path clears its policies in `provision.py` for the
+same reason.
+
+## `motherduck_token` cannot be a DuckDB connect-time option
+
+`duckdb.connect(config={"motherduck_token": ...})` fails with
+`The following options were not recognized: motherduck_token`. The option is
+registered *by* the MotherDuck extension, and connect-time config is validated
+before any extension loads. The working order is:
+
+```sql
+LOAD motherduck;                       -- INSTALL first, in provisioning only
+SET motherduck_token = '<token>';
+ATTACH 'md:<database>' AS warehouse (READ_ONLY);
+USE warehouse;
+```
+
+`SET` takes no bound parameter, so the token is quote-escaped into the
+statement and every error from it is wrapped in a `ConnectorError`, whose
+message is redacted — a driver error that echoes the statement would otherwise
+carry the token.
+
+Also verified against live MotherDuck: the `READ_ONLY` attach is accepted and
+is **really enforced** — an `INSERT` through that session fails with
+`Cannot execute statement of type "INSERT" on database "warehouse" which is
+attached in read-only mode`. That matters because read-scoped *tokens* need a
+higher plan tier, so on most accounts the attach is the only read-only layer
+actually in force.
+
+## Dropping a BigQuery row access policy widens access, it does not narrow it
+
+Re-seeding the fixture drops the row access policies, because a table under
+one cannot be truncated. The trap is what that does to a reader who already
+holds `roles/bigquery.dataViewer` from a previous run: the policy was the
+*filter*, so removing it does not lock the reader out — it hands them every
+tenant's rows. Measured on the live fixture: 4800 rows across 3 tenants where
+the filtered reader sees 2917 from tenant alpha.
+
+The sequence therefore fails closed, and the ordering is the security
+property:
+
+1. `provision.py` revokes the reader's dataset grant **and waits until the
+   reader is actually denied**;
+2. `seed.sql` drops the policies and reloads the data;
+3. `security.sql` re-creates every policy and grants the reader **last**.
+
+At no point does the reader hold an unfiltered grant, and a run that aborts
+part way leaves the fixture locked rather than open.
+
+The revoke cannot live in `seed.sql`: it and the drops would be a single
+BigQuery job, and a revoke is applied to the dataset policy immediately but
+takes a moment to become effective for queries, so there would be nothing to
+wait on. Without reader credentials provisioning cannot confirm the lock-out
+and says so rather than assuming it.
+
+One more sharp edge on the same path: a `reader_principal` naming a service
+account in a *different* project is accepted silently by `GRANT` and rejected
+much later by `CREATE ROW ACCESS POLICY` (`Service account ... does not
+exist`), leaving a half-provisioned fixture. Copying `.env.example` and
+forgetting that line is the easy way there, so `provision.py` now checks it up
+front.
