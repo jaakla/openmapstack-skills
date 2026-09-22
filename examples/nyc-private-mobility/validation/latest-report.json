@@ -1,11 +1,11 @@
 {
-  "run_id": "run-20260917-131353",
+  "run_id": "run-20260922-194831",
   "schema": "openmapstack-project/v1",
   "status": "passed",
-  "started_at": "2026-09-17T13:13:53.014428+00:00",
-  "completed_at": "2026-09-17T13:13:53.286115+00:00",
-  "inputs_hash": "sha256:d2d0f4dec607dd1e9e3e68569450c1cf135d8cc9ff2d80683d6258cbd7711ffd",
-  "outputs_hash": "sha256:aa6e802fd916d6b3f3767399afb4552834d1cf8594954090277afb2124fa755b",
+  "started_at": "2026-09-22T19:48:31.599343+00:00",
+  "completed_at": "2026-09-22T19:48:31.922862+00:00",
+  "inputs_hash": "sha256:a26b3e85e4dfb85bc9709804324f796381aa2c723e3f58e4bb9903a7ab4de1b6",
+  "outputs_hash": "sha256:af20c65c440950452a316c89096d6e77744a74fd03e5c3431da2e57490753009",
   "checks": [
     {
       "id": "geometry_valid",
@@ -28,7 +28,7 @@
       "status": "passed",
       "message": "zone metrics and candidates non-empty",
       "zone_rows": 60,
-      "candidate_zones": 6
+      "candidate_zones": 15
     },
     {
       "id": "no_null_zone_id",
@@ -70,6 +70,14 @@
       "status": "passed",
       "message": "candidates satisfy every eligibility threshold",
       "violations": []
+    },
+    {
+      "id": "qgis_project_static_valid",
+      "status": "passed",
+      "message": "project.qgz is structurally valid and matches the declared layer groups",
+      "project": "project.qgz",
+      "errors": [],
+      "note": "structural only; loading through PyQGIS is not available in this environment"
     }
   ]
 }

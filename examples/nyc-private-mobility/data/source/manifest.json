@@ -1,5 +1,5 @@
 {
-  "note": "all snapshots captured through the restricted reader oms_alpha_reader",
+  "note": "every snapshot was captured through that backend's restricted analysis identity: oms_alpha_reader on PostGIS, a read-only service account on BigQuery, a dedicated token on MotherDuck",
   "project": "nyc-private-mobility",
   "schema": "openmapstack-source-manifest/v1",
   "sources": {
@@ -18,6 +18,14 @@
     "taxi_zones": {
       "path": "data/source/taxi_zones.parquet",
       "sha256": "sha256:ec256ae4435f1a9013d2589bc0befda6a93b36a238371ac936cf84720aa678ef"
+    },
+    "zone_demand": {
+      "path": "data/source/zone_demand.parquet",
+      "sha256": "sha256:cf16348825701064de41b0290ba98da362b7e0e6b50089e96af428e713ca695b"
+    },
+    "zone_market": {
+      "path": "data/source/zone_market.parquet",
+      "sha256": "sha256:527a8876161554a3d2162cedc5173af60996d3290ce7fb7887344df537dc13a4"
     }
   }
 }

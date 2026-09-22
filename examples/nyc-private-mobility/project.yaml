@@ -6,33 +6,40 @@ project:
     fleet and hub coverage and account demand, and show ranked candidate zones on an interactive map while
     respecting all database access restrictions.
   created_at: '2026-09-17T00:00:00Z'
-  updated_at: '2026-09-17T13:13:53.286115+00:00'
+  updated_at: '2026-09-22T19:48:31.922862+00:00'
   status: validated
 interpretation:
-  objective: Rank NYC taxi zones as operations/charging-hub candidates for tenant alpha from PostGIS operational
-    snapshots (account demand, fleet coverage, distance to existing hubs), under the fixture's enforced
-    security model (row-level security, withheld columns, inaccessible relations).
+  objective: Rank NYC taxi zones as operations/charging-hub candidates for tenant alpha by combining three
+    private backends — historical trip demand from the BigQuery warehouse, fleet and hub coverage from
+    the operational PostGIS database, and market/POI context from the MotherDuck overlay — under each
+    backend's enforced security model (row-level security and row access policies, withheld columns, inaccessible
+    relations).
   assumptions:
   - id: A1
-    statement: All private snapshots were retrieved through the restricted reader oms_alpha_reader, so
-      row-level security confines them to tenant_id = 'alpha'; protected columns (contact_name, contact_email,
-      contract_value) are withheld by column grants and hr.driver_private is inaccessible.
-    rationale: The fixture's security boundary is backend-enforced, not filtered in the pipeline.
+    statement: 'Every private snapshot was retrieved through that backend''s restricted analysis identity,
+      so the rows in it are the rows those identities may see: PostGIS row-level security and the BigQuery
+      row access policy both confine the data to tenant_id = ''alpha'', protected columns (contact_name,
+      contact_email, contract_value) are withheld by column grants, and hr.driver_private and the restricted
+      BigQuery dataset are inaccessible.'
+    rationale: The fixture's security boundary is backend-enforced, never filtered in the pipeline; a
+      WHERE clause here would hide whether the boundary works.
   - id: A2
-    statement: Until the BigQuery leg lands (issue 43), historical trip demand is proxied by active tenant-alpha
-      customer accounts per zone.
-    rationale: Account density is the only tenant-visible demand signal available in the PostGIS-only
-      skeleton stage; the scoring weights below are unchanged when the real demand snapshot replaces it.
+    statement: Historical demand is the tenant-alpha trip total per zone over the 30 days in the BigQuery
+      warehouse (trips_total), with trips_peak_day and trips_stddev_day carried alongside as the peak
+      and variability evidence.
+    rationale: Demand over time is the one input the operational database cannot answer; active account
+      counts describe today and are kept as a separate column, not as the demand signal.
   - id: A3
     statement: Distance to the closest existing hub is measured from the zone centroid in EPSG:32618 (UTM
       18N, metres).
     rationale: A metric, area-true CRS for NYC; centroid-level screening is appropriate for zone-level
       siting.
   - id: A4
-    statement: Market/amenity context (MotherDuck) is unavailable in this stage and contributes 0 to every
-      zone's score.
-    rationale: The scoring weights stay fixed to the canonical model (45/30/15/10) so the formula is already
-      recomputable when the market snapshot arrives; no zone is advantaged by a missing source.
+    statement: 'Market context combines Northstar''s own per-zone score with what is physically in the
+      zone: amenities (charging, parking, transit) help and competitors do not, saturating at 6 amenity
+      POIs and 3 competitor POIs respectively.'
+    rationale: The saturation points keep one dense zone from dominating the component, and every input
+      is stored in zone-metrics.parquet so the market score can be recomputed and disagreed with.
   - id: A5
     statement: Zone geometries are the fixture's deterministic synthetic grid stand-in (zone_source =
       'synthetic-grid') for real NYC TLC taxi-zone polygons.
@@ -188,6 +195,86 @@ sources:
       path: data/source/customer_accounts.parquet
       sha256: sha256:37f44517f293541b116cf09e4cf2e1dd30ef3abdea6579b93b3cab97b2607424
       captured_at: '2026-09-17T12:51:38.624109Z'
+  zone_demand:
+    provider: Northstar Mobility fixture (issue 43)
+    dataset: Historical trip demand per taxi zone (BigQuery warehouse)
+    source_url: https://github.com/jaakla/openmapstack-skills/issues/43
+    access:
+      method: bigquery
+      connection:
+        ref: env:GOOGLE_APPLICATION_CREDENTIALS
+      retrieved_at: '2026-09-22T19:33:34.212228Z'
+      downloaded_at: '2026-09-22T19:33:34.212228Z'
+      file:
+        name: zone_demand.parquet
+        format: GeoParquet
+        row_count: 60
+        size_bytes: 2979
+    version:
+      identifier: northstar_analytics.zone_daily_demand seed 20260917
+      published_at: '2026-09-22'
+    warehouse:
+      backend: bigquery
+      dataset: northstar_analytics
+      table: zone_daily_demand
+      query_sha256: sha256:76586fe231945d39000295b544b8df2e4afc5cb9ff9f8efa9eaf7c738f17e5ba
+      schema_sha256: sha256:bcf79947c5d00b00a96b9aa86c29369ccbf54103f23c4327a8a54f257196fea1
+      project: northstar-demo-001
+    selection:
+      filter: aggregated per taxi_zone_id; the query applies no tenant filter of its own
+      security_note: a BigQuery row access policy confines the restricted reader to tenant_id = 'alpha',
+        so these totals are tenant-alpha demand; Table.num_rows would report every tenant's rows and is
+        not what this snapshot counts
+    license:
+      name: Synthetic fixture data (CC0-1.0)
+      url: https://github.com/jaakla/openmapstack-skills/issues/43
+    rationale: Demand over time is the one input the operational database cannot answer; account counts
+      describe today, not history.
+    pin:
+      class: local_snapshot
+      path: data/source/zone_demand.parquet
+      sha256: sha256:cf16348825701064de41b0290ba98da362b7e0e6b50089e96af428e713ca695b
+      captured_at: '2026-09-22T19:33:34.212228Z'
+  zone_market:
+    provider: Northstar Mobility fixture (issue 43)
+    dataset: Private market and POI context per taxi zone (MotherDuck)
+    source_url: https://github.com/jaakla/openmapstack-skills/issues/43
+    access:
+      method: motherduck
+      connection:
+        ref: env:MOTHERDUCK_TOKEN
+      retrieved_at: '2026-09-22T19:33:38.455304Z'
+      downloaded_at: '2026-09-22T19:33:38.455304Z'
+      file:
+        name: zone_market.parquet
+        format: GeoParquet
+        row_count: 60
+        size_bytes: 3717
+    version:
+      identifier: northstar_market.market analysis views seed 20260917
+      published_at: '2026-09-22'
+    warehouse:
+      backend: motherduck
+      database: northstar_market
+      schema: market
+      table: analysis_zone_scores + analysis_zone_poi_counts
+      query_sha256: sha256:fe8e947504fc3dd3d6251f426bb5acc0e963a42fdefa7434c5c7872d9a8e69da
+      schema_sha256: sha256:17569e0ae07d07170240e57d8e2440fcb1c2c6527ea115c042651dbf60311b67
+    selection:
+      filter: analysis views only; market.analyst_annotations is never read
+      security_note: 'private market intelligence: public-origin POI geometry combined with Northstar''s
+        own enrichment. The analyst notes behind the scores are not republished -- a convention this analysis
+        honours, not a grant the backend enforces (see fixture.yaml)'
+    license:
+      name: Synthetic fixture data (CC0-1.0)
+      url: https://github.com/jaakla/openmapstack-skills/issues/43
+    rationale: Amenity and competitor context a zone's own operational data cannot show; it is what separates
+      two zones with equal demand.
+    pin:
+      class: local_snapshot
+      path: data/source/zone_market.parquet
+      sha256: sha256:527a8876161554a3d2162cedc5173af60996d3290ce7fb7887344df537dc13a4
+      captured_at: '2026-09-22T19:33:38.455304Z'
 overrides: []
 processing:
   analysis_crs: EPSG:32618
@@ -211,6 +298,16 @@ processing:
     source: customer_accounts
     expression: is_active = true
     output: accounts_raw
+  - id: load_demand
+    operation: read
+    source: zone_demand
+    expression: pinned BigQuery snapshot; rows already confined to tenant alpha by the row access policy
+    output: zone_demand_raw
+  - id: load_market
+    operation: read
+    source: zone_market
+    expression: pinned MotherDuck snapshot; analysis views only, never the analyst notes
+    output: zone_market_raw
   - id: project_zones
     operation: project
     input: zones_raw
@@ -229,23 +326,25 @@ processing:
     input: fleet_raw
     expression: count(*) grouped by taxi_zone_id
     output: zone_fleet_counts
-  - id: demand_by_zone
+  - id: accounts_by_zone
     operation: aggregate
     input: accounts_raw
-    expression: count(*) grouped by taxi_zone_id (demand proxy, A2)
-    output: zone_demand
+    expression: count(*) grouped by taxi_zone_id (active accounts present today)
+    output: zone_accounts
   - id: combine_metrics
     operation: join
     inputs:
     - zones_raw
     - zone_hub_distance
     - zone_fleet_counts
-    - zone_demand
+    - zone_accounts
+    - zone_demand_raw
+    - zone_market_raw
     output: zone_metrics
   - id: eligible_zones
     operation: filter
     input: zone_metrics
-    expression: demand_accounts >= 40 AND hub_distance_m >= 1500 AND fleet_present <= 6
+    expression: trips_total >= 45 AND hub_distance_m >= 1500 AND fleet_present <= 6
     output: eligible_candidates
   - id: score_candidates
     operation: score
@@ -263,15 +362,18 @@ scoring:
     market: 0.15
     saturation: 0.1
   components:
-    demand_score: demand_accounts / max eligible demand_accounts
-    coverage_gap_score: hub_distance_m / max eligible hub_distance_m
-    market_score: 0 in this stage (A4); (charging + parking context)/200 once the MotherDuck snapshot
-      lands
-    saturation_score: 1 - fleet_present / max eligible fleet_present
-  final_score: 100 * sum(weight * component), rounded to 2 decimals; recomputable from data/derived/zone-metrics.parquet
-    alone
+    demand_score: 'trips_total / max eligible trips_total (BigQuery: historical demand)'
+    coverage_gap_score: 'hub_distance_m / max eligible hub_distance_m (PostGIS: hub coverage)'
+    market_score: '0.5*market_score_raw + 0.3*min(1, (charging_pois + parking_pois + transit_pois)/amenity_pois_for_full_score)
+      + 0.2*(1 - min(1, competitor_pois/competitor_pois_for_full_pressure)) (MotherDuck: market context),
+      rounded to 6 decimals'
+    saturation_score: '1 - fleet_present / max eligible fleet_present (PostGIS: current fleet)'
+    amenity_pois_for_full_score: 6
+    competitor_pois_for_full_pressure: 3
+  final_score: 100 * sum(weight * component), rounded to 2 decimals; every input is stored beside the
+    score, so it is recomputable from data/derived/zone-metrics.parquet alone
   eligibility:
-    demand_accounts_min: 40
+    trips_total_min: 45
     hub_distance_m_min: 1500
     fleet_present_max: 6
 outputs:
@@ -287,6 +389,10 @@ outputs:
     path: data/derived/hub-candidates.geojson
     format: GeoJSON (EPSG:4326)
     generated_by: export_candidates
+  qgis_project:
+    path: project.qgz
+    format: QGIS project archive (EPSG:4326)
+    generated_by: export_candidates
 validation:
   required:
   - geometry_valid
@@ -296,6 +402,7 @@ validation:
   - rls_scope_alpha_only
   - protected_columns_absent
   - score_components_complete
+  - qgis_project_static_valid
   domain_checks:
   - name: score_range
     expression: final_score >= 0 AND final_score <= 100
@@ -303,22 +410,20 @@ validation:
     expression: demand_accounts >= 40 AND hub_distance_m >= 1500 AND fleet_present <= 6
 runs:
   latest:
-    id: run-20260917-131353
-    started_at: '2026-09-17T13:13:53.014428+00:00'
-    completed_at: '2026-09-17T13:13:53.286115+00:00'
+    id: run-20260922-194831
+    started_at: '2026-09-22T19:48:31.599343+00:00'
+    completed_at: '2026-09-22T19:48:31.922862+00:00'
     status: passed
-    inputs_hash: sha256:d2d0f4dec607dd1e9e3e68569450c1cf135d8cc9ff2d80683d6258cbd7711ffd
-    outputs_hash: sha256:aa6e802fd916d6b3f3767399afb4552834d1cf8594954090277afb2124fa755b
+    inputs_hash: sha256:a26b3e85e4dfb85bc9709804324f796381aa2c723e3f58e4bb9903a7ab4de1b6
+    outputs_hash: sha256:af20c65c440950452a316c89096d6e77744a74fd03e5c3431da2e57490753009
     record:
-      path: runs/run-20260917-131353.json
+      path: runs/run-20260922-194831.json
     validation_report:
       path: validation/latest-report.json
 runtime:
   implementation:
     pipeline: pipeline.py
-    command:
-    - python
-    - pipeline.py
+    preferred_engine: duckdb-spatial
   environment:
     python: '3.12'
     duckdb: 1.5.5
@@ -342,12 +447,23 @@ presentation:
       semantic_role: constraint
     - source: fleet_positions
       semantic_role: source
+    layer_groups:
+    - id: result
+      title: Hub Candidates (ranked, tenant alpha)
+    - id: context
+      title: Basemap Context
   provenance_ui:
     distinctions:
-    - public-origin reference data (taxi_zones)
-    - private snapshot data (hubs, fleet_positions, customer_accounts)
-    - RLS-limited source (hubs, fleet_positions, customer_accounts)
-    - synthetic business attributes (all fixture tables)
+    - public-origin reference geometry (taxi_zones; synthetic grid stand-in, assumption A5)
+    - private operational snapshots, PostGIS (hubs, fleet_positions, customer_accounts)
+    - 'private warehouse snapshot, BigQuery (zone_demand: historical trip demand)'
+    - 'private market overlay, MotherDuck (zone_market: POI and competitor context)'
+    - 'RLS-limited sources: hubs, fleet_positions, customer_accounts (PostGIS row-level security) and
+      zone_demand (BigQuery row access policy) — all confined to tenant alpha'
+    - 'column-protected source: customer_accounts (contact_name, contact_email, contract_value withheld
+      by column grants)'
+    - 'never republished: market.analyst_annotations informs the MotherDuck scores and is not exported'
+    - synthetic business attributes (all fixture tables, seed 20260917)
     - analysis assumptions (A1-A5)
   intent: analytical_workspace
   primary_view: map
