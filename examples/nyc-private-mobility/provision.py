@@ -355,8 +355,15 @@ def _motherduck_connect(token: str, database: str | None):
         raise SystemExit(
             "provision.py motherduck requires duckdb: pip install 'openmapstack[motherduck]'"
         ) from exc
-    connection = duckdb.connect(config={"motherduck_token": token})
+    connection = duckdb.connect()
+    # `motherduck_token` is registered by the extension, so it cannot be a
+    # connect-time option: DuckDB answers "options were not recognized". Load
+    # first, then SET, then ATTACH. Unlike the connector, provisioning may
+    # install the extension -- it is a setup tool, and setup is where a
+    # download belongs.
+    connection.execute("INSTALL motherduck")
     connection.execute("LOAD motherduck")
+    connection.execute("SET motherduck_token = '" + token.replace("'", "''") + "'")
     if database:
         connection.execute(f"ATTACH 'md:{database}'")
         connection.execute(f"USE {database}")
@@ -395,31 +402,53 @@ def verify_motherduck(reader_token: str, database: str) -> tuple[dict, list[str]
     discovery = connector.discover(ConnectorLimits(timeout_s=60.0))
     print(json.dumps({"backend": "motherduck", "tables": [t.to_dict() for t in discovery.tables]}, indent=2))
     by_name = {table.name: table for table in discovery.tables}
-    connection = _motherduck_connect(reader_token, database)
-    try:
-        zones = connection.execute("SELECT count(*) FROM market.zone_market_scores").fetchone()[0]
-        pois = connection.execute("SELECT count(*) FROM market.relevant_pois").fetchone()[0]
-        # A zero-row INSERT is the least invasive read-only probe there is: it
-        # needs write permission but can change nothing if it is allowed.
+
+    # Two different questions, and conflating them would misreport both:
+    #   1. can the connector's own session write?  -- the boundary in use;
+    #   2. can the raw token write?                -- defence in depth.
+    # A zero-row INSERT is the least invasive probe there is: it needs write
+    # permission but changes nothing if it is allowed.
+    probe = (
+        "INSERT INTO market.analyst_annotations "
+        "SELECT * FROM market.analyst_annotations WHERE false"
+    )
+
+    def _can_write(connection) -> bool:
         try:
-            connection.execute(
-                "INSERT INTO market.analyst_annotations "
-                "SELECT * FROM market.analyst_annotations WHERE false"
-            )
-            writable = True
+            connection.execute(probe)
+            return True
         except Exception:
-            writable = False
+            return False
+
+    session = connector._session()
+    try:
+        zones = session.execute("SELECT count(*) FROM market.zone_market_scores").fetchone()[0]
+        pois = session.execute("SELECT count(*) FROM market.relevant_pois").fetchone()[0]
+        session_writable = _can_write(session)
     finally:
-        connection.close()
+        session.close()
+
+    raw = _motherduck_connect(reader_token, database)
+    try:
+        token_writable = _can_write(raw)
+    finally:
+        raw.close()
+
     checks = {
         "zone_market_scores complete (60)": zones == 60,
         "relevant_pois complete (240)": pois == 240,
         "analysis views present": "analysis_zone_poi_counts" in by_name,
-        "token is read-only": not writable,
+        "connector session refuses writes": not session_writable,
     }
     unconfigured: list[str] = []
     if not discovery.read_only:
         unconfigured.append("READ_ONLY attach (this DuckDB build could not attach the database read-only)")
+    if token_writable:
+        unconfigured.append(
+            "read-scoped analysis token: this token can write when used outside the connector "
+            "(MotherDuck read-scoped tokens need a higher plan tier). The connector's own "
+            "session is still read-only, but the identity-layer boundary is absent"
+        )
     return checks, unconfigured
 
 
@@ -442,6 +471,22 @@ def report(backend: str, checks: dict, unconfigured: list[str]) -> bool:
     for label in unconfigured:
         print(f"  NOT CONFIGURED: {label}")
     return all(checks.values())
+
+
+def _verdict(results: list[tuple[str, bool]], unconfigured_total: int) -> str:
+    """Never print a bare "passed" while a declared restriction is unapplied.
+
+    An unconfigured restriction is not a failure of the connector, but it is
+    also not evidence that the boundary holds, and a summary that hid it would
+    be exactly the green-by-omission this fixture exists to argue against.
+    """
+    names = ", ".join(name for name, _ in results)
+    if unconfigured_total:
+        return (
+            f"verification passed for: {names} -- with {unconfigured_total} declared "
+            "restriction(s) NOT CONFIGURED (see above); those boundaries are not in place"
+        )
+    return f"verification passed for: {names}"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -539,6 +584,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "verify":
         results, skipped = [], []
+        unconfigured_total = 0
         if reader_dsn:
             results.append(("postgis", verify_postgis(reader_dsn) == 0))
         else:
@@ -552,11 +598,13 @@ def main(argv: list[str] | None = None) -> int:
                 args.bigquery_location,
             )
             results.append(("bigquery", report("bigquery", checks, unconfigured)))
+            unconfigured_total += len(unconfigured)
         else:
             skipped.append("bigquery")
         if motherduck_reader:
             checks, unconfigured = verify_motherduck(motherduck_reader, args.motherduck_database)
             results.append(("motherduck", report("motherduck", checks, unconfigured)))
+            unconfigured_total += len(unconfigured)
         else:
             skipped.append("motherduck")
         if skipped:
@@ -568,7 +616,7 @@ def main(argv: list[str] | None = None) -> int:
         if failed:
             print(f"verification FAILED for: {', '.join(failed)}")
             return 1
-        print(f"verification passed for: {', '.join(name for name, _ in results)}")
+        print(_verdict(results, unconfigured_total))
         return 0
 
     if args.command == "destroy":

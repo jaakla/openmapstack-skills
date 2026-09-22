@@ -237,3 +237,29 @@ tenant-bearing table before truncating, and `security.sql` re-creates them in
 the step straight after. Dropping when none exist is a no-op, so a first run
 is unaffected. The PostGIS path clears its policies in `provision.py` for the
 same reason.
+
+## `motherduck_token` cannot be a DuckDB connect-time option
+
+`duckdb.connect(config={"motherduck_token": ...})` fails with
+`The following options were not recognized: motherduck_token`. The option is
+registered *by* the MotherDuck extension, and connect-time config is validated
+before any extension loads. The working order is:
+
+```sql
+LOAD motherduck;                       -- INSTALL first, in provisioning only
+SET motherduck_token = '<token>';
+ATTACH 'md:<database>' AS warehouse (READ_ONLY);
+USE warehouse;
+```
+
+`SET` takes no bound parameter, so the token is quote-escaped into the
+statement and every error from it is wrapped in a `ConnectorError`, whose
+message is redacted — a driver error that echoes the statement would otherwise
+carry the token.
+
+Also verified against live MotherDuck: the `READ_ONLY` attach is accepted and
+is **really enforced** — an `INSERT` through that session fails with
+`Cannot execute statement of type "INSERT" on database "warehouse" which is
+attached in read-only mode`. That matters because read-scoped *tokens* need a
+higher plan tier, so on most accounts the attach is the only read-only layer
+actually in force.

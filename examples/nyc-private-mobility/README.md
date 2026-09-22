@@ -135,10 +135,15 @@ backend enforces and which are only conventions. In summary:
 
 ### MotherDuck (token-scoped)
 
-- The boundary is a private database plus a dedicated **read-scoped token**;
-  the admin token is never the analysis token.
-- The database is attached `READ_ONLY` where the installed DuckDB supports
-  it, and discovery says so when it cannot be.
+- Two independent read-only layers, and only one is guaranteed:
+  - the connector attaches the database `READ_ONLY`, which DuckDB enforces —
+    verified against live MotherDuck, where an `INSERT` through that session
+    is refused outright;
+  - a dedicated **read-scoped token** bounds what the credential can do
+    anywhere else. Read-scoped tokens need a higher MotherDuck plan tier, and
+    without one `provision.py verify` reports the identity layer as
+    `NOT CONFIGURED` — not as a pass.
+- The admin token is never the analysis token.
 - `market.analyst_annotations` informs the scores and is never republished.
   That is a convention this analysis honours, not an enforced grant, and
   `fixture.yaml` records it as such.

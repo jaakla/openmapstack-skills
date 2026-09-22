@@ -84,12 +84,28 @@ backends:
       - {name: market.relevant_pois, origin: mixed, visibility: full}
       - {name: market.analyst_annotations, origin: private, visibility: full_but_never_republished}
     restrictions:
-      - {kind: database_scope, applies_to: the whole database, enforced_by: a private database plus a read-scoped token}
-      - {kind: read_only, applies_to: the session, enforced_by: READ_ONLY attach where supported, plus the single-SELECT query policy}
+      - {kind: database_scope, applies_to: the whole database, enforced_by: a private database}
+      - kind: read_only
+        applies_to: the connector's session
+        # Verified against live MotherDuck: the attach is accepted and an
+        # INSERT through that session is refused outright.
+        enforced_by: ATTACH ... (READ_ONLY), plus the single-SELECT query policy
+      - kind: read_scoped_identity
+        applies_to: the analysis token
+        enforced_by: a read-scoped MotherDuck token
+        # Read-scoped tokens need a higher MotherDuck plan tier. Without one
+        # the analysis token can write when used outside the connector, and
+        # `provision.py verify` reports NOT CONFIGURED rather than a pass. The
+        # session-level read_only above still holds; this layer does not.
+        applied_when: the MotherDuck plan offers read-scoped tokens
       - {kind: convention, applies_to: market.analyst_annotations, rule: informs scores, never published, enforced_by: nothing — it is a convention, and the analysis must honour it}
     caveats:
       - A MotherDuck session needs network access, so file confinement via enable_external_access is not available.
-      - Per-table security is an optional later profile; this fixture's boundary is the database and the token.
+      - Per-table security is an optional later profile.
+      - >-
+        The two read-only layers are independent: the connector's READ_ONLY attach is enforced by
+        DuckDB and verified live, while a read-scoped token bounds what the credential can do
+        anywhere else. Only the first is guaranteed on every MotherDuck plan.
 
 verification:
   command: python provision.py verify

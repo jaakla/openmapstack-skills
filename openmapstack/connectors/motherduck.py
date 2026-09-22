@@ -50,6 +50,14 @@ _COUNT_NOTE = "row_estimate is a counted SELECT through this token; it reflects 
 
 
 def _default_connect(token: str) -> Any:
+    """Open a bare DuckDB session. The token is applied later, in ``_session``.
+
+    It cannot be passed as connect-time ``config``: ``motherduck_token`` is
+    registered *by* the MotherDuck extension, and connect-time options are
+    validated before any extension loads, so DuckDB answers
+    ``The following options were not recognized: motherduck_token``. The
+    working order is LOAD, then SET, then ATTACH.
+    """
     from ..checks.spatial import _connection_config
 
     try:
@@ -58,13 +66,11 @@ def _default_connect(token: str) -> Any:
         raise ConnectorUnavailable(
             "the motherduck connector requires duckdb (pip install 'openmapstack[motherduck]')"
         ) from exc
-    config = dict(_connection_config())
-    config["motherduck_token"] = token
     try:
-        return duckdb.connect(config=config)
+        return duckdb.connect(config=dict(_connection_config()))
     except ConnectorError:
         raise
-    except Exception as exc:  # noqa: BLE001 - driver errors may quote the token
+    except Exception as exc:  # noqa: BLE001
         raise ConnectorError(f"cannot open a DuckDB session: {type(exc).__name__}", code="connection_failed") from exc
 
 
@@ -104,7 +110,19 @@ class MotherDuckConnector:
             connection.close()
             raise ConnectorUnavailable(
                 "this DuckDB build has no MotherDuck extension available offline; "
-                "install it before running the connector"
+                "install it before running the connector (provision.py does, this does not: "
+                "a connector never downloads an extension)"
+            ) from exc
+        # Only now does `motherduck_token` exist as an option. SET takes no
+        # bound parameter, so the value is quote-escaped into the statement;
+        # any error from it is wrapped so the token cannot reach a message
+        # unredacted.
+        try:
+            connection.execute(f"SET motherduck_token = '{_escape(self._token)}'")
+        except Exception as exc:  # noqa: BLE001
+            connection.close()
+            raise ConnectorError(
+                f"MotherDuck rejected the access token: {type(exc).__name__}", code="connection_failed"
             ) from exc
         try:
             connection.execute("LOAD spatial")

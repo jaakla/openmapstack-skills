@@ -126,11 +126,15 @@ Owned by `examples/nyc-private-mobility/setup/motherduck/*.sql`.
   the "large shared source + private enrichment = private analytical dataset"
   enterprise pattern. Deterministic from
   `md5_number('northstar|20260917|' || label)`.
-- Security for the canonical fixture is private DB + dedicated read-scoped
-  token + read-only session; fine-grained table security remains an optional
-  later profile, and `security.sql` says so rather than implying a boundary
-  it does not create. `market.analyst_annotations` is a *convention*, not a
-  grant, and `fixture.yaml` records it as `enforced_by: nothing`.
+- Security is three independent claims, and they must not be conflated:
+  a private database; the connector's `ATTACH ... (READ_ONLY)` session, which
+  DuckDB enforces and which is **verified live** (an `INSERT` through it is
+  refused); and a read-scoped token, which needs a higher MotherDuck plan
+  tier and is reported `NOT CONFIGURED` when absent. Fine-grained table
+  security remains an optional later profile, and `security.sql` says so
+  rather than implying a boundary it does not create.
+  `market.analyst_annotations` is a *convention*, not a grant, and
+  `fixture.yaml` records it as `enforced_by: nothing`.
 - Connector `openmapstack/connectors/motherduck.py` reuses the `md:`
   protocol; `LOAD`/`ATTACH`/`USE`/token setup is connector-controlled and
   happens before any analysis SQL exists. The database is attached
