@@ -45,6 +45,7 @@ import json
 import os
 import re
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -263,6 +264,55 @@ def _bigquery_params(project: str, dataset: str, restricted: str, location: str,
     }
 
 
+def lock_out_bigquery_reader(
+    admin_client,
+    reader_credentials: str,
+    project: str,
+    dataset: str,
+    principal: str,
+    location: str,
+    *,
+    timeout_s: float = 120.0,
+) -> None:
+    """Revoke the reader's dataset grant and wait until it really is denied.
+
+    Re-seeding drops the row access policies, and a dropped policy does not
+    restrict an existing grant -- it removes the filter. A reader that still
+    holds `dataViewer` at that moment reads every tenant's rows. So the grant
+    goes first, and provisioning waits for it, because an IAM revoke is
+    applied to the dataset policy at once but takes a moment to become
+    effective for queries.
+
+    Without reader credentials the wait cannot happen and provisioning says
+    so rather than assuming: a window it cannot observe is not a window it
+    can promise is closed.
+    """
+    admin_client.query(
+        f"REVOKE `roles/bigquery.dataViewer` ON SCHEMA `{project}`.`{dataset}` FROM '{principal}'"
+    ).result()
+    print(f"revoked {principal} on {dataset}")
+    if not reader_credentials:
+        print(
+            "WARNING  no reader credentials (GOOGLE_APPLICATION_CREDENTIALS), so the lock-out "
+            "could not be confirmed before the row access policies are dropped; re-provision "
+            "with them set to close that window"
+        )
+        return
+    probe = _bigquery_client(reader_credentials, project, location)
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        try:
+            list(probe.query(f"SELECT 1 FROM `{project}`.`{dataset}`.trip_events LIMIT 1").result())
+        except Exception:  # noqa: BLE001 - any refusal means the revoke is in force
+            print("confirmed: the reader is locked out before the policies are dropped")
+            return
+        time.sleep(2.0)
+    raise SystemExit(
+        f"the reader still reads {dataset} {timeout_s:.0f}s after the revoke; refusing to drop "
+        "the row access policies, which would expose every tenant's rows"
+    )
+
+
 def provision_bigquery(
     credentials: str,
     project: str,
@@ -271,6 +321,7 @@ def provision_bigquery(
     location: str,
     principal: str,
     policy_tag: str,
+    reader_credentials: str = "",
 ) -> None:
     if not principal:
         raise SystemExit(
@@ -278,9 +329,23 @@ def provision_bigquery(
             "(--reader-principal or OMS_DEMO_BIGQUERY_READER_PRINCIPAL); the grants "
             "in security.sql are the fixture"
         )
+    # A service-account principal from another project is accepted silently by
+    # GRANT and only rejected much later, by CREATE ROW ACCESS POLICY, leaving
+    # a half-provisioned fixture. Copying .env from the template and forgetting
+    # this line is the easy way to get there, so it is caught up front.
+    domain = f"@{project}.iam.gserviceaccount.com"
+    if ".iam.gserviceaccount.com" in principal and not principal.endswith(domain):
+        raise SystemExit(
+            f"reader principal {principal!r} is not a service account in {project}; "
+            "check OMS_DEMO_BIGQUERY_READER_PRINCIPAL"
+        )
     client = _bigquery_client(credentials, project, location)
     params = _bigquery_params(project, dataset, restricted, location, principal)
-    for name in ("schema.sql", "seed.sql", "security.sql"):
+    _run_bigquery_script(client, BIGQUERY_SETUP / "schema.sql", params)
+    # Between here and security.sql the tables carry no row filter, so the
+    # reader must not be able to reach them.
+    lock_out_bigquery_reader(client, reader_credentials, project, dataset, principal, location)
+    for name in ("seed.sql", "security.sql"):
         _run_bigquery_script(client, BIGQUERY_SETUP / name, params)
     if policy_tag:
         _run_bigquery_script(client, BIGQUERY_SETUP / "column-security.sql", {**params, "policy_tag": policy_tag})
@@ -544,6 +609,7 @@ def main(argv: list[str] | None = None) -> int:
             args.bigquery_location,
             reader_principal,
             policy_tag,
+            bigquery_reader_credentials,
         )
 
     def _provision_motherduck() -> None:

@@ -263,3 +263,36 @@ is **really enforced** — an `INSERT` through that session fails with
 attached in read-only mode`. That matters because read-scoped *tokens* need a
 higher plan tier, so on most accounts the attach is the only read-only layer
 actually in force.
+
+## Dropping a BigQuery row access policy widens access, it does not narrow it
+
+Re-seeding the fixture drops the row access policies, because a table under
+one cannot be truncated. The trap is what that does to a reader who already
+holds `roles/bigquery.dataViewer` from a previous run: the policy was the
+*filter*, so removing it does not lock the reader out — it hands them every
+tenant's rows. Measured on the live fixture: 4800 rows across 3 tenants where
+the filtered reader sees 2917 from tenant alpha.
+
+The sequence therefore fails closed, and the ordering is the security
+property:
+
+1. `provision.py` revokes the reader's dataset grant **and waits until the
+   reader is actually denied**;
+2. `seed.sql` drops the policies and reloads the data;
+3. `security.sql` re-creates every policy and grants the reader **last**.
+
+At no point does the reader hold an unfiltered grant, and a run that aborts
+part way leaves the fixture locked rather than open.
+
+The revoke cannot live in `seed.sql`: it and the drops would be a single
+BigQuery job, and a revoke is applied to the dataset policy immediately but
+takes a moment to become effective for queries, so there would be nothing to
+wait on. Without reader credentials provisioning cannot confirm the lock-out
+and says so rather than assuming it.
+
+One more sharp edge on the same path: a `reader_principal` naming a service
+account in a *different* project is accepted silently by `GRANT` and rejected
+much later by `CREATE ROW ACCESS POLICY` (`Service account ... does not
+exist`), leaving a half-provisioned fixture. Copying `.env.example` and
+forgetting that line is the easy way there, so `provision.py` now checks it up
+front.
