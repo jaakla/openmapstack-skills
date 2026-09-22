@@ -1,0 +1,44 @@
+relations:
+  driver-private.parquet:
+    accessible: false
+    reason: 'simulates hr.driver_private: no grants for the restricted reader'
+  fleet-positions.geojson:
+    accessible: true
+    crs: EPSG:2263
+    note: mixed-CRS input relative to the EPSG:4326 zones
+    rows:
+      null_geometry: 1
+      total: 10
+  hubs.geojson:
+    accessible: true
+    rows: 2
+    tenants:
+    - alpha
+  market-scores.parquet:
+    absent_zones:
+    - 106
+    accessible: true
+    note: 'zone 106 has no market row: exercises the ''market data present'' eligibility
+      rule'
+    rows: 7
+  pois.geojson:
+    accessible: true
+    rows: 24
+  taxi-zones.geojson:
+    accessible: true
+    rows: 8
+  trip-events.parquet:
+    accessible: true
+    note: protected columns simulate BigQuery policy tags / denied column grants
+    protected_columns:
+    - internal_cost
+    - rider_reference
+    rows:
+      alpha_visible: 37
+      beta_hidden: 27
+      total: 64
+schema: openmapstack-mini-access-matrix/v1
+seed: '20260917'
+tenants:
+  hidden: beta
+  rls_visible: alpha

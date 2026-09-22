@@ -1,0 +1,202 @@
+# Northstar Mobility: private-database fixture design
+
+Design and fixture contract for the private-database worked example
+(`examples/nyc-private-mobility/`) and its deterministic eval fixture
+(`evals/fixtures/mini-private-mobility/`). Motivated by
+[openmapstack-skills#43](https://github.com/jaakla/openmapstack-skills/issues/43).
+
+This document is navigation and rationale. Executable contracts live in the
+files it points to.
+
+## Scenario
+
+One fictional company, **Northstar Mobility — NYC Operations Hub Analysis**.
+Canonical question: identify promising NYC areas for a new operations/charging
+hub for tenant `alpha` from historical trip demand, current fleet and hub
+coverage, and market/POI context, while respecting all database access
+restrictions. All synthetic business attributes are deterministic from the
+checked-in seed `20260917`; no output may imply real NYC taxi records belong
+to the fictional company.
+
+Three backends play three enterprise roles:
+
+| Backend | Role | Fixture database |
+|---|---|---|
+| BigQuery | historical analytical warehouse | `northstar_analytics` |
+| PostGIS | operational GIS | `northstar_ops` |
+| MotherDuck | private market-intelligence overlay | `northstar_market` |
+
+## Core architecture rules
+
+1. **Live warehouses are for read-only discovery and explicitly approved
+   snapshotting only.** The accepted, reproducible analysis always runs from
+   pinned local snapshots (`pin.class: local_snapshot`) under `data/source/`,
+   exactly as `skills/open-map-stack/references/user-data-sources.md`
+   requires. Backend time travel is never the long-term reproducibility
+   mechanism.
+2. **Provisioning identity ≠ analysis identity.** `provision.py` uses an
+   admin credential; `project.yaml` always references the restricted reader
+   (`env:OMS_DEMO_POSTGIS_DSN`, `env:GOOGLE_APPLICATION_CREDENTIALS`,
+   `env:MOTHERDUCK_TOKEN`). Credentials never appear in `project.yaml`,
+   snapshots, logs, errors, or committed artifacts — enforced by
+   `openmapstack.sources.find_inline_credentials` and connector redaction.
+3. **Backend-enforced security is the fixture, not a nice-to-have.** RLS row
+   policies, column grants/policy tags, and inaccessible relations must be
+   created by the provisioning scripts and exercised by the tests; the
+   connector must behave correctly *under* them, not around them.
+4. **Scoring logic lives in `project.yaml`** as an explicitly recomputable
+   formula over derived columns, never hidden in Python only.
+
+Acceptance gate: `unset` all warehouse credentials, then
+`openmapstack verify examples/nyc-private-mobility` must still pass from the
+committed snapshots.
+
+## Cross-backend data model
+
+Two conceptual keys join everything:
+
+- `tenant_id` — drives RLS and permission tests (`alpha` is the RLS-visible
+  analysis tenant; `beta`/`gamma` exist to prove isolation);
+- `taxi_zone_id` — stable integer join key; geometry stays attached for real
+  spatial operations.
+
+All row generators are deterministic: a checked-in seed or stable hashes of
+public source keys. Never platform `random()` without `setseed`, never
+wall-clock data in fixture rows.
+
+## PostGIS fixture (`northstar_ops`)
+
+Owned by `examples/nyc-private-mobility/setup/postgis/{schema,seed,security}.sql`.
+
+- Schemas/tables: `ops.taxi_zones` (public-origin reference geometry),
+  `ops.hubs`, `ops.fleet_positions`, `ops.service_areas`,
+  `ops.customer_accounts`, `hr.driver_private`.
+- Restricted reader role `oms_alpha_reader`: RLS policies confine
+  tenant-bearing tables to `tenant_id = 'alpha'`; column grants on
+  `ops.customer_accounts` omit `contact_name`, `contact_email`,
+  `contract_value`; `hr.driver_private` has no grants at all.
+- Expected reader behaviour: permitted-column SELECT succeeds, `SELECT *`
+  fails on the column-granted table, protected-column SELECT fails,
+  other-tenant rows are invisible, `hr.driver_private` is inaccessible.
+- Integration tests: `tests/test_private_fixture_postgis.py` (live tests run
+  when `OPENMAPSTACK_TEST_PRIVATE_POSTGIS_ADMIN_DSN` points at an ephemeral
+  PostGIS; the connector contract tests in `tests/test_connectors.py` remain
+  the fake-driver layer).
+
+## BigQuery fixture (`northstar_analytics`)
+
+Owned by `examples/nyc-private-mobility/setup/bigquery/*.sql`.
+
+- Two datasets, because the inaccessible path is part of the fixture:
+  `northstar_analytics` (granted read-only to the reader) and
+  `northstar_analytics_restricted` (`driver_costs`, granted to nobody).
+- `trip_events`, `zone_daily_demand`, `vehicle_daily_metrics`, deterministic
+  from `FARM_FINGERPRINT('northstar|20260917|' || label)`. The trip *shape*
+  follows the public NYC dataset; every business attribute is synthetic.
+- Row access policies confine the reader to `tenant_id = 'alpha'` on all
+  three tenant-bearing tables.
+- **Column-level security is deliberately optional.** Policy tags are Data
+  Catalog objects with their own IAM, so the `ALTER COLUMN` statements live
+  in `column-security.sql` and are applied only with `--policy-tag`.
+  `provision.py verify` prints `NOT CONFIGURED` when they are absent — the
+  one thing it must never do is report an unapplied restriction as a pass.
+- Connector `openmapstack/connectors/bigquery.py`: dry-run before every
+  execution, `max_scan_bytes` refused pre-execution (`scan_limit_exceeded`),
+  `maximum_bytes_billed` on the executed job, `GEOGRAPHY` normalised to
+  EPSG:4326 (`OGC:CRS84`) GeoParquet. `Table.num_rows` is reported as an
+  estimate with a note; it ignores row access policies and must never be
+  presented as an RLS-visible count.
+- Tests: `tests/test_cloud_connectors.py` (fake client, records every job, so
+  the dry-run-before-execute ordering is observable) and
+  `tests/test_cloud_fixture_sql.py` (fixture SQL contract). Live behaviour is
+  the canary's job, below.
+
+## MotherDuck fixture (`northstar_market`)
+
+Owned by `examples/nyc-private-mobility/setup/motherduck/*.sql`.
+
+- `zone_market_scores`, `relevant_pois`, `analyst_annotations`: a shared
+  POI-style source narrowed to a fixed NYC subset plus private enrichment —
+  the "large shared source + private enrichment = private analytical dataset"
+  enterprise pattern. Deterministic from
+  `md5_number('northstar|20260917|' || label)`.
+- Security for the canonical fixture is private DB + dedicated read-scoped
+  token + read-only session; fine-grained table security remains an optional
+  later profile, and `security.sql` says so rather than implying a boundary
+  it does not create. `market.analyst_annotations` is a *convention*, not a
+  grant, and `fixture.yaml` records it as `enforced_by: nothing`.
+- Connector `openmapstack/connectors/motherduck.py` reuses the `md:`
+  protocol; `LOAD`/`ATTACH`/`USE`/token setup is connector-controlled and
+  happens before any analysis SQL exists. The database is attached
+  `READ_ONLY` where the build supports it, and the discovery notes say so
+  when it cannot be. A MotherDuck session needs network access, so
+  `enable_external_access = false` is not available — stated, not hidden.
+- **The fixture SQL is plain DuckDB SQL on purpose.** That is what lets
+  `tests/test_cloud_fixture_sql.py` *execute* schema/seed/security against a
+  local in-memory catalog on every PR, with no account and no network.
+
+## Mini deterministic fixture (`evals/fixtures/mini-private-mobility/`)
+
+Runs on ordinary CI with no credentials and no network. Regenerate with
+`python gen.py` (idempotent, seed `20260917`); committed outputs are the
+contract. File set:
+
+| File | Content |
+|---|---|
+| `taxi-zones.geojson` | 8 zones, Polygon, EPSG:4326 |
+| `trip-events.parquet` | 64 trips, two tenants, protected columns present |
+| `fleet-positions.geojson` | 10 points, EPSG:2263 (deliberate mixed-CRS input), one NULL geometry |
+| `hubs.geojson` | 2 existing hubs, tenant `alpha` |
+| `pois.geojson` | 24 private-market POIs across categories |
+| `market-scores.parquet` | per-zone market scores |
+| `driver-private.parquet` | deliberately inaccessible relation (simulates `hr.driver_private`) |
+| `access-matrix.yaml` | declares the simulated security model: visible tenant, protected columns, inaccessible relations |
+| `expected.yaml` | exact hand-checkable values: visible row counts, accessible columns, candidate zone, aggregate demand, hub distances, POI counts, final score/ranking |
+
+Deliberate hard cases baked in: two tenants (only `alpha` visible), protected
+columns, one inaccessible relation, one mixed-CRS input, one NULL geometry,
+one candidate zone with an unambiguous expected winner. `expected.yaml` values
+are produced by the same generator that writes the data, so a later eval case
+can recompute them independently and fail loudly on drift.
+
+## Test layers (from issue #43)
+
+- **A. Unit connector tests** — fake clients, no services (`tests/`).
+- **B. Local PostGIS integration** — ephemeral PostGIS with the fixture SQL
+  and RLS/column security; the mandatory live-DB leg (CI workflow
+  `eval-warehouse.yml`).
+- **C. Offline fixture evals** — committed mini snapshots, every PR, no
+  credentials.
+- **D. Optional live cloud integration** — BigQuery/MotherDuck only when
+  secrets exist; PRs must not fail without them. Workflow
+  `.github/workflows/cloud-canary.yml` (dispatch/weekly/release, never
+  `pull_request`) runs `LiveBigQueryCanaryTests` and
+  `LiveMotherDuckCanaryTests` and writes `not_testable` into the job summary
+  for any backend whose secrets are absent.
+
+## Status (issue #43 implementation sequence)
+
+Done:
+
+1. source/pin + credential-reference contract (`openmapstack/connectors/`);
+2. PostGIS RLS/column-security integration;
+3. `examples/nyc-private-mobility` skeleton on PostGIS + pinned snapshots;
+4. BigQuery connector with the dry-run scan guard;
+5. BigQuery demo provisioning and security;
+6. MotherDuck connector and the private enrichment fixture;
+8. cloud connector canary workflow;
+9. `user-data-sources.md` updated with the verified capabilities *and* the
+   limitations (metadata row counts, MotherDuck network access, BigQuery time
+   travel as a refresh window rather than a pin).
+
+Not done, and why:
+
+- **Step 7, the three-source canonical pipeline.** `pipeline.py` still scores
+  `A2` from account activity and `A4` as zero. Completing it needs BigQuery
+  and MotherDuck snapshots captured from real fixtures and committed as
+  `local_snapshot` pins; a generated file labelled as a warehouse capture
+  would break the provenance contract this example exists to demonstrate.
+  The connectors, fixture SQL and provisioning it depends on are in place.
+- **Step 10, the OpenMapBench hand-off.** Tracked separately with #45;
+  `openmapstack api-info` and the connector surface are the released contract
+  OpenMapBench builds on.

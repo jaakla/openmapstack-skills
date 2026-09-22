@@ -167,3 +167,39 @@ accompanying digest drift in the run record is the signature to suspect.
 Retained live/visual evidence belongs under `evals/results/<run-id>/...` and CI artifacts. Do not treat generated result JSON, screenshots, event streams, or temporary projects as canonical repository state unless a fixture intentionally owns them.
 
 The normalized `agent.json` is vendor-neutral audit data; raw provider events are diagnostics. Assistant final-answer prose is never the correctness oracle.
+
+## PostGIS hides column-granted tables from discovery
+
+PostGIS's `geometry_columns` view filters relations by table-level
+privilege. A reader holding only column-level grants (and row-level
+security policies) on a table — exactly the private-fixture model in
+`examples/nyc-private-mobility/setup/postgis/security.sql` — will not see
+that table in `geometry_columns`, so `PostGISConnector.discover()` omits it
+while snapshotting named columns still works. Do not "fix" this by granting
+whole-table SELECT to satisfy a discovery assertion; the omission is the
+backend telling the truth about the principal's grant shape (observed while
+building issue #43's PostGIS fixture tests).
+
+## DuckDB file confinement needs `enable_external_access = false`
+
+`SET allowed_directories = [...]` on its own does **not** stop
+`read_csv('/etc/passwd')`. It only takes effect together with
+`SET enable_external_access = false`, which is why
+`connectors/duckdb_local.py` sets both. Verified against DuckDB 1.5.5.
+
+That pair is unavailable to any connector that needs the network, because
+DuckDB refuses `SET enable_external_access = true` once a database is running
+(`Cannot enable external access while database is running`). So the MotherDuck
+connector has no session-level file confinement, and
+`connectors.require_read_only_select` is the only thing refusing a query that
+names a file or URL. Weakening that policy weakens MotherDuck's boundary, not
+just its ergonomics.
+
+`SET disabled_filesystems = 'LocalFileSystem'` *is* real, irreversible
+enforcement (a later `RESET` is refused), and would close the gap — but it
+also blocks `COPY … TO 'local.parquet'`, which is how the connector
+materialises a snapshot. Using it would mean fetching rows through the `md:`
+session and writing Parquet through a second local connection, the way
+`connectors/postgis.py` already does. It has not been tried against a live
+MotherDuck, where the client may need the local filesystem for its own cache;
+that is the open question to answer before adopting it.

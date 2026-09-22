@@ -1,0 +1,93 @@
+# Northstar Mobility private-database fixture: what provision.py creates,
+# and what actually enforces each restriction.
+#
+# This file is documentation with a schema, not an input to the pipeline. It
+# exists so a reviewer can see, in one place, which parts of the security
+# model the backend enforces and which parts are only conventions — the two
+# must never be confused. `provision.py verify` reports the same distinction
+# at runtime: a restriction that is not configured is `not configured`, never
+# a pass.
+#
+# Issue: https://github.com/jaakla/openmapstack-skills/issues/43
+
+schema: openmapstack-private-fixture/v1
+name: northstar-mobility-nyc
+seed: "20260917"
+tenant_under_analysis: alpha
+other_tenants: [beta, gamma]
+join_keys:
+  tenant_id: drives every row-level restriction
+  taxi_zone_id: stable integer key (101..160) shared by all three backends
+
+identities:
+  provisioning:
+    role: creates and destroys fixture infrastructure
+    never_used_for: analysis
+    credentials: [OMS_DEMO_POSTGIS_ADMIN_DSN, OMS_DEMO_BIGQUERY_ADMIN_CREDENTIALS, OMS_DEMO_MOTHERDUCK_ADMIN_TOKEN]
+  analysis:
+    role: the only identity OpenMapStack ever reads through
+    credentials: [OMS_DEMO_POSTGIS_DSN, GOOGLE_APPLICATION_CREDENTIALS, MOTHERDUCK_TOKEN]
+    referenced_in_project_yaml_as: env references only, never a value
+
+backends:
+  postgis:
+    database: northstar_ops
+    setup: setup/postgis/{schema,seed,security}.sql
+    reader: oms_alpha_reader
+    relations:
+      - {name: ops.taxi_zones, origin: public, visibility: full}
+      - {name: ops.hubs, origin: private, visibility: tenant_alpha_rows}
+      - {name: ops.fleet_positions, origin: private, visibility: tenant_alpha_rows}
+      - {name: ops.service_areas, origin: private, visibility: tenant_alpha_rows}
+      - {name: ops.customer_accounts, origin: private, visibility: tenant_alpha_rows_permitted_columns}
+      - {name: hr.driver_private, origin: private, visibility: none}
+    restrictions:
+      - {kind: row_level, applies_to: tenant-bearing tables, rule: "tenant_id = 'alpha'", enforced_by: PostgreSQL row-level security}
+      - {kind: column_level, applies_to: ops.customer_accounts, columns: [contact_name, contact_email, contract_value], enforced_by: column GRANTs}
+      - {kind: inaccessible, applies_to: hr.driver_private, enforced_by: no schema usage and no table grants}
+
+  bigquery:
+    project: env OMS_DEMO_BIGQUERY_PROJECT
+    datasets: {analysis: northstar_analytics, restricted: northstar_analytics_restricted}
+    setup: setup/bigquery/{schema,seed,security}.sql
+    relations:
+      - {name: trip_events, origin: mixed, visibility: tenant_alpha_rows}
+      - {name: zone_daily_demand, origin: mixed, visibility: tenant_alpha_rows}
+      - {name: vehicle_daily_metrics, origin: private, visibility: tenant_alpha_rows}
+      - {name: driver_costs, origin: private, visibility: none, dataset: restricted}
+    restrictions:
+      - {kind: row_level, applies_to: [trip_events, zone_daily_demand, vehicle_daily_metrics], rule: "tenant_id = 'alpha'", enforced_by: BigQuery row access policies}
+      - {kind: inaccessible, applies_to: driver_costs, enforced_by: no IAM grant on the restricted dataset}
+      - kind: column_level
+        applies_to: trip_events
+        columns: [internal_cost, rider_reference]
+        enforced_by: Data Catalog policy tag
+        # Optional, and honestly optional: it needs a taxonomy that lives
+        # outside this repository. Without --policy-tag these columns stay
+        # readable and `provision.py verify` says "NOT CONFIGURED".
+        applied_when: provision.py bigquery --policy-tag ...
+      - {kind: cost, applies_to: every query, rule: dry run refused above max_scan_bytes, enforced_by: the connector, before execution}
+    caveats:
+      - Table.num_rows ignores row access policies; discovery reports it as an estimate and says so.
+
+  motherduck:
+    database: northstar_market
+    setup: setup/motherduck/{schema,seed,security}.sql
+    relations:
+      - {name: market.zone_market_scores, origin: mixed, visibility: full}
+      - {name: market.relevant_pois, origin: mixed, visibility: full}
+      - {name: market.analyst_annotations, origin: private, visibility: full_but_never_republished}
+    restrictions:
+      - {kind: database_scope, applies_to: the whole database, enforced_by: a private database plus a read-scoped token}
+      - {kind: read_only, applies_to: the session, enforced_by: READ_ONLY attach where supported, plus the single-SELECT query policy}
+      - {kind: convention, applies_to: market.analyst_annotations, rule: informs scores, never published, enforced_by: nothing — it is a convention, and the analysis must honour it}
+    caveats:
+      - A MotherDuck session needs network access, so file confinement via enable_external_access is not available.
+      - Per-table security is an optional later profile; this fixture's boundary is the database and the token.
+
+verification:
+  command: python provision.py verify
+  reports:
+    pass: the backend enforced what the fixture declares
+    fail: the backend did not enforce it
+    not_configured: the restriction was never applied — not a pass, and not a failure of the connector

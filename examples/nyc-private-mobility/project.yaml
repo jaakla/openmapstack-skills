@@ -1,0 +1,353 @@
+schema: openmapstack-project/v1
+project:
+  id: nyc-private-mobility
+  title: Northstar Mobility — NYC operations/charging hub candidates (tenant alpha)
+  question: Identify promising NYC areas for a new operations/charging hub for tenant alpha, using current
+    fleet and hub coverage and account demand, and show ranked candidate zones on an interactive map while
+    respecting all database access restrictions.
+  created_at: '2026-09-17T00:00:00Z'
+  updated_at: '2026-09-17T13:13:53.286115+00:00'
+  status: validated
+interpretation:
+  objective: Rank NYC taxi zones as operations/charging-hub candidates for tenant alpha from PostGIS operational
+    snapshots (account demand, fleet coverage, distance to existing hubs), under the fixture's enforced
+    security model (row-level security, withheld columns, inaccessible relations).
+  assumptions:
+  - id: A1
+    statement: All private snapshots were retrieved through the restricted reader oms_alpha_reader, so
+      row-level security confines them to tenant_id = 'alpha'; protected columns (contact_name, contact_email,
+      contract_value) are withheld by column grants and hr.driver_private is inaccessible.
+    rationale: The fixture's security boundary is backend-enforced, not filtered in the pipeline.
+  - id: A2
+    statement: Until the BigQuery leg lands (issue 43), historical trip demand is proxied by active tenant-alpha
+      customer accounts per zone.
+    rationale: Account density is the only tenant-visible demand signal available in the PostGIS-only
+      skeleton stage; the scoring weights below are unchanged when the real demand snapshot replaces it.
+  - id: A3
+    statement: Distance to the closest existing hub is measured from the zone centroid in EPSG:32618 (UTM
+      18N, metres).
+    rationale: A metric, area-true CRS for NYC; centroid-level screening is appropriate for zone-level
+      siting.
+  - id: A4
+    statement: Market/amenity context (MotherDuck) is unavailable in this stage and contributes 0 to every
+      zone's score.
+    rationale: The scoring weights stay fixed to the canonical model (45/30/15/10) so the formula is already
+      recomputable when the market snapshot arrives; no zone is advantaged by a missing source.
+  - id: A5
+    statement: Zone geometries are the fixture's deterministic synthetic grid stand-in (zone_source =
+      'synthetic-grid') for real NYC TLC taxi-zone polygons.
+    rationale: Keeps the fixture fully reproducible; replacing the zone geometry must not change any other
+      table.
+sources:
+  taxi_zones:
+    provider: Northstar Mobility fixture (issue 43)
+    dataset: NYC taxi zone reference geometry (synthetic grid)
+    source_url: https://github.com/jaakla/openmapstack-skills/issues/43
+    access:
+      method: postgis
+      connection:
+        ref: env:OMS_DEMO_POSTGIS_DSN
+      retrieved_at: '2026-09-17T12:51:33.486230Z'
+      downloaded_at: '2026-09-17T12:51:33.486230Z'
+      file:
+        name: taxi_zones.parquet
+        format: GeoParquet
+        row_count: 60
+        size_bytes: 3051
+    version:
+      identifier: northstar_ops.ops.taxi_zones seed 20260917
+      published_at: '2026-09-17'
+    warehouse:
+      backend: postgis
+      database: northstar_ops
+      schema: ops
+      table: taxi_zones
+      query_sha256: sha256:b651e4b1a4eec91c398f1889ce81f76b96db870dce1419ab67b6213beba830e1
+      schema_sha256: sha256:13dbf87a6b596a4cca6bf9610133df4112368d430fec2d013fd19f6c560424b0
+    selection:
+      filter: public-origin reference data; no tenant restriction applies
+      security_note: readable in full by the restricted reader
+    license:
+      name: Synthetic fixture data (CC0-1.0)
+      url: https://github.com/jaakla/openmapstack-skills/issues/43
+    rationale: Stable join key (zone_id) and the geometry every spatial metric needs.
+    pin:
+      class: local_snapshot
+      path: data/source/taxi_zones.parquet
+      sha256: sha256:ec256ae4435f1a9013d2589bc0befda6a93b36a238371ac936cf84720aa678ef
+      captured_at: '2026-09-17T12:51:33.486230Z'
+  hubs:
+    provider: Northstar Mobility fixture (issue 43)
+    dataset: Existing operations/charging hubs
+    source_url: https://github.com/jaakla/openmapstack-skills/issues/43
+    access:
+      method: postgis
+      connection:
+        ref: env:OMS_DEMO_POSTGIS_DSN
+      retrieved_at: '2026-09-17T12:51:34.019068Z'
+      downloaded_at: '2026-09-17T12:51:34.019068Z'
+      file:
+        name: hubs.parquet
+        format: GeoParquet
+        row_count: 4
+        size_bytes: 1232
+    version:
+      identifier: northstar_ops.ops.hubs seed 20260917
+      published_at: '2026-09-17'
+    warehouse:
+      backend: postgis
+      database: northstar_ops
+      schema: ops
+      table: hubs
+      query_sha256: sha256:f4e89f2f3a1f1fa7869281524327ebebe222bf854a538f1892391579a628874d
+      schema_sha256: sha256:676c038cc3646e4f3a964f21d393294a71a6e3ca077b33088e64252b4f4a66a4
+    selection:
+      filter: row-level security oms_alpha_reader -> tenant_id = 'alpha'
+      security_note: RLS-limited source; contains only tenant alpha rows
+    license:
+      name: Synthetic fixture data (CC0-1.0)
+      url: https://github.com/jaakla/openmapstack-skills/issues/43
+    rationale: Existing coverage that new candidates must not duplicate.
+    pin:
+      class: local_snapshot
+      path: data/source/hubs.parquet
+      sha256: sha256:066404da3f49be4c20b925d26a06a80c017cbe786341f93d6861b7d12070d74c
+      captured_at: '2026-09-17T12:51:34.019068Z'
+  fleet_positions:
+    provider: Northstar Mobility fixture (issue 43)
+    dataset: Current fleet positions
+    source_url: https://github.com/jaakla/openmapstack-skills/issues/43
+    access:
+      method: postgis
+      connection:
+        ref: env:OMS_DEMO_POSTGIS_DSN
+      retrieved_at: '2026-09-17T12:51:35.106089Z'
+      downloaded_at: '2026-09-17T12:51:35.106089Z'
+      file:
+        name: fleet_positions.parquet
+        format: GeoParquet
+        row_count: 389
+        size_bytes: 14577
+    version:
+      identifier: northstar_ops.ops.fleet_positions seed 20260917
+      published_at: '2026-09-17'
+    warehouse:
+      backend: postgis
+      database: northstar_ops
+      schema: ops
+      table: fleet_positions
+      query_sha256: sha256:05f24719f64bb4c8c8cab52a0a842d1ce4016ea68763b113a68bd9daffa89b00
+      schema_sha256: sha256:baad4c757e8b2703fb5c11171fb7a04a676fb276e4b7557c13046d9133674ce3
+    selection:
+      filter: row-level security oms_alpha_reader -> tenant_id = 'alpha'; located rows only
+      security_note: RLS-limited source; contains only tenant alpha rows
+    license:
+      name: Synthetic fixture data (CC0-1.0)
+      url: https://github.com/jaakla/openmapstack-skills/issues/43
+    rationale: Fleet presence measures how saturated a zone already is.
+    pin:
+      class: local_snapshot
+      path: data/source/fleet_positions.parquet
+      sha256: sha256:7e28b17fc10f273c50b838d1fa31232453477b9f6ba972a3eb54c1e73f75fb74
+      captured_at: '2026-09-17T12:51:35.106089Z'
+  customer_accounts:
+    provider: Northstar Mobility fixture (issue 43)
+    dataset: Customer accounts (column-restricted)
+    source_url: https://github.com/jaakla/openmapstack-skills/issues/43
+    access:
+      method: postgis
+      connection:
+        ref: env:OMS_DEMO_POSTGIS_DSN
+      retrieved_at: '2026-09-17T12:51:38.624109Z'
+      downloaded_at: '2026-09-17T12:51:38.624109Z'
+      file:
+        name: customer_accounts.parquet
+        format: GeoParquet
+        row_count: 2181
+        size_bytes: 22991
+    version:
+      identifier: northstar_ops.ops.customer_accounts seed 20260917
+      published_at: '2026-09-17'
+    warehouse:
+      backend: postgis
+      database: northstar_ops
+      schema: ops
+      table: customer_accounts
+      query_sha256: sha256:8bace377f5c678396fd6c6ec8532da326b3a46a36265e7fc53ac85ac82a415de
+      schema_sha256: sha256:ead633aa390de2df5b9bec917bf51aabde630c0d697fc3f5ee95e899f6ef01c7
+    selection:
+      filter: row-level security oms_alpha_reader -> tenant_id = 'alpha'; contact_name, contact_email
+        and contract_value withheld by column grants
+      security_note: RLS-limited and column-limited source
+    license:
+      name: Synthetic fixture data (CC0-1.0)
+      url: https://github.com/jaakla/openmapstack-skills/issues/43
+    rationale: Active account density is the skeleton-stage demand proxy (A2).
+    pin:
+      class: local_snapshot
+      path: data/source/customer_accounts.parquet
+      sha256: sha256:37f44517f293541b116cf09e4cf2e1dd30ef3abdea6579b93b3cab97b2607424
+      captured_at: '2026-09-17T12:51:38.624109Z'
+overrides: []
+processing:
+  analysis_crs: EPSG:32618
+  storage_crs: EPSG:4326
+  steps:
+  - id: load_zones
+    operation: read
+    source: taxi_zones
+    output: zones_raw
+  - id: load_hubs
+    operation: read
+    source: hubs
+    output: hubs_raw
+  - id: load_fleet
+    operation: read
+    source: fleet_positions
+    expression: geom IS NOT NULL
+    output: fleet_raw
+  - id: load_accounts
+    operation: read
+    source: customer_accounts
+    expression: is_active = true
+    output: accounts_raw
+  - id: project_zones
+    operation: project
+    input: zones_raw
+    expression: ST_Transform(geom, 32618)
+    output: zones_metric
+  - id: hub_distances
+    operation: spatial_join
+    inputs:
+    - zones_metric
+    - hubs_raw
+    expression: min(ST_Distance(zone_centroid, hub_geom)) per zone
+    crs: EPSG:32618
+    output: zone_hub_distance
+  - id: fleet_by_zone
+    operation: aggregate
+    input: fleet_raw
+    expression: count(*) grouped by taxi_zone_id
+    output: zone_fleet_counts
+  - id: demand_by_zone
+    operation: aggregate
+    input: accounts_raw
+    expression: count(*) grouped by taxi_zone_id (demand proxy, A2)
+    output: zone_demand
+  - id: combine_metrics
+    operation: join
+    inputs:
+    - zones_raw
+    - zone_hub_distance
+    - zone_fleet_counts
+    - zone_demand
+    output: zone_metrics
+  - id: eligible_zones
+    operation: filter
+    input: zone_metrics
+    expression: demand_accounts >= 40 AND hub_distance_m >= 1500 AND fleet_present <= 6
+    output: eligible_candidates
+  - id: score_candidates
+    operation: score
+    input: eligible_candidates
+    expression: 100 * (0.45*demand_score + 0.30*coverage_gap_score + 0.15*market_score + 0.10*saturation_score)
+    output: scored_candidates
+  - id: export_candidates
+    operation: export
+    input: scored_candidates
+    output: hub_candidates
+scoring:
+  weights:
+    demand: 0.45
+    coverage_gap: 0.3
+    market: 0.15
+    saturation: 0.1
+  components:
+    demand_score: demand_accounts / max eligible demand_accounts
+    coverage_gap_score: hub_distance_m / max eligible hub_distance_m
+    market_score: 0 in this stage (A4); (charging + parking context)/200 once the MotherDuck snapshot
+      lands
+    saturation_score: 1 - fleet_present / max eligible fleet_present
+  final_score: 100 * sum(weight * component), rounded to 2 decimals; recomputable from data/derived/zone-metrics.parquet
+    alone
+  eligibility:
+    demand_accounts_min: 40
+    hub_distance_m_min: 1500
+    fleet_present_max: 6
+outputs:
+  zone_metrics_parquet:
+    path: data/derived/zone-metrics.parquet
+    format: GeoParquet (EPSG:4326)
+    generated_by: combine_metrics
+  hub_candidates_parquet:
+    path: data/derived/hub-candidates.parquet
+    format: GeoParquet (EPSG:4326)
+    generated_by: export_candidates
+  hub_candidates_geojson:
+    path: data/derived/hub-candidates.geojson
+    format: GeoJSON (EPSG:4326)
+    generated_by: export_candidates
+validation:
+  required:
+  - geometry_valid
+  - crs_known
+  - row_count_gt_zero
+  - no_null_zone_id
+  - rls_scope_alpha_only
+  - protected_columns_absent
+  - score_components_complete
+  domain_checks:
+  - name: score_range
+    expression: final_score >= 0 AND final_score <= 100
+  - name: eligibility_thresholds
+    expression: demand_accounts >= 40 AND hub_distance_m >= 1500 AND fleet_present <= 6
+runs:
+  latest:
+    id: run-20260917-131353
+    started_at: '2026-09-17T13:13:53.014428+00:00'
+    completed_at: '2026-09-17T13:13:53.286115+00:00'
+    status: passed
+    inputs_hash: sha256:d2d0f4dec607dd1e9e3e68569450c1cf135d8cc9ff2d80683d6258cbd7711ffd
+    outputs_hash: sha256:aa6e802fd916d6b3f3767399afb4552834d1cf8594954090277afb2124fa755b
+    record:
+      path: runs/run-20260917-131353.json
+    validation_report:
+      path: validation/latest-report.json
+runtime:
+  implementation:
+    pipeline: pipeline.py
+    command:
+    - python
+    - pipeline.py
+  environment:
+    python: '3.12'
+    duckdb: 1.5.5
+    gdal: DuckDB spatial extension
+presentation:
+  layout:
+    type: map_with_sidebar
+  map:
+    basemap:
+      id: cartodb-positron
+      kind: vector-style
+      url: https://basemaps.cartocdn.com/gl/positron-gl-style/style.json
+      attribution: © OpenStreetMap contributors © CARTO
+      default_visible: true
+    layers:
+    - source: hub_candidates_geojson
+      semantic_role: primary_result
+    - source: taxi_zones
+      semantic_role: context
+    - source: hubs
+      semantic_role: constraint
+    - source: fleet_positions
+      semantic_role: source
+  provenance_ui:
+    distinctions:
+    - public-origin reference data (taxi_zones)
+    - private snapshot data (hubs, fleet_positions, customer_accounts)
+    - RLS-limited source (hubs, fleet_positions, customer_accounts)
+    - synthetic business attributes (all fixture tables)
+    - analysis assumptions (A1-A5)
+  intent: analytical_workspace
+  primary_view: map

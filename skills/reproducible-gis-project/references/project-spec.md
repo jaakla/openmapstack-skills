@@ -169,7 +169,7 @@ sources:
       method: postgis
       connection: {ref: "env:PARCELS_DSN"}    # a reference, never a DSN
     warehouse:
-      backend: postgis                        # duckdb | postgis (pilot backends)
+      backend: postgis                        # duckdb | postgis | bigquery | motherduck
       account: geo-prod                       # host / project identity, no secrets
       database: gis
       schema: cadastre

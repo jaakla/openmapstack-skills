@@ -109,5 +109,67 @@ class PaginationCompletenessGuidanceTests(GuidanceCase):
         self.assertNotIn("resultType=hits", pipeline)
 
 
+class VerifiedBackendGuidanceTests(GuidanceCase):
+    """What the CLI can connect to, and what the shipped text claims, are one list.
+
+    A backend the connector supports but the guidance still calls unsupported
+    sends an agent off to the vendor CLI and an unpinned hand-copied file; a
+    backend the guidance promises but the connector refuses fails at the first
+    `source discover`. Either drift is silent, so the list is asserted from
+    `connectors.BACKENDS` rather than transcribed.
+    """
+
+    def test_every_copy_names_the_backends_the_connector_actually_supports(self) -> None:
+        from openmapstack.connectors import BACKENDS
+
+        for path, text in _shipped_copies("user-data-sources.md").items():
+            with self.subTest(path=path):
+                for backend in BACKENDS:
+                    self.assertShips(text, backend, path)
+
+    def test_no_copy_still_calls_a_supported_backend_unsupported(self) -> None:
+        from openmapstack.connectors import BACKENDS
+
+        for path, text in _shipped_copies("user-data-sources.md").items():
+            unsupported = text.split("## Other backends", 1)
+            self.assertEqual(len(unsupported), 2, f"{path} no longer has an 'Other backends' section")
+            listed = unsupported[1].split("For those:", 1)[0]
+            for backend in BACKENDS:
+                with self.subTest(path=path, backend=backend):
+                    self.assertNotIn(
+                        f"`{backend}`",
+                        listed,
+                        f"{path} lists the supported backend {backend!r} as one the CLI refuses",
+                    )
+
+    def test_the_metered_backend_ships_its_two_traps(self) -> None:
+        """BigQuery's cost guard and its row-count caveat are the reasons this
+        backend is not just 'another SQL database'."""
+        for path, text in _shipped_copies("user-data-sources.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "max-scan-bytes", path)
+                self.assertShips(text, "scan_limit_exceeded", path)
+                self.assertShips(text, "is not what your reader can see", path)
+
+    def test_the_motherduck_confinement_limit_is_stated_not_implied_away(self) -> None:
+        for path, text in _shipped_copies("user-data-sources.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "a MotherDuck session needs network access", path)
+                self.assertShips(text, "READ_ONLY", path)
+                # `allowed_directories` alone does not confine anything; saying
+                # so is what stops a reader assuming a fallback that is absent.
+                self.assertShips(text, "does nothing without that switch", path)
+
+    def test_the_query_policy_documents_what_it_refuses_to_read(self) -> None:
+        """A query that names its own file or URL is the one shape that turns
+        an approved snapshot into an exfiltration path on a backend with no
+        session-level file confinement."""
+        for path, text in _shipped_copies("user-data-sources.md").items():
+            with self.subTest(path=path):
+                for needle in ("read_csv()", "read_parquet()", "ST_Read()"):
+                    self.assertShips(text, needle, path)
+                self.assertShips(text, "relations the connector exposed", path)
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

@@ -14,14 +14,19 @@ The connector surface is deliberately small and defensive:
   every query; a query that exceeds any of them is refused, and a
   half-written file is removed;
 - **only SELECT** -- one statement, no DML/DDL/COPY/ATTACH keywords, no
-  statement separators;
+  statement separators, and no table function or bare path that would read a
+  file or a URL of the query's own choosing;
+- **scan limits** -- a backend that bills by bytes scanned (BigQuery) is
+  dry-run first and refused before execution when the estimate exceeds
+  ``max_scan_bytes``;
 - **redaction** -- every message a connector emits passes through
   ``openmapstack.sources.redact``.
 
-Two backends are implemented as the reference pair: ``duckdb`` for local
-files (GeoParquet, GeoJSON, GeoPackage, FlatGeobuf, ``.duckdb`` databases)
-and ``postgis`` for PostgreSQL/PostGIS. Other warehouses are documented only
-where their behaviour has been verified; they are not silently accepted.
+Four backends are implemented: ``duckdb`` for local files (GeoParquet,
+GeoJSON, GeoPackage, FlatGeobuf, ``.duckdb`` databases), ``postgis`` for
+PostgreSQL/PostGIS, ``bigquery``, and ``motherduck``. Other warehouses are
+documented only where their behaviour has been verified; they are not
+silently accepted.
 """
 
 from __future__ import annotations
@@ -39,7 +44,33 @@ from ..integrity import sha256_file
 from ..project import get_in, project_path
 from ..sources import CONNECTION_REFERENCE_SCHEMES, redact
 
-BACKENDS = ("duckdb", "postgis")
+BACKENDS = ("duckdb", "postgis", "bigquery", "motherduck")
+
+#: Table functions that read something the *query* names -- a local file, a
+#: URL, or another database -- rather than the relation the connector exposed.
+#: The local DuckDB connector also confines file access with
+#: ``allowed_directories`` + ``enable_external_access = false``, but that pair
+#: is unavailable to any backend that needs the network (MotherDuck reaches
+#: its warehouse over it, and ``enable_external_access`` cannot be re-enabled
+#: once a database is running). So the policy, not the session, is what has to
+#: hold for those backends, and it refuses these before execution.
+_EXTERNAL_READERS = re.compile(
+    r"\b("
+    r"read_csv|read_csv_auto|sniff_csv|read_parquet|parquet_scan|parquet_metadata|parquet_schema|"
+    r"read_json|read_json_auto|read_ndjson|read_ndjson_auto|json_scan|read_xlsx|"
+    r"st_read|st_read_meta|st_readosm|"
+    r"delta_scan|iceberg_scan|iceberg_metadata|iceberg_snapshots|"
+    r"postgres_scan|postgres_scan_pushdown|postgres_query|mysql_scan|mysql_query|"
+    r"sqlite_scan|sqlite_query|external_query"
+    r")\s*\(",
+    re.IGNORECASE,
+)
+
+#: ``FROM 'some/path.parquet'`` and ``FROM 'https://...'``: DuckDB resolves a
+#: bare string in table position as a file or URL, so it is the same hole
+#: without a function name. Detected after string literals are masked, so a
+#: literal that merely *contains* the word "from" cannot trip it.
+_PATH_AS_TABLE = re.compile(r"\b(from|join)\s+''", re.IGNORECASE)
 
 _FORBIDDEN_KEYWORDS = re.compile(
     r"\b(insert|update|delete|drop|alter|create|copy|grant|revoke|truncate|call|execute|"
@@ -70,9 +101,13 @@ class ConnectorLimits:
     timeout_s: float = 60.0
     max_rows: int = 100_000
     max_bytes: int = 256 * 1024 * 1024
+    #: Bytes a metered backend may scan. Enforced *before* execution from a
+    #: dry-run estimate, and passed to the backend as its own billing cap.
+    #: Backends that do not meter scanned bytes ignore it.
+    max_scan_bytes: int = 1024 * 1024 * 1024
 
     def validate(self) -> None:
-        if self.timeout_s <= 0 or self.max_rows <= 0 or self.max_bytes <= 0:
+        if self.timeout_s <= 0 or self.max_rows <= 0 or self.max_bytes <= 0 or self.max_scan_bytes <= 0:
             raise ConnectorError("limits must all be positive", code="limits_invalid")
 
 
@@ -126,6 +161,8 @@ class QueryPlan:
     query_sha256: str
     schema_sha256: str
     backend_snapshot: dict[str, Any] | None = None
+    #: Bytes the backend estimated it would scan, for backends that meter it.
+    scan_bytes: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -134,22 +171,41 @@ class QueryPlan:
             "query_sha256": self.query_sha256,
             "schema_sha256": self.schema_sha256,
             "backend_snapshot": self.backend_snapshot,
+            "scan_bytes": self.scan_bytes,
         }
 
 
 def require_read_only_select(query: str) -> str:
-    """Accept exactly one SELECT/WITH statement with no side-effect keywords."""
+    """Accept exactly one SELECT/WITH statement with no side-effect keywords.
+
+    SQL line comments (``--``) are allowed: they are documentation, not
+    statements, so they are removed before the policy checks and cannot hide
+    or trigger a rejection.
+    """
     if not isinstance(query, str) or not query.strip():
         raise ConnectorError("query must be a non-empty SELECT statement", code="query_rejected")
     text = query.strip().rstrip(";").strip()
     stripped = re.sub(r"'(?:[^']|'')*'", "''", text)  # ignore text inside string literals
-    if ";" in stripped:
+    bare = re.sub(r"--[^\n]*", " ", stripped).strip()  # ignore line comments as well
+    if ";" in bare:
         raise ConnectorError("query must be a single statement", code="query_rejected")
-    if not re.match(r"(?is)^(select|with)\b", text):
+    if not re.match(r"(?is)^(select|with)\b", bare):
         raise ConnectorError("only SELECT (or WITH ... SELECT) queries are allowed", code="query_rejected")
-    match = _FORBIDDEN_KEYWORDS.search(stripped)
+    match = _FORBIDDEN_KEYWORDS.search(bare)
     if match:
         raise ConnectorError(f"query contains a forbidden keyword: {match.group(0).upper()}", code="query_rejected")
+    match = _EXTERNAL_READERS.search(bare)
+    if match:
+        raise ConnectorError(
+            f"query reads a source of its own choosing via {match.group(1).lower()}(); "
+            "read the relations the connector exposed",
+            code="query_rejected",
+        )
+    if _PATH_AS_TABLE.search(bare):
+        raise ConnectorError(
+            "query names a file or URL in table position; read the relations the connector exposed",
+            code="query_rejected",
+        )
     return text
 
 
@@ -198,7 +254,14 @@ def resolve_connection_reference(reference: object, *, environ: dict[str, str] |
     raise ConnectorError("keyring: references are not supported by the pilot connectors", code="connection_reference_invalid")
 
 
-def load_connector(backend: str, connection: str, *, project_root: Path):
+def load_connector(backend: str, connection: str, *, project_root: Path, warehouse: dict[str, Any] | None = None):
+    """Build a connector for ``backend``.
+
+    ``warehouse`` is the source's ``warehouse`` block. The cloud backends need
+    it to know *what* to read -- a BigQuery dataset, a MotherDuck database --
+    because unlike a DSN or a directory, their credential names no target.
+    """
+    warehouse = warehouse or {}
     if backend == "duckdb":
         from .duckdb_local import DuckDBLocalConnector
 
@@ -207,10 +270,27 @@ def load_connector(backend: str, connection: str, *, project_root: Path):
         from .postgis import PostGISConnector
 
         return PostGISConnector(connection)
+    if backend == "bigquery":
+        from .bigquery import BigQueryConnector
+
+        return BigQueryConnector(
+            connection,
+            project=_text(warehouse.get("project")),
+            dataset=_text(warehouse.get("dataset")),
+            location=_text(warehouse.get("location")),
+        )
+    if backend == "motherduck":
+        from .motherduck import MotherDuckConnector
+
+        return MotherDuckConnector(connection, database=_text(warehouse.get("database")))
     raise ConnectorError(
         f"backend {backend!r} is not a verified connector; supported: {list(BACKENDS)}",
         code="backend_unsupported",
     )
+
+
+def _text(value: object) -> str | None:
+    return value if isinstance(value, str) and value.strip() else None
 
 
 def _source_block(manifest: dict[str, Any], source_key: str) -> dict[str, Any]:
@@ -228,6 +308,7 @@ def connector_for_source(
     environ: dict[str, str] | None = None,
 ):
     source = _source_block(manifest, source_key)
+    warehouse = source.get("warehouse") if isinstance(source.get("warehouse"), dict) else {}
     backend = get_in(source, "warehouse", "backend")
     if not isinstance(backend, str):
         raise ConnectorError(f"source {source_key!r} declares no warehouse.backend", code="backend_undeclared")
@@ -235,9 +316,9 @@ def connector_for_source(
     if backend == "duckdb" and reference is None:
         # Local files need no credential: the "connection" is the project's
         # own data/source directory.
-        return load_connector(backend, "", project_root=project_root)
+        return load_connector(backend, "", project_root=project_root, warehouse=warehouse)
     _, secret = resolve_connection_reference(reference, environ=environ)
-    return load_connector(backend, secret, project_root=project_root)
+    return load_connector(backend, secret, project_root=project_root, warehouse=warehouse)
 
 
 def discover_source(

@@ -1,0 +1,97 @@
+name: OpenMapStack cloud connector canary
+
+# Issue #43, test layer D: the BigQuery and MotherDuck connectors against
+# real services.
+#
+# Deliberately NOT on pull_request. These backends need billed accounts and
+# long-lived secrets, so a contributor without them must never see a red PR
+# — the fake-client tests in tests/test_cloud_connectors.py and the fixture
+# SQL tests in tests/test_cloud_fixture_sql.py run on every PR instead.
+#
+# A missing secret is reported as `not_testable`, never as a pass: the job
+# says which backend it could not reach, and the summary carries that word.
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "17 6 * * 2"
+  release:
+    types: [published]
+
+jobs:
+  cloud-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the CLI with both cloud backends
+        run: pip install ".[geo,bigquery,motherduck]"
+
+      - name: Prepare controlled DuckDB Spatial directory
+        run: |
+          echo "OPENMAPSTACK_SPATIAL_EXTENSION_DIR=${RUNNER_TEMP}/openmapstack-duckdb-extensions" >> "$GITHUB_ENV"
+          OPENMAPSTACK_SPATIAL_EXTENSION_DIR="${RUNNER_TEMP}/openmapstack-duckdb-extensions" python evals/prepare_spatial.py
+
+      - name: Decide which backends are testable
+        id: configured
+        env:
+          BIGQUERY_PROJECT: ${{ secrets.OMS_CANARY_BIGQUERY_PROJECT }}
+          BIGQUERY_KEY: ${{ secrets.OMS_CANARY_BIGQUERY_CREDENTIALS }}
+          BIGQUERY_DATASET: ${{ secrets.OMS_CANARY_BIGQUERY_DATASET }}
+          MOTHERDUCK_TOKEN: ${{ secrets.OMS_CANARY_MOTHERDUCK_TOKEN }}
+          MOTHERDUCK_DATABASE: ${{ secrets.OMS_CANARY_MOTHERDUCK_DATABASE }}
+        run: |
+          # Every secret the live tests need, not just the credential: with a
+          # credential but no target the tests skip, and a skip reported as
+          # `testable` is exactly the false green this job exists to avoid.
+          bigquery=not_testable
+          motherduck=not_testable
+          if [ -n "$BIGQUERY_PROJECT" ] && [ -n "$BIGQUERY_KEY" ] && [ -n "$BIGQUERY_DATASET" ]; then
+            bigquery=testable
+          fi
+          if [ -n "$MOTHERDUCK_TOKEN" ] && [ -n "$MOTHERDUCK_DATABASE" ]; then
+            motherduck=testable
+          fi
+          echo "bigquery=$bigquery" >> "$GITHUB_OUTPUT"
+          echo "motherduck=$motherduck" >> "$GITHUB_OUTPUT"
+
+      - name: Write the BigQuery reader key
+        if: steps.configured.outputs.bigquery == 'testable'
+        env:
+          BIGQUERY_KEY: ${{ secrets.OMS_CANARY_BIGQUERY_CREDENTIALS }}
+        run: |
+          printf '%s' "$BIGQUERY_KEY" > "${RUNNER_TEMP}/bigquery-reader.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${RUNNER_TEMP}/bigquery-reader.json" >> "$GITHUB_ENV"
+
+      - name: BigQuery canary
+        if: steps.configured.outputs.bigquery == 'testable'
+        env:
+          OPENMAPSTACK_TEST_BIGQUERY_PROJECT: ${{ secrets.OMS_CANARY_BIGQUERY_PROJECT }}
+          OPENMAPSTACK_TEST_BIGQUERY_DATASET: ${{ secrets.OMS_CANARY_BIGQUERY_DATASET }}
+        run: python -m unittest -v tests.test_cloud_connectors.LiveBigQueryCanaryTests
+
+      - name: MotherDuck canary
+        if: steps.configured.outputs.motherduck == 'testable'
+        env:
+          OPENMAPSTACK_TEST_MOTHERDUCK_TOKEN: ${{ secrets.OMS_CANARY_MOTHERDUCK_TOKEN }}
+          OPENMAPSTACK_TEST_MOTHERDUCK_DATABASE: ${{ secrets.OMS_CANARY_MOTHERDUCK_DATABASE }}
+        run: python -m unittest -v tests.test_cloud_connectors.LiveMotherDuckCanaryTests
+
+      - name: Report what ran and what could not
+        if: always()
+        run: |
+          {
+            echo "## Cloud connector canary"
+            echo
+            echo "| backend | status |"
+            echo "| --- | --- |"
+            echo "| bigquery | ${{ steps.configured.outputs.bigquery }} |"
+            echo "| motherduck | ${{ steps.configured.outputs.motherduck }} |"
+            echo
+            echo "\`not_testable\` means the secrets that backend needs were not all configured."
+            echo "It is not a pass, and it does not mean the connector works."
+          } >> "$GITHUB_STEP_SUMMARY"
