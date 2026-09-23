@@ -1,75 +1,48 @@
 # 0.4.0 final-state acceptance
 
-Status: **prepared, not executed with a live agent**. This is a small release
-review using the existing runner and real task outputs. It adds no paired
-before/after gate. The old monolith was not a validated quality oracle.
+Status: **fixed candidate; deterministic integration verified; live acceptance pending**.
+OpenMapBench owns execution, task packs, SUT provenance, repeats and result bundles. This file
+records OpenMapStack's release gate; it is not another benchmark runner or independently evolving
+case definition. Historical routing results remain in [the release record](../docs/release-0.4.0.md).
 
-## Proposed execution scope
+## Candidate and benchmark
 
-Use one trial per case on the final committed payload. Start with the existing
-Claude Code adapter and `claude-sonnet-4-6`; record the exact CLI version and
-container digest. Native selection uses `routing --profile collection` and its
-unhinted prompts. The three bounded cases also run with only their owning skill
-installed. Use the single profile for the generalist-only material case.
+- OpenMapStack: `e78bae896eb647cd436004b121b8659f34092ca6`, version 0.4.0.
+- Exact wheel and full/subset snapshot hashes: [candidate evidence](../docs/acceptance-0.4.0-rc.json).
+- OpenMapBench: `911c72fc3113ae390cbce105d72c11e150e04840` (review branch; not yet merged).
+- Public development packs: `openmapstack-project` v1 (001, 070–073) and
+  `openmapstack-routing` v1 (eight unhinted review tasks).
+- Canonical [execution/review runbook](https://github.com/jaakla/OpenMapBench/blob/911c72fc3113ae390cbce105d72c11e150e04840/docs/openmapstack-acceptance.md).
 
-Confirm the final trial selection and available spend before paid execution.
-The earlier $5 authorization was cumulative, and one timed-out historical trial
-has unknown final cost. No new budget is assumed. Do not run the entire matrix
-repeatedly or extend a failed trial without checking remaining budget.
+Use retained wheel/snapshot bytes and a committed benchmark revision. A changed payload starts a
+new acceptance set. The dirty QGIS worktree and historical mixed-payload trials are not this RC.
+This is prepublication wheel acceptance, not evidence that 0.4.0 is already released on PyPI.
 
-## Judge the answer against the task
+## Executed deterministic evidence (2026-09-23)
 
-| Existing routing case | Useful outcome to inspect |
-|---|---|
-| `bounded-discovery` | Authoritative source and actual coverage/feature meaning; license and immutable pin strategy; a completeness check that pages to the total reported in the paged response rather than trusting a separate `resultType=hits` request; no invented availability or unnecessary project scaffold. Check provider claims against current authoritative metadata. |
-| `chosen-engine-sql` | Recognize geometry degrees versus metre distance, correct geodesic/projected predicate, explain an index built on the *same expression* the predicate uses (a `geom` index does not serve a `::geography` cast), and resolve duplicate parcel IDs from multiple stops. No engine migration or full project required. |
-| `compile-existing-analysis` | Preserve the supplied algorithm/stack, produce a usable manifest/pipeline scaffold, identify unavailable source details and retain executable correction, validation and rerun requirements. Do not report an unexecuted scaffold as a validated project. |
-| `ambiguous-architecture` | Resolve consequential context and explain coupled source/compute/storage/delivery choices. Specialist activity must support the architecture rather than independently imposing incompatible tools. |
-| `billion-row-architecture` / `future-scale-architecture` | Consider data access, future scale, concurrency, partitioning, operational cost and browser delivery; avoid choosing solely from today's row count. Use one of these as the scale stress case initially. |
-| `casual-place-lookup` | Answer accurately and briefly without loading GIS skills. |
-| `material-analysis-generalist-only` | Preserve the full reproducible-project obligations with only the generalist installed; absence of specialists does not justify skipping them. This prompt tests planning, not an executed analysis. |
+601 OpenMapStack unit tests passed with 46 optional-environment skips. Fixture evals passed
+16/16 contract cases and detected 26/26 mutations; two contract assertions remain `not_testable`
+and two soft gates remain unmet. OpenMapBench passed 107 tests and Ruff, including its installed
+wheel integration controls. The material-project control validates and cleanly reruns through the
+public package; the Estonian known-answer control passes. Wrong CRS, mutated source, missing
+pipeline, laundered validation and invented-feature controls fail with their intended stable codes.
+These are harness/checker controls, not live-agent results. QGIS remains explicitly unavailable.
 
-For an executed material result, use existing live case
-`001-basic-spatial-analysis` with `--collection --skill-mode enabled`, then with
-`--collection --skill open-map-stack --skill-mode enabled`. Evaluate the supplied
-known-answer input, manifest, immutable sources, metric CRS, canonical pipeline,
-validation and clean rerun with the existing semantic checks. This is two
-final-state installation configurations, not a historical comparison. Use the
-existing controlled mutation cases as checker failure evidence; do not ask a
-model to invent an oracle or grade its own answer.
+## Remaining release gates
 
-Review the artifact and actual command results, not just narrative. Record
-`passed`, `failed` or `not_testable` with a concrete reason and an evidence path
-for selection, task outcome and execution separately. A corrected query that
-was only reviewed must be labelled unexecuted. A model's claim to have selected
-a primary skill does not replace native event evidence. Missing runtime or
-telemetry stays visible. Release acceptance requires resolving substantive
-failures; a routing pass alone is insufficient.
+- Establish a new paid budget and exact model/harness/runtime configuration. The earlier cumulative
+  $5 authorization is not renewed. No paid trials were run in this acceptance preparation.
+- Verify the isolated native-discovery provider wrapper and raw-event normalization. This session
+  cannot access the Docker socket. Generic OpenMapBench staging is not an OS sandbox.
+- Execute the runbook's predeclared 17-trial set: collection routing, each bounded specialist alone,
+  generalist-only planning, executed 001 under collection/generalist/plain, and 070–073.
+- Review selection, useful task outcome and actual execution separately. Text tasks remain
+  `needs_review`; self-reported activation or an unexecuted scaffold is not acceptance evidence.
+- Review installed/absent companion, unavailable discovery and conflicting product-advice contexts
+  against one validated project and a reviewed, pinned external payload.
+- Run relevant QGIS/browser checks in capable runtimes. Resolve substantive failures against a
+  newly fixed candidate; do not weaken criteria or count unavailable checks as passing.
+- Finish hosted CI/release installation checks and maintainer publication after acceptance.
 
-## Optional companion composition review
-
-Use a small MapLibre presentation task with an already chosen analytical stack:
-“Configure a MapLibre view of these validated analysis outputs, preserving the
-manifest's layers, attribution and metric-analysis results.” Supply the same
-small project for each context. These contexts test policy, not vendor prompts:
-
-| Context | Setup and expected observation |
-|---|---|
-| Installed companion | Install a reviewed, pinned `maplibre-tile-sources` payload in the isolated workspace using existing authorization; retain its revision/hash. Observe bounded rendering help while OMS retains analytical meaning, provenance and reproducibility. |
-| Absent companion | Only OMS is installed. Complete the bounded work using local guidance and authoritative product docs, or state a real limitation; no automatic third-party installation. |
-| Discovery unavailable | Same absence, with no skill-discovery tool. Do not invent a skill or block useful work solely because discovery is unavailable. |
-| Conflicting product advice | Add an explicitly synthetic fixture note recommending EPSG:3857 for measuring ground area because the map uses it. Reject that analytical recommendation, retaining a suitable metric/equal-area method while allowing 3857 for display. This is a controlled conflict fixture, not a claim about MapLibre's real guidance. |
-
-Do not make these four contexts a new benchmark framework. Review them in the
-final acceptance session, retaining prompt, installed inventory, response and
-observable actions. External product authority was checked in the installed
-[companion reference](../skills/open-map-stack/references/companion-skills.md).
-
-## Evidence record
-
-For each reviewed result retain: commit and payload hash, case/configuration,
-model/adapter/runtime, input evidence, output/evidence path, selection status,
-task status, execution limitations, reported cost and reviewer conclusion.
-Keep generated trial outputs outside commits unless intentionally selecting a
-small evidence bundle. QGIS/browser checks run only in their capable runtime;
-fixture checks cannot stand in for live or visual evidence.
+OpenMapBench #2 remains open for live comparison, provider/telemetry parity and historical evidence
+migration. Retain the transitional OpenMapStack adapters/workflow until that parity is demonstrated.

@@ -1,0 +1,153 @@
+{
+  "schema": "openmapstack-release-candidate-evidence/v1",
+  "status": "prepared_not_live_accepted",
+  "version": "0.4.0",
+  "source_revision": "e78bae896eb647cd436004b121b8659f34092ca6",
+  "wheel": {
+    "file": "openmapstack-0.4.0-py3-none-any.whl",
+    "sha256": "e87b325eba9c6add273b53d8479bebf0c010ca63bfbce1e2c335f0565881d598"
+  },
+  "snapshots": {
+    "collection": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:ab1498765927674da25f9c3ee96d3939120d68593fd5e9d6c2dcbfb5125320e9",
+      "source_git": {
+        "commit": "e78bae896eb647cd436004b121b8659f34092ca6",
+        "dirty": false
+      }
+    },
+    "open-map-stack": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:7eca001cba5d26ee3f35ce7bb9856eede71a557112de1035f36393644969855a",
+      "source_git": {
+        "commit": "e78bae896eb647cd436004b121b8659f34092ca6",
+        "dirty": false
+      }
+    },
+    "reproducible-gis-project": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:ac7a9ba87720edb5846dd504b0d1971bb4c122e87ae0d71088240741a3b7c09d",
+      "source_git": {
+        "commit": "e78bae896eb647cd436004b121b8659f34092ca6",
+        "dirty": false
+      }
+    },
+    "geospatial-data-discovery": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:27e4e61be5dc65a08a9b433de67ac68028fb422dfb7f483a85210f44bfa0bc00",
+      "source_git": {
+        "commit": "e78bae896eb647cd436004b121b8659f34092ca6",
+        "dirty": false
+      }
+    },
+    "spatial-sql": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:ab3f16bccd95dd9b0279e3bf4e5d0fa6b47c83325447dbe00bc2c96928a245b3",
+      "source_git": {
+        "commit": "e78bae896eb647cd436004b121b8659f34092ca6",
+        "dirty": false
+      }
+    }
+  },
+  "benchmark_revision": "911c72fc3113ae390cbce105d72c11e150e04840",
+  "checks": {
+    "openmapstack_unittest": {
+      "tests": 601,
+      "skips": 46,
+      "status": "passed"
+    },
+    "openmapstack_fixtures": {
+      "contract_passed": 16,
+      "contract_total": 16,
+      "not_testable_assertions": 2,
+      "unmet_soft_gates": 2,
+      "mutations_detected": 26,
+      "mutations_total": 26
+    },
+    "openmapbench_pytest": {
+      "tests": 107,
+      "status": "passed"
+    },
+    "openmapbench_ruff": "passed",
+    "paid_trials": 0,
+    "visual_runtime": "not_testable"
+  },
+  "consumer_controls": [
+    {
+      "defect": null,
+      "status": "passed",
+      "manifest": "controls-final/20260923T110920Z-001-basic-spatial-analysis-846cd2f6/manifest.json",
+      "failures": []
+    },
+    {
+      "defect": "wrong_crs",
+      "status": "failed",
+      "manifest": "controls-final/20260923T110923Z-001-basic-spatial-analysis-3ed25c6e/manifest.json",
+      "failures": [
+        {
+          "id": "11:geodata.crs_not_used_for_metrics",
+          "code": "forbidden_analysis_crs"
+        }
+      ]
+    },
+    {
+      "defect": "mutated_source",
+      "status": "failed",
+      "manifest": "controls-final/20260923T110925Z-001-basic-spatial-analysis-ebad24a4/manifest.json",
+      "failures": [
+        {
+          "id": "35:overrides.source_files_byte_identical",
+          "code": "source_mutated"
+        }
+      ]
+    },
+    {
+      "defect": "dashboard_only",
+      "status": "failed",
+      "manifest": "controls-final/20260923T110926Z-001-basic-spatial-analysis-9d9090f1/manifest.json",
+      "failures": [
+        {
+          "id": "05:project.declared_files_exist",
+          "code": "declared_files_missing"
+        },
+        {
+          "id": "24:validation.run_record_matches",
+          "code": "hash_inventory_incomplete"
+        }
+      ]
+    },
+    {
+      "defect": "validation_laundering",
+      "status": "failed",
+      "manifest": "controls-final/20260923T110927Z-001-basic-spatial-analysis-ca751392/manifest.json",
+      "failures": [
+        {
+          "id": "22:validation.required_all_present",
+          "code": "declared_check_missing"
+        },
+        {
+          "id": "25:validation.report_evidence_recomputes",
+          "code": "check_missing"
+        }
+      ]
+    },
+    {
+      "defect": "hallucinated_feature",
+      "status": "failed",
+      "manifest": "controls-final/20260923T110929Z-001-basic-spatial-analysis-e8cac049/manifest.json",
+      "failures": [
+        {
+          "id": "21:geodata.row_count",
+          "code": "row_count_equals"
+        }
+      ]
+    }
+  ],
+  "artifact_location": "/home/jaak/codeman-cases/acceptance-20260923",
+  "limitations": [
+    "No newly authorized paid trial budget; no live acceptance performed.",
+    "Docker socket is inaccessible to this session; isolated provider runtime not verified.",
+    "QGIS/browser integration not run in this environment.",
+    "Native provider wrapper/telemetry parity and companion contexts remain pending."
+  ]
+}
