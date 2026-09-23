@@ -85,6 +85,36 @@ class GeographyIndexGuidanceTests(GuidanceCase):
                 self.assertRetracted(text, retracted, path)
 
 
+class AcceptanceGuidanceTests(GuidanceCase):
+    """Content regressions only; native task-quality review remains a live gate."""
+
+    def test_geography_support_and_projected_input_are_not_confused(self) -> None:
+        for path, text in _shipped_copies("spatial-sql.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "geodetic CRSs beyond EPSG:4326", path)
+                self.assertShips(text, "ST_Transform(geom, 4326)::geography", path)
+                self.assertRetracted(text, "rejects the cast for any SRID other than 4326", path)
+                self.assertRetracted(text, "SRID 4326, only", path)
+
+    def test_etak_license_filter_and_pin_corrections_ship_together(self) -> None:
+        for path, text in _shipped_copies("data-sources.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "https://geoportaal.maaruum.ee/avaandmete-litsents", path)
+                self.assertShips(text, "Do not substitute CC-BY for these terms", path)
+                self.assertShips(text, "not a universal “real building” predicate", path)
+                self.assertShips(text, "do not require `ehr_gid IS NOT NULL`", path)
+                self.assertShips(text, "actual bytes and SHA-256", path)
+                self.assertRetracted(text, "Most data is open under CC-BY 4.0", path)
+                self.assertRetracted(text, "require `ehr_gid IS NOT NULL` to drop", path)
+
+    def test_parquet_guidance_requires_reopened_artifact_metadata(self) -> None:
+        for path, text in _shipped_copies("formats-and-crs.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "does not by itself produce GeoParquet", path)
+                self.assertShips(text, "Reopen the written artifact", path)
+                self.assertShips(text, "including empty outputs", path)
+
+
 class PaginationCompletenessGuidanceTests(GuidanceCase):
     """`bounded-discovery`: completeness comes from the paged total, not from hits."""
 

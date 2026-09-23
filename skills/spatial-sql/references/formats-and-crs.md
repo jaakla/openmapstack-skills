@@ -17,6 +17,15 @@ Format selection, conversions, and coordinate reference system handling. Two of 
 | **GeoArrow** | In-memory interchange between processes (uses Arrow C Data Interface for zero-copy memory transfers) | Persistent storage (use GeoParquet) |
 | **MVT (Mapbox Vector Tile)** | Wire format inside vector tiles — almost never authored directly | — |
 
+### Spatial Parquet must retain metadata
+
+Writing `ST_AsWKB(geometry)` as an ordinary Parquet BLOB does not by itself produce GeoParquet.
+Use a GeoParquet writer and retain the `geo` metadata, primary geometry column, encoding and CRS.
+Reopen the written artifact and verify its actual CRS and geometry, including empty outputs;
+a correct CRS string in `project.yaml` cannot repair missing file metadata. Do not repair this
+by assigning a CRS guessed from coordinate magnitudes. See the
+[GeoParquet metadata contract](https://geoparquet.org/releases/v1.1.0/).
+
 ### Raster formats
 
 | Format | When to use |

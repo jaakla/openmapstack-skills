@@ -77,26 +77,30 @@ WHERE s.geom && a.geom
 
 For meter distances on lon/lat data, use a suitable projected CRS or `geography`. Create GIST indexes on the exact expression the predicate uses, not merely on the stored geometry column (see below), and verify with `EXPLAIN ANALYZE`.
 
-An index serves only the expression it was built on. A GIST index on `geom` is **not** used by `ST_DWithin(p.geom::geography, s.geom::geography, 500)`: the cast is a different expression, and the planner falls back to a nested-loop scan. Choose one consistent option:
+An index serves only the expression it was built on. A GIST index on `geom` is **not** used by `ST_DWithin(p.geom::geography, s.geom::geography, 500)`: the cast is a different expression. Without a matching index the planner may scan many rows; inspect the actual plan. Choose one consistent option:
 
 ```sql
--- Option 1: index the geography expression the predicate uses (lon/lat, SRID 4326, only)
+-- Option 1: index the geography expression the predicate uses (example: both columns are lon/lat EPSG:4326)
 CREATE INDEX parcels_geog_gix ON parcels USING GIST ((geom::geography));
 SELECT DISTINCT p.id
 FROM stops s
 JOIN parcels p ON ST_DWithin(p.geom::geography, s.geom::geography, 500);
 
 -- Option 2: a metric projected CRS (e.g. EPSG:3301 for Estonia), indexed on the same expression.
--- Works from any source CRS.
+-- Requires a known source CRS and a supported transform.
 CREATE INDEX parcels_3301_gix ON parcels USING GIST (ST_Transform(geom, 3301));
 SELECT DISTINCT p.id
 FROM stops s
 JOIN parcels p ON ST_DWithin(ST_Transform(p.geom, 3301), ST_Transform(s.geom, 3301), 500);
 ```
 
-`geom::geography` accepts only lon/lat input: PostGIS rejects the cast for any SRID other than 4326 (SRID 0 is assumed lon/lat), so Option 1 is unavailable on already-projected data. Option 2 has no such restriction, but note that PostGIS declares `ST_Transform` `IMMUTABLE` even though its result depends on `spatial_ref_sys` and the PROJ version; the functional index is therefore accepted, yet it can silently go stale across a PROJ upgrade or a `spatial_ref_sys` edit and needs a `REINDEX` after either. A stored geography or projected column with its own GIST index avoids both caveats and is usually preferable for repeated queries.
+`geom::geography` requires a supported longitude/latitude CRS. PostGIS 2.2+ supports geodetic CRSs beyond EPSG:4326; projected coordinates must first be transformed to a supported geodetic CRS, for example `ST_Transform(geom, 4326)::geography`. Index that exact expression when using it in the predicate. A suitable local projected CRS with metre units is another option, not the only option for non-4326 inputs. Establish the real source CRS; do not relabel projected or unknown coordinates as 4326.
 
-Confirm the plan names the intended index with an `Index Cond` on that expression; a `Join Filter` over a sequential scan means the index is not being used.
+A functional `ST_Transform` index depends on CRS definitions and PROJ behavior. After changes affecting the transformation, rebuild the index and recompute any stored transformed coordinates as needed; a stored column does not maintain itself when those definitions change.
+
+Confirm whether the plan uses the intended index and its `Index Cond`. A `Join Filter` alone does not demonstrate index use. A sequential scan can be reasonable for small tables; assess the full plan rather than promising a particular join strategy. SQL that was not run remains unexecuted.
+
+Source: [PostGIS geography documentation](https://postgis.net/docs/using_postgis_dbmanagement.html#PostGIS_Geography), checked 2026-09-23.
 
 ### DuckDB Spatial
 

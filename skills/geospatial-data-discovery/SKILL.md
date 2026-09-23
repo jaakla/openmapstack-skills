@@ -22,14 +22,16 @@ not evidence that the features have the intended meaning.
    read-only inspection. Snapshot materialization follows the existing
    authorization boundary.
 3. Prefer the authoritative provider for the requested meaning. Verify fields
-   and code lists: ownership, active status, eligibility and missing values
+   and code lists against current provider metadata (report unavailable access):
+   ownership, active status, eligibility and missing values
    must not be inferred from a generic category. Preserve unknowns as unknown.
 4. Check coverage and completeness using provider counts, pagination, catalog
    structure, partitions and spatial/temporal filters as applicable. Distinguish
    a sample from a complete extract and a partial catalog from absent data.
 5. Identify a reproducible version or immutable snapshot, access method,
    retrieval time and license/attribution requirements. A URL containing
-   `latest` is not an immutable pin. Report unresolved license or retention
+   `latest`, a filename or a retrieval date alone is not an immutable pin;
+   retain snapshot bytes and their content hash when the source is mutable. Report unresolved license or retention
    constraints without inventing terms or promising a future rerun.
 
 Return a concise source assessment: provider/dataset, authoritative link,
