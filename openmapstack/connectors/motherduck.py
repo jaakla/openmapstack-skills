@@ -49,6 +49,24 @@ _NETWORK_NOTE = (
 _COUNT_NOTE = "row_estimate is a counted SELECT through this token; it reflects what this token may read"
 
 
+def _reachable_databases(connection: Any) -> list[str]:
+    """Database names this session can see, for a failed-attach message.
+
+    Best effort: a session too broken to answer gives an empty list rather
+    than replacing the original failure with a second one.
+    """
+    try:
+        rows = connection.execute(
+            "SELECT database_name FROM duckdb_databases() "
+            "WHERE database_name NOT IN ('memory', 'system', 'temp') ORDER BY 1"
+        ).fetchall()
+    except Exception:  # noqa: BLE001
+        return []
+    # Sorted here rather than trusting ORDER BY: the message is compared in
+    # tests and read by people, and should not vary with backend ordering.
+    return sorted(str(row[0]) for row in rows)
+
+
 def _default_connect(token: str) -> Any:
     """Open a bare DuckDB session. The token is applied later, in ``_session``.
 
@@ -136,9 +154,21 @@ class MotherDuckConnector:
             try:
                 connection.execute(f"ATTACH '{target}' AS {ALIAS}")
             except Exception as exc:  # noqa: BLE001
+                reachable = _reachable_databases(connection)
                 connection.close()
+                # A failed attach cannot distinguish "wrong name" from "right
+                # name, wrong account" on its own, and the token is the one
+                # thing that must not appear in the message. The database
+                # names this token can actually see answer it immediately, and
+                # a database name is not a secret.
+                detail = (
+                    f"; this token can reach: {', '.join(reachable)}"
+                    if reachable
+                    else "; this token can reach no databases at all"
+                )
                 raise ConnectorError(
-                    f"cannot attach md:{self._database}: {type(exc).__name__}", code="connection_failed"
+                    f"cannot attach md:{self._database}: {type(exc).__name__}{detail}",
+                    code="connection_failed",
                 ) from exc
             self._read_only = False
             self._note(

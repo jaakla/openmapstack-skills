@@ -538,6 +538,54 @@ class MotherDuckTests(unittest.TestCase):
 class MotherDuckPolicyTests(unittest.TestCase):
     """These need no DuckDB: they are about the contract, not the engine."""
 
+    def test_a_failed_attach_names_the_databases_the_token_can_reach(self) -> None:
+        """`no database/share named X` cannot distinguish a typo from the
+        right name in the wrong account, and the token must never appear in
+        the message. The reachable database names settle it, and a database
+        name is not a secret."""
+
+        class _NoSuchDatabase:
+            def execute(self, statement, parameters=None):
+                text = statement.strip().lower()
+                if text.startswith("attach 'md:"):
+                    raise RuntimeError("Catalog Error: no database/share named 'northstar_market' found")
+                if text.startswith("select database_name"):
+                    return self
+                return self
+
+            def fetchall(self):
+                return [("my_db",), ("legislation",)]
+
+            def close(self):
+                pass
+
+        secret = "md_token_hunter2"
+        connector = MotherDuckConnector(secret, database="northstar_market", connect=lambda token: _NoSuchDatabase())
+        with self.assertRaises(ConnectorError) as caught:
+            connector.discover(ConnectorLimits())
+        message = str(caught.exception)
+        self.assertEqual(caught.exception.code, "connection_failed")
+        self.assertIn("this token can reach: legislation, my_db", message)
+        self.assertNotIn(secret, message)
+
+    def test_an_attach_failure_with_nothing_reachable_says_so(self) -> None:
+        class _Empty:
+            def execute(self, statement, parameters=None):
+                if statement.strip().lower().startswith("attach 'md:"):
+                    raise RuntimeError("Catalog Error: no database/share named 'x' found")
+                return self
+
+            def fetchall(self):
+                return []
+
+            def close(self):
+                pass
+
+        connector = MotherDuckConnector("t", database="x", connect=lambda token: _Empty())
+        with self.assertRaises(ConnectorError) as caught:
+            connector.discover(ConnectorLimits())
+        self.assertIn("no databases at all", str(caught.exception))
+
     def test_a_missing_database_is_a_manifest_error(self) -> None:
         connector = MotherDuckConnector("token", database=None, connect=lambda token: None)
         with self.assertRaises(ConnectorError) as caught:
