@@ -60,7 +60,7 @@ jobs:
           echo "motherduck=$motherduck" >> "$GITHUB_OUTPUT"
 
       - name: Write the BigQuery reader key
-        if: steps.configured.outputs.bigquery == 'testable'
+        if: always() && steps.configured.outputs.bigquery == 'testable'
         env:
           BIGQUERY_KEY: ${{ secrets.OMS_CANARY_BIGQUERY_CREDENTIALS }}
         run: |
@@ -68,14 +68,18 @@ jobs:
           echo "GOOGLE_APPLICATION_CREDENTIALS=${RUNNER_TEMP}/bigquery-reader.json" >> "$GITHUB_ENV"
 
       - name: BigQuery canary
-        if: steps.configured.outputs.bigquery == 'testable'
+        if: always() && steps.configured.outputs.bigquery == 'testable'
         env:
           OPENMAPSTACK_TEST_BIGQUERY_PROJECT: ${{ secrets.OMS_CANARY_BIGQUERY_PROJECT }}
           OPENMAPSTACK_TEST_BIGQUERY_DATASET: ${{ secrets.OMS_CANARY_BIGQUERY_DATASET }}
         run: python -m unittest -v tests.test_cloud_connectors.LiveBigQueryCanaryTests
 
       - name: MotherDuck canary
-        if: steps.configured.outputs.motherduck == 'testable'
+        # `always()` because a step with a bare condition is skipped once an
+        # earlier one fails. Without it a BigQuery failure silently takes the
+        # MotherDuck result with it, which is the opposite of what a canary
+        # that reports per backend is for.
+        if: always() && steps.configured.outputs.motherduck == 'testable'
         env:
           OPENMAPSTACK_TEST_MOTHERDUCK_TOKEN: ${{ secrets.OMS_CANARY_MOTHERDUCK_TOKEN }}
           OPENMAPSTACK_TEST_MOTHERDUCK_DATABASE: ${{ secrets.OMS_CANARY_MOTHERDUCK_DATABASE }}
@@ -94,4 +98,5 @@ jobs:
             echo
             echo "\`not_testable\` means the secrets that backend needs were not all configured."
             echo "It is not a pass, and it does not mean the connector works."
+            echo "A backend marked \`testable\` here still failed if the job is red; read its step."
           } >> "$GITHUB_STEP_SUMMARY"
