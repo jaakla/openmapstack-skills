@@ -195,8 +195,7 @@ OpenMapBench now has a reviewable native project-directory/check-API path, priva
 versioned 001/070–073 and routing review packs, SUT descriptors, directory hashes and honest
 unscorable handling. Its healthy material control passes clean rerun; five intended defects are
 caught. See [current final-state acceptance](../evals/final-state-acceptance.md) for the pinned
-benchmark commit and remaining gates. The earlier runner-based proposed execution scope is
-superseded by that OpenMapBench path; historical results remain context, not a quality oracle.
+benchmark commit and remaining gates. Historical results remain context, not a quality oracle.
 
 A new $10 cap using `claude-sonnet-4-6` funded native attempts at benchmark `ba704e5`. Nine attempts
 reported $6.530115 before an organization monthly spend-limit rejection; $3.469885 remains authorized.
@@ -208,5 +207,9 @@ output/checker defects also remain. No material clean rerun or valid plain/skill
 
 **This candidate is not accepted.** Eight planned trials, companion contexts and capable visual
 checks remain missing. Correct the benchmark/producer defects and freeze changed payloads before
-retesting; preserve this result set. No tag/package has been published. Do not remove transitional
-harnesses before OpenMapBench #2 parity.
+retesting; preserve this result set. No tag/package has been published.
+
+A corrected candidate (`0749b07`) also failed focused acceptance; see
+[final-state acceptance](../evals/final-state-acceptance.md#corrected-candidate-outcome-2026-09-23).
+Remaining release trials run with this repository's sandboxed runner
+([ADR 0006](maintainers/decisions/0006-release-trials-in-repository-sandbox.md)), not OpenMapBench.

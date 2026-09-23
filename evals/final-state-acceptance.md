@@ -1,9 +1,10 @@
 # 0.4.0 final-state acceptance
 
-Status: **fixed candidate not accepted; native trials recorded; provider access blocked**.
-OpenMapBench owns execution, task packs, SUT provenance, repeats and result bundles. This file
-records OpenMapStack's release gate; it is not another benchmark runner or independently evolving
-case definition. Historical routing results remain in [the release record](../docs/release-0.4.0.md).
+Status: **fixed and corrected candidates not accepted; remaining trials run in this repository**.
+This file records OpenMapStack's release gate. The remaining trials use this repository's runner
+with the sandboxed Claude Code adapter ([ADR 0006](../docs/maintainers/decisions/0006-release-trials-in-repository-sandbox.md)).
+The OpenMapBench trials below remain supporting evidence; generic benchmarking continues there.
+Historical routing results remain in [the release record](../docs/release-0.4.0.md).
 
 ## Candidate and benchmark
 
@@ -52,13 +53,59 @@ See the [trial review](https://github.com/jaakla/OpenMapBench/blob/14409b3a9262b
 for exact per-trial judgments and defect attribution. Native statuses and the frozen candidate
 were preserved; no retrospective rubric changes or fixture-based live passes were applied.
 
+## Corrected candidate outcome (2026-09-23)
+
+The review above led to producer fixes `6d1e81b` (checker WKB/CRS handling) and `0749b07`
+(licensing, building scope, pinning and PostGIS geography guidance). OpenMapBench v2 packs now
+disclose every required delivery name. Focused trials against `0749b07` used the same harness:
+
+- `chosen-engine-sql`: the geography claim was fixed. It still offers an equal-area CRS for
+  distance work. `needs_review`.
+- `bounded-discovery`: licensing, `tyyp` scope and content-hash pinning are correct. It made no
+  provider lookup and claims without evidence that alternatives derive from ETAK. `needs_review`.
+- `001-basic-spatial-analysis`: **failed** two required checks the task disclosed. Layers declared
+  only an authority ID, and `cadastral_parcels` declared no `semantic_predicates`. The agent never
+  activated a skill and inferred the contract from package source. `openmapstack validate` still
+  reported all checks passed, because it kept a weaker copy of the layer-CRS check.
+
+Follow-ups `908bf95` (fresh provider lookup; distance versus area CRS guidance) and `250c99c`
+(`validate` delegates to `qgis.every_layer_declares_crs`) have no live evidence yet. Reported spend
+is **$8.760220** of the $10 authorization; the remaining $1.239780 does not fit another material
+trial with its reserve. See the [focused outcomes](https://github.com/jaakla/OpenMapBench/blob/feat/oms-release-acceptance/docs/openmapstack-acceptance-fixes-20260923.md#focused-live-outcomes).
+
+## Running the remaining trials
+
+Freeze a clean candidate at or after `250c99c` and confirm a new spend authorization first.
+Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
+
+```bash
+python3 evals/run.py --mode live --agent claude_code --model claude-sonnet-4-6 \
+  --collection --arms oms --case 001-basic-spatial-analysis \
+  --max-budget-usd 2 --credential-file ~/.claude/.credentials.json --timeout 1200
+```
+
+Native selection (Docker, digest-pinned image; the cap is split across the selected cases; see
+[routing smoke tests](routing.md)):
+
+```bash
+python3 evals/run.py routing --agent claude_code --model claude-sonnet-4-6 \
+  --image sha256:EXACT_LOCAL_IMAGE_ID --profile collection \
+  --case bounded-discovery --case chosen-engine-sql --max-budget-usd 1 \
+  --credential-file ~/.claude/.credentials.json --out evals/results/routing-EXACT_RUN_ID
+```
+
+Project trials here do not measure native activation on an executed task. Selection is judged by
+the routing cases; review outcomes and actual execution separately as below.
+
 ## Remaining release gates
 
 - Repair and version the material artifact contract/checker coverage before another paid material
   comparison. Fix discovery guidance/source verification and substantiate task quality. Any changed
   producer payload requires a newly frozen candidate, not reuse of this candidate's evidence.
-- Restore provider access before further paid trials, carrying the recorded spend forward under
-  the same authorization. The remaining budget may not cover all missing evidence.
+- Provider access is restored. Further paid trials need a new authorization; carry the recorded
+  $8.760220 forward if they continue the existing one.
+- Rerun `chosen-engine-sql`, `bounded-discovery` and material 001 against a candidate frozen at or
+  after `250c99c`. Material 001 must pass its required checks and clean rerun.
 - Complete the eight unattempted planned trials: standalone discovery, ambiguous/future-scale
   architecture, generalist-only planning and 070–073. Standalone SQL needs a real attempt;
   compilation and material clean-rerun/comparison evidence remain incomplete.
@@ -70,5 +117,5 @@ were preserved; no retrospective rubric changes or fixture-based live passes wer
   newly fixed candidate; do not weaken criteria or count unavailable checks as passing.
 - Recheck hosted CI/release installation for any changed payload and publish only after acceptance.
 
-OpenMapBench #2 remains open for valid live comparison, provider/telemetry parity and historical
-evidence migration. Retain transitional OpenMapStack adapters/workflow until parity is demonstrated.
+OpenMapBench #2 remains open for generic live comparison, provider/telemetry parity and historical
+evidence migration. The release gate does not wait on it.
