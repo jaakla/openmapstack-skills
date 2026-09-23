@@ -136,6 +136,50 @@ class NegotiationTests(unittest.TestCase):
         self.assertIn("metamorphic_evidence", info["dimensions"])
 
 
+class InteropDocumentTests(unittest.TestCase):
+    """`docs/openmapbench-interop.md` is what OpenMapBench builds against, and
+    it restates a rule that lives in `openmapstack/api.py`. A summary can only
+    drift one way that matters -- by widening what counts as compatible -- and
+    that drift is invisible: packs keep negotiating successfully and then fail
+    at call time. The review of #45 caught exactly that, with the doc reduced
+    to a bare "additive changes may retain the major".
+    """
+
+    DOC = REPO_ROOT / "docs" / "openmapbench-interop.md"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.doc = cls.DOC.read_text(encoding="utf-8")
+
+    def test_the_doc_names_the_live_api_identifiers(self) -> None:
+        from openmapstack.api import api_info
+
+        info = api_info()
+        for value in (info["check_api_version"], *info["statuses"], *info["result_schemas"].values()):
+            with self.subTest(value=value):
+                # Report the missing identifier, not the whole document.
+                self.assertTrue(value in self.doc, f"{self.DOC.name} does not name {value!r}")
+
+    def test_the_additive_rule_keeps_the_optional_qualification(self) -> None:
+        """api.py: "a new check, a new *optional* parameter, or a new result
+        field is additive". Dropping "optional" turns a breaking change into a
+        documented-compatible one."""
+        from openmapstack import api
+
+        self.assertIn("a new optional parameter", api.__doc__ or "")
+        rule = self.doc[self.doc.index("Three things are additive"):]
+        rule = rule[: rule.index("OpenMapBench pins")]
+        self.assertIn("**optional** parameter", rule)
+        self.assertIn("adding a required parameter", rule)
+        # And it must land on the incompatible side of the sentence.
+        additive, _, incompatible = rule.partition("incompatible revision")
+        self.assertNotIn("required parameter", additive)
+        self.assertIn("required parameter", incompatible)
+
+    def test_the_doc_points_at_the_authoritative_source(self) -> None:
+        self.assertIn("openmapstack/api.py", self.doc)
+
+
 class VerifyResultSchemaTests(unittest.TestCase):
     def test_verify_json_validates_against_the_packaged_schema(self) -> None:
         workspace = make_workspace()

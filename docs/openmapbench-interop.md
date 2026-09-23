@@ -1,83 +1,83 @@
 # OpenMapBench interoperability contract
 
-OpenMapBench owns benchmark orchestration, run isolation, provider adapters,
-leaderboard policy, and task governance. OpenMapStack owns the project
-contract and the checks that grade a produced project. This document is the
-narrow surface between them. Neither side copies the other's implementation:
-OpenMapBench consumes a released `openmapstack` package through the API
-below; OpenMapStack does not export a second benchmark harness.
+OpenMapBench owns benchmark orchestration, run isolation, provider/model execution,
+benchmark task and pack governance, repeated trials, system-under-test provenance,
+reporting, cost/reliability metrics, holdouts and certification policy.
 
-Owning code: `openmapstack/api.py`, `openmapstack/schemas/`,
-`openmapstack/snapshot.py`, `evals/schemas/benchmark-arm-v1.schema.json`.
-The consumer fixture that proves the contract without vendoring a check is
-`tests/test_check_api.py::ConsumerFixtureTests`.
+OpenMapStack owns the OpenMapStack project contract, the checks that grade a
+produced OpenMapStack project, connector/product semantics, and the exact identity
+of the skill/collection payload it publishes.
+
+> OpenMapStack defines what an OpenMapStack project means. OpenMapBench decides
+> how systems are compared.
+
+Neither side copies the other's implementation. OpenMapBench consumes a released
+`openmapstack` package through the API below. The historical live benchmark code
+under `evals/` is transitional until parity exists in
+[OpenMapBench #2](https://github.com/jaakla/OpenMapBench/issues/2); it is not the
+target ownership model.
+
+OpenMapStack-owned code for this boundary:
+`openmapstack/api.py`, `openmapstack/schemas/`, and the skill/collection snapshot
+producer in `openmapstack/snapshot.py` / `openmapstack/collection.py`.
+
+The consumer fixture that proves the check interface without vendoring an
+implementation is `tests/test_check_api.py::ConsumerFixtureTests`.
 
 ## 1. Versioned check API — `openmapstack-check-api/v1`
 
 | Surface | Purpose |
 |---|---|
 | `openmapstack api-info --json` / `openmapstack.api.api_info()` | package version, check API version, project schema, result schemas, status vocabulary, dimensions |
-| `openmapstack api-info --require-api … --min-version … --require-check …` / `negotiate()` | compatibility answer with every unmet requirement listed; exit 1 when incompatible |
-| `openmapstack checks --json` / `list_checks()` | the catalogue: name, module, dimension, `oracle_free`, parameters with required/default |
-| `openmapstack check NAME WORKSPACE --arg k=v --json` / `run_check()` | one check, one `openmapstack-check-result/v1` record |
-| `openmapstack verify PROJECT --json` | the whole applicable plan, `openmapstack-verify-result/v1` |
+| `openmapstack api-info --require-api … --min-version … --require-check …` / `negotiate()` | compatibility answer with every unmet requirement listed |
+| `openmapstack checks --json` / `list_checks()` | check catalogue: name, module, dimension, `oracle_free`, parameters |
+| `openmapstack check NAME WORKSPACE --arg k=v --json` / `run_check()` | one check, one versioned result |
+| `openmapstack verify PROJECT --json` | the whole applicable verification plan |
 
-Additive changes (a new check, a new optional parameter, a new result
-field) keep the major. Renaming or removing a check, changing a parameter's
-meaning, or touching the four-state vocabulary bumps it. A consumer pins the
-major and the minimum package version it was tested against.
+`openmapstack/api.py` is the authoritative statement of this; the summary
+here must not be read as widening it. Three things are additive and retain the
+major: a new check, a new **optional** parameter, and a new result field.
+Everything else is an incompatible revision — renaming or removing a check,
+changing a parameter's meaning, changing the four-state status vocabulary, and
+**adding a required parameter**.
+
+That last one is worth spelling out because it fails quietly in the direction
+of looking fine: a pack that pinned the major would still negotiate
+successfully, and then `run_check()` would reject every call for the missing
+argument. A required parameter is a new contract, not an addition to the old
+one.
+
+OpenMapBench pins the API major and minimum released package version used by a
+benchmark pack.
 
 ## 2. Result semantics a consumer may rely on
 
-- `status` ∈ `passed | failed | warning | not_testable`; a check that could
-  not establish its predicate is never `passed`.
-- `code` is a stable machine identifier whenever `status` is not `passed`.
-  Grade on `status` and `code`; never on `detail` text.
-- `dimension` names the reporting bucket (`gis_correctness`,
-  `reproducibility_compliance`, `provenance`, `override_handling`,
-  `validation_integrity`, `presentation_contract`, `rerun_success`,
-  `metamorphic_evidence`, `visual_judgement`). Buckets have separate
-  denominators and are never collapsed into one score. Deterministic
-  analytical correctness, metamorphic evidence, differential diagnostics,
-  and visual judgement stay apart.
-- `oracle_free: false` marks the five known-answer checks. On arbitrary
-  data they are reachable only through attested `validation.expectations`;
-  a benchmark with a frozen expert reference may call them directly.
-- A check that raises is `not_testable` with `code: check_error`. A
-  harness keeps such trials **outside the scored denominator** and reports
-  them prominently as setup failures, exactly as `evals/run.py` does
-  (`status: setup_failed`, exit 2).
+A single check result validates against `openmapstack-check-result/v1`; a whole
+verification validates against `openmapstack-verify-result/v1`. Both schema
+identifiers are reported by `api-info`, and both live in
+`openmapstack/schemas/` — pin them rather than inferring the shape from an
+example payload.
 
-## 3. Reproducible arms — `openmapstack-benchmark-arm/v1`
+- `status` is one of `passed | failed | warning | not_testable`.
+- A check that could not establish its predicate is never `passed`.
+- `code` is the stable machine identifier for non-pass outcomes. Grade on
+  `status` and `code`, never on prose in `detail`.
+- `dimension` identifies the evidence bucket; dimensions do not become one
+  opaque weighted quality score.
+- `oracle_free: false` identifies checks that need independent expected truth.
+- A checker exception is represented honestly as unavailable/not-testable
+  evidence rather than a pass.
 
-A published benchmark result identifies the *whole arm*, not a skill hash.
-`evals/schemas/benchmark-arm-v1.schema.json` is the record OpenMapBench
-must store per arm:
+OpenMapBench decides benchmark admissibility and denominators. An unavailable
+required checker may make a benchmark run unscorable/setup-failed without
+changing OpenMapStack's project-QA semantics.
 
-| Field | Meaning |
-|---|---|
-| `arm` | `plain` (no skill) or `oms` (skill snapshot injected) |
-| `skill` | mode, snapshot content hash, repository commit, dirty flag |
-| `task_set` | case ids and a content hash over their prompts, expectations, and declared fixtures |
-| `checker` | `openmapstack` package version and check API version |
-| `harness` | harness repository commit and dirty flag |
-| `runtime` | Python version, platform, DuckDB version, container image if any |
-| `tool_surface` | adapter name and the exact agent CLI/API version it drove |
-| `model` | provider, exact model id, provider revision/alias resolution when known |
-| `sampling` | seed, temperature, reasoning configuration as the adapter reports them (nulls are allowed but must be present) |
-| `price_catalog_date` | the date of the price list used for cost estimates |
+## 3. Skill/collection identity is produced by OpenMapStack
 
-`openmapstack skill-snapshot --format v1 --source SKILL_ROOT --out DIR --json` produces the controlled
-copy of `SKILL.md`, `references/`, and `templates/` with a per-file
-inventory and content hash (`openmapstack-skill-snapshot/v1`); `--inspect`
-re-verifies one. Symlinks and paths escaping the snapshot root are rejected.
+OpenMapStack knows which bytes constitute its distributable skill or collection,
+so it owns the snapshot producer.
 
-### Collection migration in 0.4.0: snapshot v2 and arm v2
-
-`api-info` advertises `skill_snapshot_schemas` and `benchmark_arm_schemas`.
-Consumers must check the required schema identifier and pin a compatible
-package version; do not reinterpret a v1 record as a collection. The project
-schema and check API remain v1.
+Examples:
 
 ```bash
 openmapstack skill-snapshot --source . --out /tmp/oms-collection --json
@@ -86,47 +86,129 @@ openmapstack skill-snapshot --format v2 --source /path/to/installed-skill --out 
 openmapstack skill-snapshot --inspect /tmp/oms-collection --json
 ```
 
-A collection source (`collection.json`) defaults to v2; a legacy skill root
-defaults to v1. V2 copies the complete selected skill directories, including
-agent metadata, templates, schemas and worked-example sources, under `skills/`.
-Its manifest records skill names, descriptions, entry points, one coordinated
-version, per-file hashes and an aggregate hash. The generated `collection.json`
-describes only the selected subset. Inspection accepts both versions and checks
-missing/extra/changed files, unsafe paths, symlinks and descriptor consistency.
+The snapshot records selected skills, entry points, file hashes and aggregate
+content identity, and rejects unsafe paths/symlinks.
 
-`evals/run.py --mode live --collection [--skill NAME ...]` uses snapshot v2 and
-`openmapstack-benchmark-arm/v2`. This is **injection**, not native discovery.
-V2 adds `configuration`: `kind` (`plain`, `legacy_single`, `collection`),
-`delivery` (`none`, `injection`, `discovery`), snapshot schema, selected skill
-descriptors and content hash. An unknown hash remains null after setup failure.
-The model/runtime/task/checker provenance fields remain required. External
-discovery harnesses use `delivery=discovery` with their actual adapter evidence.
-The historical runner path without `--collection` continues to emit v1.
+This is **producer-side capability identity**, not the whole benchmark arm.
 
-The small native runner remains a v1 single-skill smoke path until the final
-collection integration in #39. Its entry point now defaults to
-`skills/open-map-stack`; historical exported roots remain valid explicit sources.
+OpenMapBench consumes the snapshot manifest/hash as one component of its generic
+system-under-test descriptor.
 
-## 4. Task ownership and paired arms
+## 4. System-under-test / arm provenance belongs to OpenMapBench
 
-`evals/run.py --export-tasks DIR` writes the vendor-neutral task bundles
-(`openmapstack-benchmark-task/v1`: prompt, declared fixtures, assertions,
-hard gates, task hash) that OpenMapBench imports. Cases 070–073 (the
-behavioural, prompt-style tasks) are exported as canonical OpenMapBench
-tasks; this repository keeps them only as a scheduled smoke subset that
-protects the integration and does not publish a competing benchmark.
+A published benchmark result identifies the complete tested configuration, not
+only a skill hash.
 
-`evals/run.py --mode live --arms paired` runs `plain` and `oms` over the
-same cases, trials, and seeds and reports them side by side: task parity,
-per-arm success rate with a Wilson interval, per-arm median cost, tokens,
-and duration, and trajectory diagnostics (event counts). It never emits a
-single "success per dollar" number; quality and cost are reported as a
-trade-off, and headline correctness is artifact-first.
+OpenMapBench owns the native representation for at least:
 
-## 5. Evidence classes
+```text
+agent/harness + version
+model/provider + exact id/revision where known
+reasoning/sampling configuration
+skill/capability payloads + versions/hashes
+tool/MCP surface
+openmapstack package/check API version when used
+task pack/version + task/data hashes
+runtime/container
+repeat count / seed where supported
+price catalog date
+```
 
-OpenMapBench distinguishes four evidence classes rather than one ground
-truth: an authoritative answer, a frozen expert reference, metamorphic
-evidence, and a differential diagnostic. Only the first two license a
-known-answer check. VLM/visual review has its own denominator and judge
-provenance and never turns an unverified analytical result into a pass.
+The historical `openmapstack-benchmark-arm/v1` and `v2` schemas under
+`evals/schemas/` remain readable as migration evidence until OpenMapBench #2
+defines/imports the replacement. They are **not the long-term canonical schema**.
+
+Do not extend those historical arm schemas with new benchmark concepts unless
+needed strictly for backward compatibility.
+
+## 5. OpenMapStack project output is graded through the released package
+
+Some benchmark cases produce a complete OpenMapStack project directory rather
+than one scalar/table/vector artifact.
+
+The target flow is:
+
+```text
+OpenMapBench task + frozen fixtures
+        ↓
+system under test
+        ↓
+generated OpenMapStack project
+        ↓
+released openmapstack package
+        ↓
+openmapstack verify/check API
+        ↓
+stable result status/code
+        ↓
+OpenMapBench run evidence
+```
+
+OpenMapBench retains the generated project, execution evidence and benchmark
+manifest. OpenMapStack supplies project-specific checking only.
+
+The benchmark must not expose expected assertions, reference projects, mutation
+generators or hidden rationale to the system under test.
+
+## 6. Task ownership
+
+Behavioral cases 070–073 are canonical OpenMapBench migration candidates:
+
+- underspecified request;
+- contradictory request;
+- do-not-invent/missing attribute;
+- non-English GIS request.
+
+Their source definitions and mini-Tartu inputs have moved into the OpenMapBench
+migration branch under `benchmark/candidates/openmapstack-project/`.
+
+Until OpenMapBench #2 implements project-directory/check-API grading, the
+existing copies here may remain as a **transitional scheduled integration smoke**.
+They must not evolve into a competing independent public benchmark.
+
+Future benchmark task changes happen in OpenMapBench first. Any retained
+OpenMapStack smoke should pin/reference a released task/pack version.
+
+## 7. Routing/discovery ownership
+
+OpenMapStack tests that its published metadata, collection descriptor and
+standalone payloads are valid and discoverable.
+
+OpenMapBench owns substantive routing experiments:
+
+- positive/negative/composition cases;
+- false/excess activation;
+- native discovery across agent harnesses;
+- provider telemetry normalization;
+- plain-vs-skill comparison;
+- repeated trials and reliability/cost evidence.
+
+See OpenMapStack #32 and OpenMapBench #2.
+
+## 8. Evidence classes
+
+OpenMapBench may distinguish authoritative answers, frozen expert references,
+metamorphic evidence and differential diagnostics.
+
+OpenMapStack checks remain explicit about what they establish. A VLM or semantic
+judge must never turn an analytically unverified result into a deterministic
+correctness pass.
+
+## 9. Migration rule
+
+Do not delete the historical OpenMapStack benchmark harness merely because
+ownership changed on paper. Removal happens only after OpenMapBench can reproduce
+the required behavioral/routing evidence.
+
+Migration order:
+
+1. OpenMapBench project/check-API integration.
+2. Canonical 070–073 tasks in OpenMapBench.
+3. Generic OpenMapBench SUT provenance replacing arm v1/v2 for new evidence.
+4. Routing/discovery benchmark parity.
+5. One reproducible plain-vs-OpenMapStack comparison through OpenMapBench.
+6. Deprecate/remove provider adapters, live benchmark workflow and generic live
+   orchestration from OpenMapStack while retaining checker/mutation CI.
+
+Canonical migration tracker:
+[OpenMapBench #2](https://github.com/jaakla/OpenMapBench/issues/2).
