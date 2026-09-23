@@ -165,7 +165,7 @@ The `bbox` column is a struct (`xmin`, `ymin`, `xmax`, `ymax`) that Overture emi
 
 ### License note
 
-Overture data is mostly CDLA-Permissive 2.0, but Foursquare-sourced places are Apache 2.0, and OSM-derived data inherits ODbL obligations (share-alike + attribution). The `sources` array on each feature records provenance — preserve it.
+License is per theme. Base, buildings, divisions and transportation are ODbL (share-alike + attribution); places are CDLA-Permissive 2.0 or Apache 2.0 by source; addresses carry their regional sources' terms. Check the release's attribution page rather than assuming one license for Overture. The `sources` array on each feature records provenance — preserve it.
 
 ## OpenStreetMap
 
@@ -226,9 +226,9 @@ osm2pgsql -d gisdb --slim -G --hstore -C 4000 \
 
 ### Building footprints
 
-* **Microsoft Global Building Footprints** — global, public domain (ODbL where derived from OSM). Released as country-wise GeoJSON or GeoPackage on GitHub.
+* **Microsoft Global Building Footprints** — global, CDLA-Permissive 2.0. Released as country-wise GeoJSON or GeoPackage on GitHub.
 * **Google Open Buildings** — Africa, South Asia, SE Asia, LATAM. CSV + Parquet.
-* **Overture Buildings** — conflates the above with OSM and is usually the simplest entry point now.
+* **Overture Buildings** — conflates the above with OSM and is usually the simplest entry point now. The theme is ODbL.
 
 ### Elevation
 

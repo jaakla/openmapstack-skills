@@ -26,6 +26,17 @@ def _routed_references(skill_text: str) -> set[str]:
     return set(re.findall(r"references/[A-Za-z0-9._-]+\.md", skill_text))
 
 
+# Intentional additions to the frozen project-workflow contract. Each needs
+# its own focused evidence: a guidance regression test plus the owning live case.
+WORKFLOW_ADDITIONS = (
+    # tests/test_guidance_regressions.py; live 001 semantic_predicate_documented.
+    ", zoning",
+    " Record every coded attribute the selection depends on as `selection.semantic_predicates`"
+    " (`field`, `domain_value`) on the source it filters, even when the source is local and"
+    " unfiltered on load; a free-text `selection.filter` does not document it.",
+)
+
+
 class SkillRoutingTests(unittest.TestCase):
     def setUp(self) -> None:
         self.skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
@@ -50,10 +61,16 @@ class SkillRoutingTests(unittest.TestCase):
         This guards the initial lossless extraction, not future wording changes.
         A later intentional behavior change must replace this migration guard
         with its own focused eval evidence instead of silently updating the hash.
+        Intentional additions are listed in ``WORKFLOW_ADDITIONS`` with their
+        evidence and removed before hashing, so the frozen text itself still
+        cannot be lost or reworded.
         """
         baseline = json.loads((REPO_ROOT / "evals/baselines/pre-refactor.json").read_text())
         reference = (SKILL_ROOT / "references/project-workflow.md").read_text()
         body = reference.removeprefix("# Reproducible project-first workflow\n")
+        for addition in WORKFLOW_ADDITIONS:
+            self.assertIn(addition, body)
+            body = body.replace(addition, "", 1)
         self.assertEqual(
             "sha256:" + hashlib.sha256(body.encode()).hexdigest(),
             baseline["skill"]["project_contract_body_sha256"],

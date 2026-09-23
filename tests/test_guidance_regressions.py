@@ -107,6 +107,25 @@ class AcceptanceGuidanceTests(GuidanceCase):
                 self.assertRetracted(text, "Most data is open under CC-BY 4.0", path)
                 self.assertRetracted(text, "require `ehr_gid IS NOT NULL` to drop", path)
 
+    def test_building_footprint_licenses_match_the_providers(self) -> None:
+        # Checked 2026-09-23 against docs.overturemaps.org/attribution and the
+        # microsoft/GlobalMLBuildingFootprints README. A live discovery trial
+        # repeated both retracted claims from this file.
+        for path, text in _shipped_copies("data-sources.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "Base, buildings, divisions and transportation are ODbL", path)
+                self.assertShips(text, "Microsoft Global Building Footprints** — global, CDLA-Permissive 2.0", path)
+                self.assertRetracted(text, "Overture data is mostly CDLA-Permissive 2.0", path)
+                self.assertRetracted(text, "Building Footprints** — global, public domain", path)
+
+    def test_coded_selection_attributes_are_recorded_as_semantic_predicates(self) -> None:
+        # A live material trial documented the zoning filter only as free-text
+        # selection.filter and failed provenance.semantic_predicate_documented.
+        for path, text in _shipped_copies("project-workflow.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "as `selection.semantic_predicates` (`field`, `domain_value`)", path)
+                self.assertShips(text, "a free-text `selection.filter` does not document it", path)
+
     def test_current_source_verification_is_not_inherited_from_reference_notes(self) -> None:
         text = (SKILLS_ROOT / "geospatial-data-discovery/SKILL.md").read_text()
         self.assertIn("pages during this task", text)
