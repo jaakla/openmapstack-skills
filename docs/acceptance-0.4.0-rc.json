@@ -1,6 +1,6 @@
 {
   "schema": "openmapstack-release-candidate-evidence/v1",
-  "status": "prepared_not_live_accepted",
+  "status": "not_accepted",
   "version": "0.4.0",
   "source_revision": "e78bae896eb647cd436004b121b8659f34092ca6",
   "wheel": {
@@ -49,7 +49,7 @@
       }
     }
   },
-  "benchmark_revision": "911c72fc3113ae390cbce105d72c11e150e04840",
+  "benchmark_revision": "ba704e5fb968f0e97d10ca6a7c42888f824959d1",
   "checks": {
     "openmapstack_unittest": {
       "tests": 601,
@@ -65,12 +65,14 @@
       "mutations_total": 26
     },
     "openmapbench_pytest": {
-      "tests": 107,
-      "status": "passed"
+      "tests": 110,
+      "status": "passed",
+      "installed_wheel_controls": true
     },
     "openmapbench_ruff": "passed",
-    "paid_trials": 0,
-    "visual_runtime": "not_testable"
+    "paid_trials": 8,
+    "visual_runtime": "not_testable",
+    "native_trial_attempts": 9
   },
   "consumer_controls": [
     {
@@ -157,10 +159,23 @@
   ],
   "artifact_location": "/home/jaak/codeman-cases/acceptance-20260923",
   "limitations": [
-    "No newly authorized paid trial budget; no live acceptance performed.",
-    "Docker socket is inaccessible to this session; isolated provider runtime not verified.",
-    "QGIS/browser integration not run in this environment.",
-    "Native provider wrapper/telemetry parity and companion contexts remain pending."
+    "Three material v1 trials unscorable: private artifact naming assumptions missing from public contract; no valid plain/skill comparison.",
+    "Discovery task quality failed; SQL core repair useful but includes inaccurate generalization; no SQL execution.",
+    "Both compilation attempts hit per-trial caps; standalone SQL rejected at provider organization spend limit.",
+    "Eight planned trials unattempted; companion contexts and QGIS/browser evidence remain missing.",
+    "Rootless Claude isolation/native activation verified within recorded limits; partial Bash read visibility, observed CLI builtins design/doctor, historical and cross-provider parity pending."
   ],
-  "snapshot_inspection": "all five retained snapshots passed byte/content verification"
+  "snapshot_inspection": "all five retained snapshots passed byte/content verification",
+  "live_review": {
+    "url": "https://github.com/jaakla/OpenMapBench/blob/14409b3a9262b481bf9c806950e0eaf1363fbbe0/docs/openmapstack-acceptance-20260923.md",
+    "evidence_url": "https://github.com/jaakla/OpenMapBench/blob/14409b3a9262b481bf9c806950e0eaf1363fbbe0/docs/evidence/openmapstack-20260923.json",
+    "evidence_sha256": "801e1ad0bfb8436c03aa79858c62a7c148ccaeaef63f43c21d51312ca2f364f5",
+    "authorization_usd": 10.0,
+    "model": "claude-sonnet-4-6",
+    "reported_cost_usd": 6.530115,
+    "remaining_authorized_usd": 3.469885,
+    "cost_basis": "provider API-equivalent report, not a reconciled invoice",
+    "stop_reason": "provider organization monthly spend limit",
+    "decision": "not_accepted"
+  }
 }

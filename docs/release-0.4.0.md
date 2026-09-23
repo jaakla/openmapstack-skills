@@ -180,7 +180,7 @@ their separate capable environments.
 - After acceptance, build the coordinated release artifacts and publish only through the maintainer's release process. This implementation does not publish a tag or package.
 
 
-## Fixed-candidate OpenMapBench acceptance preparation (2026-09-23)
+## Fixed-candidate OpenMapBench acceptance outcome (2026-09-23)
 
 The issue checklists were reconciled against recorded evidence before this increment. Packaging
 #34 is complete; final behavioral acceptance in #39 and the collection epic remain open. September
@@ -198,6 +198,15 @@ caught. See [current final-state acceptance](../evals/final-state-acceptance.md)
 benchmark commit and remaining gates. The earlier runner-based proposed execution scope is
 superseded by that OpenMapBench path; historical results remain context, not a quality oracle.
 
-No new paid trial budget has been established, no live result is claimed, and no tag/package has
-been published. Isolated provider execution, native telemetry parity, companion review and capable
-visual checks remain open. Do not remove the transitional harness before OpenMapBench #2 parity.
+A new $10 cap using `claude-sonnet-4-6` funded native attempts at benchmark `ba704e5`. Nine attempts
+reported $6.530115 before an organization monthly spend-limit rejection; $3.469885 remains authorized.
+Rootless provider isolation/native activation were exercised, with partial Bash telemetry and two
+observed CLI builtins recorded. The [fixed-candidate review](https://github.com/jaakla/OpenMapBench/blob/14409b3a9262b481bf9c806950e0eaf1363fbbe0/docs/openmapstack-acceptance-20260923.md)
+records failures and limitations: discovery quality failed, compilation exhausted per-trial caps,
+and all three material arms are unscorable because v1 hides artifact requirements; independent
+output/checker defects also remain. No material clean rerun or valid plain/skill comparison passed.
+
+**This candidate is not accepted.** Eight planned trials, companion contexts and capable visual
+checks remain missing. Correct the benchmark/producer defects and freeze changed payloads before
+retesting; preserve this result set. No tag/package has been published. Do not remove transitional
+harnesses before OpenMapBench #2 parity.
