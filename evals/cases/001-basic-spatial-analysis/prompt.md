@@ -3,6 +3,8 @@
 Use the supplied parcel, road, and POI layers in `data/source/` to find parcels that could support the proposed use. Include parcels that are at least 8,000 square metres, have zoning `ARIMAA`, `MAATULUNDUSMAA`, or `TOOTMISMAA`, and are within 2,000 metres of the main road.
 
 
+Python 3, DuckDB Spatial and the openmapstack package are installed; use `openmapstack` or `python3 -m openmapstack` for the CLI. Do not assume other geospatial Python packages, and do not install packages.
+
 Deliver a complete openmapstack-project/v1 project in this directory. The frozen inputs are already in `data/source/`; keep them byte-for-byte unchanged. Include project.yaml, a canonical executable pipeline, validation evidence, project.qgz and dashboard.html. Keep the project rerunnable without this conversation.
 
 Artifact interface (required delivery names, not expected analytical answers):
