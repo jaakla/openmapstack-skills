@@ -59,25 +59,38 @@ class OpenMapStackCliTests(unittest.TestCase):
     # reprojected, so a Web Mercator basemap in an EPSG:3301 project draws
     # ~1500 km from the data while every other signal stays healthy.
 
-    def _map_project_with_qgz(self, *maplayers: str) -> Path:
+    def _map_project_with_qgz(self, *maplayers: str, projections_enabled: bool = True) -> Path:
         project = deepcopy(valid_manifest())
         project["presentation"]["primary_view"] = "map"
         path = self.write_project(project, artifacts=True)
         body = "".join(maplayers)
+        reprojection = (
+            '<SpatialRefSys><ProjectionsEnabled type="int">1</ProjectionsEnabled></SpatialRefSys>'
+            if projections_enabled
+            else ""
+        )
         with zipfile.ZipFile(self.root / "project.qgz", "w") as archive:
             archive.writestr(
                 "project.qgs",
-                f'<?xml version="1.0"?><qgis><projectlayers>{body}</projectlayers></qgis>',
+                f'<?xml version="1.0"?><qgis><properties>{reprojection}</properties>'
+                f"<projectlayers>{body}</projectlayers></qgis>",
             )
         return path
+
+    @staticmethod
+    def _layer(name: str, authid: str, *, definition: bool = True) -> str:
+        wkt = f'<wkt>PROJCRS["test",ID["EPSG",{authid.split(":")[1]}]]</wkt>' if definition else ""
+        return (
+            f"<maplayer><layername>{name}</layername>"
+            f"<srs><spatialrefsys>{wkt}<authid>{authid}</authid></spatialrefsys></srs></maplayer>"
+        )
 
     def _check(self, result, check_id):
         return next((c for c in result.checks if c.id == check_id), None)
 
     def test_qgis_layer_without_crs_fails(self) -> None:
         path = self._map_project_with_qgz(
-            "<maplayer><layername>parcels</layername>"
-            "<srs><spatialrefsys><authid>EPSG:3301</authid></spatialrefsys></srs></maplayer>",
+            self._layer("parcels", "EPSG:3301"),
             "<maplayer><layername>OpenStreetMap (XYZ)</layername>"
             "<datasource>type=xyz&amp;url=https://tile.openstreetmap.org/{z}/{x}/{y}.png</datasource>"
             "</maplayer>",
@@ -89,17 +102,46 @@ class OpenMapStackCliTests(unittest.TestCase):
         self.assertEqual(check.details["missing"], ["OpenStreetMap (XYZ)"])
         self.assertFalse(result.ok())
 
-    def test_qgis_layers_with_crs_pass(self) -> None:
+    def test_qgis_layers_with_complete_crs_pass(self) -> None:
         path = self._map_project_with_qgz(
-            "<maplayer><layername>parcels</layername>"
-            "<srs><spatialrefsys><authid>EPSG:3301</authid></spatialrefsys></srs></maplayer>",
-            "<maplayer><layername>OpenStreetMap (XYZ)</layername>"
-            "<srs><spatialrefsys><authid>EPSG:3857</authid></spatialrefsys></srs></maplayer>",
+            self._layer("parcels", "EPSG:3301"),
+            self._layer("OpenStreetMap (XYZ)", "EPSG:3857"),
         )
         result = validate_project(path)
         check = self._check(result, "qgis.layer_crs")
         self.assertEqual(check.status, "passed", check.to_dict())
         self.assertEqual(check.details["declared"]["OpenStreetMap (XYZ)"], "EPSG:3857")
+
+    # validate must agree with the public qgis.every_layer_declares_crs
+    # check: a live agent once shipped authority-id-only layers that
+    # validate passed and the benchmark grader failed.
+
+    def test_qgis_authority_id_without_definition_fails(self) -> None:
+        path = self._map_project_with_qgz(
+            self._layer("parcels", "EPSG:3301", definition=False),
+        )
+        result = validate_project(path)
+        check = self._check(result, "qgis.layer_crs")
+        self.assertEqual(check.status, "failed", check.to_dict())
+        self.assertEqual(check.details["code"], "layer_crs_incomplete")
+        self.assertEqual(check.details["incomplete"], ["parcels"])
+        self.assertFalse(result.ok())
+
+    def test_qgis_project_without_reprojection_fails(self) -> None:
+        path = self._map_project_with_qgz(
+            self._layer("parcels", "EPSG:3301"),
+            projections_enabled=False,
+        )
+        result = validate_project(path)
+        check = self._check(result, "qgis.layer_crs")
+        self.assertEqual(check.status, "failed", check.to_dict())
+        self.assertEqual(check.details["code"], "project_reprojection_disabled")
+
+    def test_qgis_project_without_layers_warns(self) -> None:
+        path = self._map_project_with_qgz()
+        result = validate_project(path)
+        check = self._check(result, "qgis.layer_crs")
+        self.assertEqual(check.status, "warning", check.to_dict())
 
     def test_qgis_unreadable_archive_is_reported(self) -> None:
         project = deepcopy(valid_manifest())
@@ -109,7 +151,7 @@ class OpenMapStackCliTests(unittest.TestCase):
         result = validate_project(path)
         check = self._check(result, "qgis.layer_crs")
         self.assertEqual(check.status, "failed")
-        self.assertIn("not readable as a zip", check.message)
+        self.assertEqual(check.details["code"], "not_a_zip")
 
     def test_preflight_allows_not_yet_generated_artifacts(self) -> None:
         path = self.write_project(artifacts=False)
