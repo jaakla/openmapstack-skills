@@ -34,14 +34,29 @@ implementation is `tests/test_check_api.py::ConsumerFixtureTests`.
 | `openmapstack check NAME WORKSPACE --arg k=v --json` / `run_check()` | one check, one versioned result |
 | `openmapstack verify PROJECT --json` | the whole applicable verification plan |
 
-Additive changes may retain the major. Renaming/removing a check, changing
-parameter semantics, or changing the status vocabulary requires an incompatible
-API revision.
+`openmapstack/api.py` is the authoritative statement of this; the summary
+here must not be read as widening it. Three things are additive and retain the
+major: a new check, a new **optional** parameter, and a new result field.
+Everything else is an incompatible revision — renaming or removing a check,
+changing a parameter's meaning, changing the four-state status vocabulary, and
+**adding a required parameter**.
+
+That last one is worth spelling out because it fails quietly in the direction
+of looking fine: a pack that pinned the major would still negotiate
+successfully, and then `run_check()` would reject every call for the missing
+argument. A required parameter is a new contract, not an addition to the old
+one.
 
 OpenMapBench pins the API major and minimum released package version used by a
 benchmark pack.
 
 ## 2. Result semantics a consumer may rely on
+
+A single check result validates against `openmapstack-check-result/v1`; a whole
+verification validates against `openmapstack-verify-result/v1`. Both schema
+identifiers are reported by `api-info`, and both live in
+`openmapstack/schemas/` — pin them rather than inferring the shape from an
+example payload.
 
 - `status` is one of `passed | failed | warning | not_testable`.
 - A check that could not establish its predicate is never `passed`.
