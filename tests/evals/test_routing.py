@@ -82,6 +82,21 @@ class RoutingEvidenceTests(unittest.TestCase):
             self.assertEqual(result["status"], "not_testable")
             self.assertTrue(result["false_activation_count_is_lower_bound"])
 
+    def test_tool_loading_and_web_fetches_are_not_skill_read_surfaces(self):
+        # A discovery trial loaded WebFetch through ToolSearch before fetching
+        # provider pages; neither can read a staged skill file.
+        trace = [
+            *claude_trace("ToolSearch", {"query": "select:WebFetch"}, "<functions>...</functions>")[:2],
+            *claude_trace("WebFetch", {"url": "https://example.org/license"}, "page text")[:2],
+            *claude_trace(),
+        ]
+        for index, event in enumerate(trace[:4]):
+            block = event["message"]["content"][0]
+            block["id" if "id" in block else "tool_use_id"] = f"call-{index // 2}"
+        observed, gaps = claude_events(trace, self.inventory)
+        self.assertEqual(gaps, [])
+        self.assertEqual(grade_evidence(observed, gaps, self.expected)["status"], "passed")
+
     def test_byte_metric_counts_unique_verified_sources(self):
         observations, gaps = claude_events(claude_trace(), self.inventory)
         graded = grade_evidence(observations * 3, gaps, self.expected)

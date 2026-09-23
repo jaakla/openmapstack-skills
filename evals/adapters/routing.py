@@ -102,9 +102,11 @@ def claude_events(events, inventory):
                 # that known decoration, then verify against source bytes.
                 output = re.sub(r"(?m)^[ \t]*\d+(?:\t|→)", "", output)
                 observation = _observation(arguments["file_path"], inventory, index, "read", output)
-            elif name not in {"Glob", "Write", "Edit", "TodoWrite"}:
+            elif name not in {"Glob", "Write", "Edit", "TodoWrite", "ToolSearch", "WebFetch", "WebSearch"}:
                 # Bash, Grep, nested agents and future tools can load text
-                # through paths this decoder cannot attest.
+                # through paths this decoder cannot attest. ToolSearch returns
+                # tool schemas and the web tools fetch only URLs, so none of
+                # them can read a staged skill file.
                 gaps.append("unobserved_read_surface:" + str(name))
             if observation:
                 observations.append(observation)
