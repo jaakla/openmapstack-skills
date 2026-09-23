@@ -97,6 +97,11 @@ class RoutingEvidenceTests(unittest.TestCase):
         self.assertEqual(gaps, [])
         self.assertEqual(grade_evidence(observed, gaps, self.expected)["status"], "passed")
 
+    def test_claude_surface_grants_web_tools_but_not_bash(self):
+        command = SURFACES["claude_code"]["command"]
+        granted = command[command.index("--allowedTools") + 1].split(",")
+        self.assertEqual(sorted(granted), ["WebFetch", "WebSearch"])
+
     def test_byte_metric_counts_unique_verified_sources(self):
         observations, gaps = claude_events(claude_trace(), self.inventory)
         graded = grade_evidence(observations * 3, gaps, self.expected)

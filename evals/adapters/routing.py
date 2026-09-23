@@ -144,10 +144,13 @@ def codex_events(events, inventory):
     return observations, gaps
 
 
+# Web tools are granted so a trial can make the provider lookup the discovery
+# guidance requires; without an allow rule, print mode refuses them. Bash stays
+# unapproved here because the decoder cannot attest what it reads.
 SURFACES = {
     "claude_code": {
         "directory": ".claude/skills", "credential": "ANTHROPIC_API_KEY", "executable": "claude",
-        "command": ["claude", "-p", "--output-format", "stream-json", "--verbose", "--permission-mode", "acceptEdits", "--permission-prompts", "none", "--no-session-persistence", "--no-chrome", "--strict-mcp-config", "--setting-sources", "project", "--settings", '{"disableBundledSkills":true}'],
+        "command": ["claude", "-p", "--output-format", "stream-json", "--verbose", "--permission-mode", "acceptEdits", "--permission-prompts", "none", "--allowedTools", "WebFetch,WebSearch", "--no-session-persistence", "--no-chrome", "--strict-mcp-config", "--setting-sources", "project", "--settings", '{"disableBundledSkills":true}'],
         "decode": claude_events,
     },
     "codex": {
