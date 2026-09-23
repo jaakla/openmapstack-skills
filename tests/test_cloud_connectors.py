@@ -636,15 +636,34 @@ class LiveBigQueryCanaryTests(unittest.TestCase):
         plan = self._connector().plan(self._select(LIVE_BIGQUERY_TABLE), ConnectorLimits())
         self.assertIsNone(plan.scan_bytes)
         self.assertFalse(plan.scan_estimated)
-        self.assertGreater(plan.row_count, 0)
+        self.assertGreater(
+            plan.row_count, 0,
+            "no rows visible: this is probably the wrong identity, not a suppressed estimate",
+        )
 
-    def test_the_reader_sees_fewer_rows_than_the_table_metadata_claims(self) -> None:
-        """`Table.num_rows` ignores row access policies. Proving the gap on a
-        live fixture is the only way to know the caveat is still true."""
+    def test_the_reader_sees_a_filtered_view_not_an_empty_one(self) -> None:
+        """`Table.num_rows` ignores row access policies, so a restricted reader
+        counts fewer rows than the metadata claims. Proving the gap on a live
+        fixture is the only way to know the caveat still holds.
+
+        The lower bound matters as much as the upper one. A principal that is
+        not a grantee of the policy sees *zero* rows, which satisfies "fewer
+        than metadata" and would let this canary pass while pointed at the
+        wrong identity -- exactly what happened on the first configured run,
+        where the admin key had been supplied instead of the reader's. An
+        empty result is not a filtered result.
+        """
         connector = self._connector()
         discovery = connector.discover(ConnectorLimits())
         metadata = {table.name: table.row_estimate for table in discovery.tables}
         counted = connector.plan(self._select(LIVE_BIGQUERY_TABLE), ConnectorLimits()).row_count
+        self.assertGreater(
+            counted, 0,
+            "this identity sees no rows at all. It is probably not the restricted reader: a "
+            "principal absent from the row access policy is filtered down to nothing, which "
+            "makes every other assertion in this canary vacuous. Check that the credentials "
+            "secret holds the analysis reader's key, not the admin's.",
+        )
         self.assertLess(counted, metadata[LIVE_BIGQUERY_TABLE])
 
 
