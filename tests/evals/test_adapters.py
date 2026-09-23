@@ -158,6 +158,8 @@ class AdapterContractTests(unittest.TestCase):
         # budget cap and none of the host environment.
         self.assertEqual(seen["command"][0], "bwrap")
         self.assertEqual(seen["command"][seen["command"].index("--max-budget-usd") + 1], "0.5")
+        # Host allow rules are hidden in the sandbox, so tools are granted here.
+        self.assertIn("Bash", seen["command"][seen["command"].index("--allowedTools") + 1].split(","))
         self.assertEqual(seen["env"]["ANTHROPIC_API_KEY"], "sk-test-secret")
         self.assertEqual(seen["env"]["ANTHROPIC_CUSTOM_HEADERS"], "anthropic-workspace-id: w1")
         self.assertNotIn("UNRELATED_HOST_SECRET", seen["env"])

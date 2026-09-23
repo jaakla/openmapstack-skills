@@ -19,6 +19,11 @@ from .base import AgentAdapter, AgentRunResult, parse_json_lines
 from .isolation import Sandbox, unavailable_reason
 from .routing import credentials
 
+# Granted explicitly: the sandbox hides the host's Claude settings, and in
+# print mode any tool without an allow rule is refused. The sandbox, not a
+# per-command prompt, is what confines these tools.
+ALLOWED_TOOLS = "Read,Write,Edit,Glob,Grep,Bash,Skill,WebSearch,WebFetch"
+
 # Non-secret provider routing the operator may set (e.g. a workspace header
 # that scopes spend); forwarded by name, recorded by name only.
 PROVIDER_SETTINGS = ("ANTHROPIC_BASE_URL", "ANTHROPIC_CUSTOM_HEADERS")
@@ -130,6 +135,8 @@ class ClaudeCodeAdapter(AgentAdapter):
             "--verbose",
             "--permission-mode",
             "acceptEdits",
+            "--allowedTools",
+            ALLOWED_TOOLS,
             "--no-session-persistence",
             "--no-chrome",
             "--max-budget-usd",
@@ -210,6 +217,7 @@ class ClaudeCodeAdapter(AgentAdapter):
                 "session_persistence": False,
                 "chrome": False,
                 "customizations": False,
+                "allowed_tools": ALLOWED_TOOLS.split(","),
                 "max_budget_usd": self.max_budget_usd,
                 "credential": credential,
                 "provider_settings": sorted(forwarded),
