@@ -76,35 +76,41 @@
     {
       "defect": null,
       "status": "passed",
-      "manifest": "controls-final/20260923T110920Z-001-basic-spatial-analysis-846cd2f6/manifest.json",
-      "failures": []
+      "manifest": "controls-911c72f/20260923T111125Z-001-basic-spatial-analysis-056c0089/manifest.json",
+      "failures": [],
+      "manifest_sha256": "27d2701c0e7c31ef738b73656bfb2e015761622dcd98c92fa5f9a78a4276a47f",
+      "benchmark_revision": "911c72fc3113ae390cbce105d72c11e150e04840"
     },
     {
       "defect": "wrong_crs",
       "status": "failed",
-      "manifest": "controls-final/20260923T110923Z-001-basic-spatial-analysis-3ed25c6e/manifest.json",
+      "manifest": "controls-911c72f/20260923T111127Z-001-basic-spatial-analysis-6473c9b7/manifest.json",
       "failures": [
         {
           "id": "11:geodata.crs_not_used_for_metrics",
           "code": "forbidden_analysis_crs"
         }
-      ]
+      ],
+      "manifest_sha256": "ebb55da39f5d6b01e2e5f5774b16b1f121822a7db1c6cd401ae0a2dabbf71382",
+      "benchmark_revision": "911c72fc3113ae390cbce105d72c11e150e04840"
     },
     {
       "defect": "mutated_source",
       "status": "failed",
-      "manifest": "controls-final/20260923T110925Z-001-basic-spatial-analysis-ebad24a4/manifest.json",
+      "manifest": "controls-911c72f/20260923T111129Z-001-basic-spatial-analysis-6b8b9d53/manifest.json",
       "failures": [
         {
           "id": "35:overrides.source_files_byte_identical",
           "code": "source_mutated"
         }
-      ]
+      ],
+      "manifest_sha256": "7a930a0a6755e3941142e264ab7ecd2dec4dd86a472e67b973768942b0b3efbd",
+      "benchmark_revision": "911c72fc3113ae390cbce105d72c11e150e04840"
     },
     {
       "defect": "dashboard_only",
       "status": "failed",
-      "manifest": "controls-final/20260923T110926Z-001-basic-spatial-analysis-9d9090f1/manifest.json",
+      "manifest": "controls-911c72f/20260923T111130Z-001-basic-spatial-analysis-99b834b6/manifest.json",
       "failures": [
         {
           "id": "05:project.declared_files_exist",
@@ -114,12 +120,14 @@
           "id": "24:validation.run_record_matches",
           "code": "hash_inventory_incomplete"
         }
-      ]
+      ],
+      "manifest_sha256": "6776f46f481b63bce1bbd001925a6717e78b539a6df4a7f9e127abb1ddacc7c2",
+      "benchmark_revision": "911c72fc3113ae390cbce105d72c11e150e04840"
     },
     {
       "defect": "validation_laundering",
       "status": "failed",
-      "manifest": "controls-final/20260923T110927Z-001-basic-spatial-analysis-ca751392/manifest.json",
+      "manifest": "controls-911c72f/20260923T111132Z-001-basic-spatial-analysis-61335e05/manifest.json",
       "failures": [
         {
           "id": "22:validation.required_all_present",
@@ -129,18 +137,22 @@
           "id": "25:validation.report_evidence_recomputes",
           "code": "check_missing"
         }
-      ]
+      ],
+      "manifest_sha256": "c175c8417b1b2d4f06f4867dab4ed0422f04e80a5b722411d9d7f5b4f0bc502e",
+      "benchmark_revision": "911c72fc3113ae390cbce105d72c11e150e04840"
     },
     {
       "defect": "hallucinated_feature",
       "status": "failed",
-      "manifest": "controls-final/20260923T110929Z-001-basic-spatial-analysis-e8cac049/manifest.json",
+      "manifest": "controls-911c72f/20260923T111133Z-001-basic-spatial-analysis-5bf091a2/manifest.json",
       "failures": [
         {
           "id": "21:geodata.row_count",
           "code": "row_count_equals"
         }
-      ]
+      ],
+      "manifest_sha256": "25e66f7ce9bbb04df214e704461cbf37d55724ee33dc8b8bb52906ed2c4922c7",
+      "benchmark_revision": "911c72fc3113ae390cbce105d72c11e150e04840"
     }
   ],
   "artifact_location": "/home/jaak/codeman-cases/acceptance-20260923",
@@ -149,5 +161,6 @@
     "Docker socket is inaccessible to this session; isolated provider runtime not verified.",
     "QGIS/browser integration not run in this environment.",
     "Native provider wrapper/telemetry parity and companion contexts remain pending."
-  ]
+  ],
+  "snapshot_inspection": "all five retained snapshots passed byte/content verification"
 }
