@@ -126,6 +126,16 @@ class AcceptanceGuidanceTests(GuidanceCase):
                 self.assertShips(text, "as `selection.semantic_predicates` (`field`, `domain_value`)", path)
                 self.assertShips(text, "a free-text `selection.filter` does not document it", path)
 
+    def test_project_skills_require_a_clean_validate_before_delivery(self) -> None:
+        # Live material trials delivered projects that `openmapstack validate`
+        # fails; the agent never ran it under "when the CLI is available".
+        for name in ("open-map-stack", "reproducible-gis-project"):
+            text = (SKILLS_ROOT / name / "SKILL.md").read_text(encoding="utf-8")
+            with self.subTest(skill=name):
+                self.assertIn("python3 -m openmapstack --version", text)
+                self.assertIn("do not deliver while", text)
+                self.assertNotIn("path when the CLI\nis available", text)
+
     def test_current_source_verification_is_not_inherited_from_reference_notes(self) -> None:
         text = (SKILLS_ROOT / "geospatial-data-discovery/SKILL.md").read_text()
         self.assertIn("pages during this task", text)

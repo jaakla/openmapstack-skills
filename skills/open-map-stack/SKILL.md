@@ -46,9 +46,10 @@ correction as data or canonical pipeline logic, make overrides executable and
 verified, and preserve unknown semantic attributes as unknown. The project must
 have explicit CRS, deterministic ordered steps, machine-readable validation and
 run evidence, provenance, and a documented clean rerun without chat dependencies.
-Run `openmapstack validate` and the canonical `openmapstack run` path when the CLI
-is available. Missing validation capability is `not_testable`, never an implicit
-pass. Follow the referenced workflow's complete QGIS and presentation obligations.
+Check whether the CLI is installed (`openmapstack --version` or
+`python3 -m openmapstack --version`); if it is, run `openmapstack validate` and the
+canonical `openmapstack run` path, and do not deliver while `validate` reports a
+failure. Missing validation capability is `not_testable`, never an implicit pass. Follow the referenced workflow's complete QGIS and presentation obligations.
 
 For a bounded one-shot SQL, CRS or conversion question, the relevant domain
 reference is sufficient; a full project artifact and its methodology are not needed.
