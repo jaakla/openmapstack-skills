@@ -85,7 +85,7 @@ built from `evals/containers/routing.Dockerfile` on `node@sha256:0e0ff40c39bc087
 | Trial | Selection | Reviewed outcome | Status | Reported USD |
 |---|---|---|---|---:|
 | `chosen-engine-sql` (routing, collection) | `spatial-sql` | Passed: units, index use via matching expression index, duplicates, UTM projection for distance | `passed` | 0.135944 |
-| `bounded-discovery` (routing, collection) | `geospatial-data-discovery` | Attempted three provider pages, which the harness refused; labeled those claims unverified. ETAK license, `tyyp` scope, pinning and paging correct. Wrong licenses for two alternatives: Overture buildings and Microsoft footprints are ODbL | `not_testable` (`ToolSearch` telemetry gap) | 0.206338 |
+| `bounded-discovery` (routing, collection) | `geospatial-data-discovery` | Attempted three provider pages, which the harness refused; labeled those claims unverified. ETAK license, `tyyp` scope, pinning and paging correct. Wrong licenses for two alternatives, both from shipped guidance: Overture buildings are ODbL, Microsoft footprints CDLA-Permissive 2.0 | `not_testable` (`ToolSearch` telemetry gap) | 0.206338 |
 | `001-basic-spatial-analysis` (live, sandboxed) | injected guidance | Not graded: harness defect refused almost every `Bash` command | setup failure (`error_max_budget_usd`) | 2.002112 |
 | Sandbox tool check | — | `Bash`, DuckDB and `openmapstack` work after the fix | — | 0.037616 |
 
@@ -96,6 +96,36 @@ relied on the maintainer's own tool allow rules, which the sandbox hides. `61bb2
 explicitly; `bcb4131` stops counting `ToolSearch` and web tools as unattested skill reads. Neither
 change regrades these trials. Routing still refuses `WebFetch`, so it cannot observe the fresh
 provider lookup the discovery guidance now requires.
+
+## Second in-repository round (2026-09-23)
+
+A further **$10.00** was authorized for `claude-sonnet-4-6`. `5497c8d` let routing use web tools.
+Each failure below traced to shipped guidance and was corrected before the next trial, so the
+candidate moved: `7180e0e` (footprint licenses; `semantic_predicates` rule), then `cb4c009` (check
+for the CLI; do not deliver while `validate` fails). Guidance regression tests guard each fix.
+
+| Trial | Candidate | Selection | Reviewed outcome | Status | Reported USD |
+|---|---|---|---|---|---:|
+| material 001 (live) | `5497c8d` | injected | 35/36 required checks; zoning kept only as free-text `selection.filter` | failed `provenance.semantic_predicate_documented` | 1.986656 |
+| `bounded-discovery` (collection) | `5497c8d` | passed | Live provider lookups; repeated the guidance's wrong Overture/Microsoft licenses | `passed` / needs review | 0.374675 |
+| `bounded-discovery` (collection) | `7180e0e` | passed | Four live lookups, correct licenses, honest unverified PDF. Minor: unverified retention rationale | `passed` / passed | 0.293311 |
+| `bounded-discovery` (discovery only) | `7180e0e` | passed | Read the license PDF; correct alternative licenses | `passed` / passed | 0.324528 |
+| `ambiguous-architecture` | `7180e0e` | passed (`open-map-stack`) | Consequential questions and coupled choices | `passed` / passed | 0.076916 |
+| `future-scale-architecture` | `7180e0e` | passed (`open-map-stack`) | Separates concurrent edits from pinned analytical snapshots at scale | `passed` / passed | 0.192059 |
+| `casual-place-lookup` | `7180e0e` | passed (no GIS skill) | Brief and correct | `passed` / passed | 0.017089 |
+| `material-analysis-generalist-only` | `7180e0e` | passed (single) | Complete plan; records land-use codes as `semantic_predicates`. Minor: unverified ETAK stop layer name | `passed` / passed | 0.413073 |
+| material 001 (live) | `7180e0e` | injected | Predicates fixed; declared `parcel_area_range` but omitted it from the report. Never ran `validate`, which flags it | failed `validation.required_all_present` | 1.929765 |
+| material 001 (live) | `cb4c009` | injected | Checked for the CLI, ran `validate`, was fixing its failures; about ten turns went on probing the runtime | setup failure (`error_max_budget_usd`, 70 turns) | 3.043631 |
+
+Record hashes (SHA-256 prefix): material `a4403d5d`, `c94366d3`, `6df48698`; routing at `7180e0e`
+`70e61a10` (collection discovery), `7ae36587` (standalone discovery), `bbb0e503`, `09f16719`,
+`abd2e449`, `3f4c7f42`. `chosen-engine-sql` passed at `d4bfa5e`; `spatial-sql` content is unchanged
+since. Round spend: **$8.651825 of $10.00**; $1.348175 remains, below one material trial.
+
+Material 001 has not yet passed. The last trial shows the intended validate-and-repair loop, but
+the prompt does not say which runtime exists (DuckDB Spatial and the CLI, no geopandas or `pip`),
+so the agent spent turns probing it. Disclose the runtime in the 001 prompt, as OpenMapBench does,
+before the next paid material trial, and allow a larger cap for the repair loop.
 
 ## Running the remaining trials
 
