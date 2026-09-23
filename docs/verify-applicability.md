@@ -49,8 +49,8 @@ checker where applicable.
 | `metamorphic.declarations_valid` | `validation.metamorphic` is declared | every relation parses, names an implemented relation, and addresses declared outputs | none; structural only, nothing executes | direct declaration tests; cases 015, 923–925 |
 | `metamorphic.<id>` | `--metamorphic` and the relation is declared | the declared invariant holds under the relation's controlled perturbation | executes the canonical entrypoint in an isolated copy; unmet data preconditions, unsupported source/output formats, DuckDB absent for Parquet, timeouts, and oversize sources are `not_testable`; a crashing variant or one that mutates the project's inputs fails | 015 (holds); 923 `permutation_changed_output`, 924 `monotonicity_violated`, 925 `duplicates_changed_output` |
 | `geodata.crs_not_used_for_metrics` | always | manifest does not declare geographic CRS for metric work | none | 001, 007, 902, 914 |
-| `geodata.geometry_all_valid` | once per declared readable geodata output | every geometry in the artifact is valid | DuckDB Spatial; unsupported formats and unreadable artifacts are `not_testable`, missing files fail separately | 001, 011, 918 |
-| `geodata.dataset_crs_is` | once per readable geodata output with declared EPSG | artifact CRS agrees with the manifest | DuckDB Spatial; absent EPSG/addressing and unreadable metadata are `not_testable` | 001, 007, 914, 919 |
+| `geodata.geometry_all_valid` | once per declared readable geodata output | every geometry in the artifact is present and valid; WKB is decoded for inspection | DuckDB Spatial; unsupported formats and unreadable artifacts are `not_testable`, missing files fail separately | 001, 011, 918 |
+| `geodata.dataset_crs_is` | once per readable geodata output with declared EPSG | artifact CRS agrees with the manifest | DuckDB Spatial; absent declared EPSG/addressing and unreadable metadata are `not_testable`; readable geometry lacking actual CRS metadata fails, including bare WKB Parquet | 001, 007, 914, 919 |
 | `presentation.layers_use_semantic_roles` | always | declared map layers carry semantic roles | no layers produces a warning | 001, 006 |
 | `presentation.controls_match_pipeline` | always | canonical controls agree with processing expressions and overrides | controls without an addressable matching step are currently outside the predicate | 001, 003, 006 |
 | `presentation.edit_targets_reference_real_sources` | always | editing targets resolve to declared sources | none; no targets is valid | 001, 003, 006 |
@@ -91,3 +91,8 @@ address them without guessing:
 These omissions are reachability gaps, not implicit passes. They should enter
 the plan only with a versioned addressing contract and their own mutation
 coverage.
+
+Geometry evidence recomputation resolves the actual geometry column rather than assuming `geom`.
+An `invalid_geometry_count` declaration may provide `geometry_field` when needed to disambiguate;
+null geometries count as invalid. GeoParquet CRS-qualified columns work with nonstandard names,
+and typed CRS metadata is checked even for empty datasets. Missing Spatial remains `not_testable`.

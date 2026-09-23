@@ -48,9 +48,9 @@ def _geometry_column(con, rel: str, preferred: str | None = None) -> str | None:
     except Exception:  # noqa: BLE001
         return preferred
     by_name = {str(name): str(type_name).upper() for name, type_name, *_ in columns}
-    if preferred and preferred in by_name:
-        return preferred
-    typed = [name for name, type_name in by_name.items() if type_name == "GEOMETRY"]
+    if preferred:
+        return preferred if preferred in by_name else None
+    typed = [name for name, type_name in by_name.items() if type_name == "GEOMETRY" or type_name.startswith("GEOMETRY(")]
     if len(typed) == 1:
         return typed[0]
     candidates = typed or list(by_name)
@@ -58,6 +58,37 @@ def _geometry_column(con, rel: str, preferred: str | None = None) -> str | None:
         if candidate in candidates:
             return candidate
     return typed[0] if typed else preferred
+
+
+def _geometry_expression(con, rel: str, preferred: str | None = None) -> str | None:
+    """Resolve typed geometry or WKB without assigning an invented CRS.
+
+    Spatial reads GeoParquet metadata into GEOMETRY (including CRS-qualified
+    types). Bare WKB Parquet remains BLOB: it can be checked for validity, but
+    ST_CRS on its decoded value correctly reports missing metadata.
+    """
+    column = _geometry_column(con, rel, preferred)
+    if column is None:
+        return None
+    columns = con.execute(f"SELECT * FROM {rel} LIMIT 0").description or []
+    types = {str(name): str(kind).upper() for name, kind, *_ in columns}
+    identifier = '"' + column.replace('"', '""') + '"'
+    if types.get(column) == "BLOB":
+        return f"ST_GeomFromWKB({identifier})"
+    if types.get(column, "").startswith("GEOMETRY"):
+        return identifier
+    return None
+
+
+def _invalid_geometry_count(con, rel: str, preferred: str | None = None) -> int | None:
+    expression = _geometry_expression(con, rel, preferred)
+    if expression is None:
+        return None
+    # Missing geometries cannot silently count as valid via SQL NULL semantics.
+    return con.execute(
+        f"SELECT COUNT(*) FROM {rel} "
+        f"WHERE {expression} IS NULL OR NOT ST_IsValid({expression})"
+    ).fetchone()[0]
 
 
 def row_count(workspace: Path, path: str, equals: int | None = None, at_least: int | None = None,
@@ -92,12 +123,10 @@ def geometry_all_valid(workspace: Path, path: str, project_dir: str = ".") -> As
         return not_testable("duckdb spatial not available in this environment", code="duckdb_unavailable")
     try:
         rel = _read(con, target)
-        column = _geometry_column(con, rel)
-        if column is None:
-            return not_testable(f"{path} has no geometry column", code="geometry_column_missing")
-        total, invalid = con.execute(
-            f'SELECT COUNT(*), SUM(CASE WHEN NOT ST_IsValid("{column}") THEN 1 ELSE 0 END) FROM {rel}'
-        ).fetchone()
+        invalid = _invalid_geometry_count(con, rel)
+        if invalid is None:
+            return failed(f"{path} has no geometry column", code="geometry_column_missing")
+        total = con.execute(f"SELECT COUNT(*) FROM {rel}").fetchone()[0]
     except Exception as exc:  # noqa: BLE001
         return not_testable(f"could not validate geometry in {path}: {exc}", code="read_error")
     invalid = invalid or 0
@@ -299,10 +328,14 @@ def dataset_crs_is(
         return not_testable("duckdb spatial not available in this environment", code="duckdb_unavailable")
     try:
         rel = _read(con, target)
-        column = _geometry_column(con, rel, geometry_field)
-        if column is None:
-            return not_testable(f"{path} has no geometry column", code="geometry_column_missing")
-        rows = con.execute(f'SELECT DISTINCT ST_CRS("{column}") FROM {rel}').fetchall()
+        expression = _geometry_expression(con, rel, geometry_field)
+        if expression is None:
+            return failed(f"{path} has no geometry column", code="geometry_column_missing")
+        # The NULL row preserves a typed column's CRS even for an empty dataset.
+        rows = con.execute(
+            f"SELECT DISTINCT ST_CRS(geometry_value) FROM "
+            f"(SELECT {expression} AS geometry_value FROM {rel} UNION ALL SELECT NULL)"
+        ).fetchall()
     except Exception as exc:  # noqa: BLE001
         return not_testable(f"could not inspect CRS metadata in {path}: {exc}", code="read_error")
     actual = sorted({str(row[0]).upper() for row in rows if row and row[0]})
