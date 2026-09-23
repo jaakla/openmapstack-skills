@@ -73,6 +73,30 @@ Follow-ups `908bf95` (fresh provider lookup; distance versus area CRS guidance) 
 is **$8.760220** of the $10 authorization; the remaining $1.239780 does not fit another material
 trial with its reserve. See the [focused outcomes](https://github.com/jaakla/OpenMapBench/blob/feat/oms-release-acceptance/docs/openmapstack-acceptance-fixes-20260923.md#focused-live-outcomes).
 
+## In-repository trials against `d4bfa5e` (2026-09-23)
+
+A new authorization capped this round at $4.00 using `claude-sonnet-4-6` (Claude Code 2.1.281).
+The candidate was frozen at `d4bfa5e`: collection content
+`sha256:3f4d7b9da430c1f53cd65c4cc87189d25492febe6a5080903ff9bd6505df94b3`, the same skill payload
+as `7b1a886`. Routing used local image `sha256:ab1c1835f312edd67d21b03e7ec75aba5a04c08e49e2c54367186288a0e52fe8`,
+built from `evals/containers/routing.Dockerfile` on `node@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6`.
+`d4bfa5e` also discloses the 001 artifact interface, whose earlier prompt hid the required names.
+
+| Trial | Selection | Reviewed outcome | Status | Reported USD |
+|---|---|---|---|---:|
+| `chosen-engine-sql` (routing, collection) | `spatial-sql` | Passed: units, index use via matching expression index, duplicates, UTM projection for distance | `passed` | 0.135944 |
+| `bounded-discovery` (routing, collection) | `geospatial-data-discovery` | Attempted three provider pages, which the harness refused; labeled those claims unverified. ETAK license, `tyyp` scope, pinning and paging correct. Wrong licenses for two alternatives: Overture buildings and Microsoft footprints are ODbL | `not_testable` (`ToolSearch` telemetry gap) | 0.206338 |
+| `001-basic-spatial-analysis` (live, sandboxed) | injected guidance | Not graded: harness defect refused almost every `Bash` command | setup failure (`error_max_budget_usd`) | 2.002112 |
+| Sandbox tool check | — | `Bash`, DuckDB and `openmapstack` work after the fix | — | 0.037616 |
+
+Record hashes: routing `3504530c…53ff35` (discovery), `20373d50…e874ed` (SQL); material agent
+record `94a41843…e64c29`. Spend this round: **$2.382009 of $4.00**; $1.617991 remains, below one
+material trial's cap. The material failure is a harness defect, not a skill result: the adapter had
+relied on the maintainer's own tool allow rules, which the sandbox hides. `61bb27a` grants tools
+explicitly; `bcb4131` stops counting `ToolSearch` and web tools as unattested skill reads. Neither
+change regrades these trials. Routing still refuses `WebFetch`, so it cannot observe the fresh
+provider lookup the discovery guidance now requires.
+
 ## Running the remaining trials
 
 Freeze a clean candidate at or after `250c99c` and confirm a new spend authorization first.
