@@ -35,7 +35,21 @@ jobs:
           echo "OPENMAPSTACK_SPATIAL_EXTENSION_DIR=${RUNNER_TEMP}/openmapstack-duckdb-extensions" >> "$GITHUB_ENV"
           OPENMAPSTACK_SPATIAL_EXTENSION_DIR="${RUNNER_TEMP}/openmapstack-duckdb-extensions" python evals/prepare_spatial.py
 
+      - name: Enable the live-agent sandbox for its tests
+        # tests/evals/test_isolation.py runs a real rootless Bubblewrap
+        # sandbox; Ubuntu 24.04 blocks unprivileged user namespaces through
+        # AppArmor by default. OPENMAPSTACK_REQUIRE_SANDBOX turns a skip into
+        # a failure so the isolation guarantee cannot silently go untested.
+        run: |
+          sudo apt-get install -y bubblewrap
+          if sudo sysctl -n kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          bwrap --unshare-user --ro-bind / / true
+
       - name: Run unit tests with assertion coverage gate
+        env:
+          OPENMAPSTACK_REQUIRE_SANDBOX: "1"
         run: |
           python -m coverage run -m unittest discover -v
           python -m coverage report

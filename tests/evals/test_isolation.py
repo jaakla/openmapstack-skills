@@ -2,6 +2,8 @@
 
 The sandbox tests run a real Bubblewrap sandbox and skip where unprivileged
 user namespaces are unavailable; the adapter itself refuses to run there.
+CI sets ``OPENMAPSTACK_REQUIRE_SANDBOX=1`` so an unavailable sandbox fails
+instead of skipping.
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ sys.path.insert(0, str(REPO_ROOT / "evals"))
 from adapters.isolation import PACKAGE_DIR, Sandbox, symlink_chain, unavailable_reason  # noqa: E402
 
 UNAVAILABLE = unavailable_reason()
+REQUIRED = os.environ.get("OPENMAPSTACK_REQUIRE_SANDBOX") == "1"
 
 PROBE = """
 import json, os, pathlib, sys
@@ -67,8 +70,12 @@ class SandboxDeclarationTests(unittest.TestCase):
         self.assertNotIn("HOST_ONLY_SECRET", environment)
 
 
-@unittest.skipIf(UNAVAILABLE, f"sandbox unavailable: {UNAVAILABLE}")
+@unittest.skipIf(UNAVAILABLE and not REQUIRED, f"sandbox unavailable: {UNAVAILABLE}")
 class SandboxTests(unittest.TestCase):
+    def setUp(self) -> None:
+        if UNAVAILABLE:
+            self.fail(f"OPENMAPSTACK_REQUIRE_SANDBOX=1 but the sandbox is unavailable: {UNAVAILABLE}")
+
     def test_agent_sees_its_workspace_and_package_but_not_the_repository(self) -> None:
         with tempfile.TemporaryDirectory(prefix="openmapstack-isolation-test-") as temporary:
             base = Path(temporary).resolve()
