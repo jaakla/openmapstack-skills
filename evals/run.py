@@ -5,7 +5,7 @@
     python evals/run.py --case attribute-override
     python evals/run.py --mode fixture
     python evals/run.py --mode visual      # PyQGIS + headless-browser integration
-    python evals/run.py --mode live --agent claude_code --model <model>
+    python evals/run.py --mode live --agent claude_code --model <model> --max-budget-usd <usd>
     python evals/run.py --mode live --agent openai_compatible   # model from OPENAI_COMPATIBLE_MODEL
     python evals/run.py --json eval-results.json
     python evals/run.py --list
@@ -525,16 +525,26 @@ def _format_command(command: str, project_path: Path) -> str:
     )
 
 
-def _load_adapter(agent_name: str):
+def _load_adapter(agent_name: str, options: dict[str, Any] | None = None):
+    """Instantiate an adapter with the agent options the user actually set.
+
+    An option the adapter does not accept is a setup failure rather than
+    silently ignored: a budget cap that one agent quietly drops is not a cap.
+    """
     if agent_name not in KNOWN_AGENTS:
         raise SetupFailure("agent_preflight", f"unknown agent {agent_name!r}")
+    options = {key: value for key, value in (options or {}).items() if value is not None}
     try:
         adapter_module = importlib.import_module(f"adapters.{agent_name}")
         adapter_cls_name = "".join(part.capitalize() for part in agent_name.split("_")) + "Adapter"
         adapter_cls = getattr(adapter_module, adapter_cls_name)
-        return adapter_cls()
     except (ImportError, AttributeError) as exc:
         raise SetupFailure("agent_preflight", f"could not load adapter {agent_name!r}: {exc}") from exc
+    try:
+        return adapter_cls(**options)
+    except TypeError as exc:
+        unsupported = ", ".join("--" + key.replace("_", "-") for key in sorted(options))
+        raise SetupFailure("agent_preflight", f"agent {agent_name!r} does not support {unsupported}") from exc
 
 
 def _selected_live_agents(case_dirs: list[Path], agent_override: str | None) -> set[str]:
@@ -1065,6 +1075,7 @@ def run_case(
     artifact_dir: Path | None = None,
     benchmark_context: dict[str, Any] | None = None,
     skill_mode: str | None = None,
+    agent_options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Execute one case/trial, keeping setup failures out of assertion scores.
 
@@ -1288,7 +1299,8 @@ def run_case(
                     "content_sha256": None,
                     "entrypoint": None,
                 }
-            adapter = _load_adapter(agent_name)
+            adapter = _load_adapter(agent_name, agent_options)
+            adapter.trial_root = workspace
             if not adapter.is_available():
                 raise SetupFailure(
                     "agent_preflight",
@@ -1746,6 +1758,16 @@ def main(argv: list[str] | None = None) -> int:
         help="override the live-case agent adapter",
     )
     parser.add_argument("--model", help="model passed to the selected live agent")
+    parser.add_argument(
+        "--max-budget-usd",
+        type=float,
+        help="per-trial provider spend cap for live agents that enforce one (required by claude_code)",
+    )
+    parser.add_argument(
+        "--credential-file",
+        type=Path,
+        help="Claude OAuth credentials file; only its access token reaches the sandboxed agent",
+    )
     parser.add_argument("--collection", action="store_true", help="use complete skill snapshot v2 and benchmark arm v2 (injected guidance)")
     parser.add_argument("--skill", action="append", help="select a skill in --collection mode; repeat for a subset (default: all)")
     parser.add_argument(
@@ -1822,6 +1844,7 @@ def main(argv: list[str] | None = None) -> int:
         "model": args.model,
         "model_source": "flag" if args.model else None,
         "timeout_s": args.timeout,
+        "max_budget_usd": args.max_budget_usd,
         "repetitions": args.repetitions,
         "seed": args.seed,
         "case": args.case,
@@ -1941,6 +1964,7 @@ def main(argv: list[str] | None = None) -> int:
                         "environment": _environment(),
                     },
                     skill_mode=SKILL_MODE_BY_ARM[arm] if args.mode == "live" else None,
+                    agent_options={"max_budget_usd": args.max_budget_usd, "credential_file": args.credential_file},
                 )
             except Exception as exc:  # noqa: BLE001
                 result = {

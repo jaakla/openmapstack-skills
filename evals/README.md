@@ -1,12 +1,12 @@
 # OpenMapStack eval suite
 
-> **Ownership migration:** deterministic contract/checker regression, mutation
-> coverage and OpenMapStack-specific integration remain canonical here. Generic
-> live agent benchmarking, provider adapters, repeated model comparisons,
-> routing experiments and benchmark task governance are moving to
-> [OpenMapBench #2](https://github.com/jaakla/OpenMapBench/issues/2).
-> The live/routing paths documented below remain transitional until OpenMapBench
-> reaches parity; do not extend them with new generic benchmark infrastructure.
+> **Ownership:** deterministic contract/checker regression, mutation coverage,
+> OpenMapStack-specific integration and the live release trials remain canonical
+> here ([ADR 0006](../docs/maintainers/decisions/0006-release-trials-in-repository-sandbox.md)).
+> Generic benchmarking — repeated model comparisons, leaderboards, routing
+> experiments and benchmark task governance — is moving to
+> [OpenMapBench #2](https://github.com/jaakla/OpenMapBench/issues/2); do not
+> extend the live/routing paths below with new generic benchmark infrastructure.
 > See [the interoperability contract](../docs/openmapbench-interop.md).
 
 
@@ -76,6 +76,7 @@ must not read alike.
 python3 evals/run.py --mode live \
   --agent claude_code \
   --model claude-sonnet-4-6 \
+  --max-budget-usd 2 \
   --skill-mode enabled \
   --case 001-basic-spatial-analysis \
   --case 002-attribute-override \
@@ -204,7 +205,21 @@ agent. `--timeout` applies to each generator or agent invocation;
 base seed that is incremented for each repetition.
 
 Live mode requires an explicit `--model`: a run with an unknown CLI default is
-not publishable benchmark evidence. The arm is explicit too: `--arms oms`
+not publishable benchmark evidence.
+
+The `claude_code` agent runs inside a rootless Bubblewrap sandbox
+(`adapters/isolation.py`). It sees system `/usr`, the Python interpreter running
+the evals, the shipped `openmapstack` package, the DuckDB extension directory,
+the CLI and its trial directory. Only the trial directory is writable; the
+repository, home directory, installed skills and agent configuration are not
+visible. The adapter refuses to run when the sandbox is unavailable (non-Linux,
+or unprivileged user namespaces disabled). It also requires `--max-budget-usd`
+and one credential: `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`, or
+`--credential-file` pointing at a Claude OAuth credentials file (only its
+access token is forwarded). `ANTHROPIC_BASE_URL` and `ANTHROPIC_CUSTOM_HEADERS`
+are forwarded when set. The isolation allowlist is recorded in each trial's
+`permissions.isolation`. An agent option that the selected adapter cannot
+enforce, such as a budget for `codex`, is a setup failure. The arm is explicit too: `--arms oms`
 (the default; the controlled skill snapshot is injected), `--arms plain` (no
 skill), or `--arms paired`, which runs both arms over identical cases, trials,
 and seeds. `--skill-mode enabled|disabled` remains as an alias for the single

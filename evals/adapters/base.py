@@ -74,6 +74,10 @@ class AgentAdapter:
 
     name = "base"
     executable = ""
+    # The per-trial directory the runner stages (the agent works in a
+    # subdirectory; injected guidance sits beside it). Set before ``run`` so
+    # an isolating adapter can expose exactly this tree.
+    trial_root: Path | None = None
 
     def is_available(self) -> bool:
         return bool(self.executable and shutil.which(self.executable))

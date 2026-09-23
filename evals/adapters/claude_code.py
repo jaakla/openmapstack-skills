@@ -1,8 +1,11 @@
 """Claude Code adapter for live evals.
 
-Invokes the `claude` CLI non-interactively against a case prompt inside the
-workspace. Requires `claude` on PATH and an authenticated account/API key —
-this module is only imported by `--mode live` runs, never by fixture CI.
+Invokes the `claude` CLI non-interactively against a case prompt inside a
+rootless Bubblewrap sandbox (see ``isolation.py``) that exposes only the trial
+directory, the Python runtime, the shipped package and the CLI. It needs an
+explicit credential (``ANTHROPIC_API_KEY``, ``CLAUDE_CODE_OAUTH_TOKEN`` or
+``--credential-file``) and a positive ``--max-budget-usd``, and refuses to run
+unisolated. Only imported by `--mode live` runs, never by fixture CI.
 """
 
 from __future__ import annotations
@@ -13,6 +16,12 @@ import time
 from pathlib import Path
 
 from .base import AgentAdapter, AgentRunResult, parse_json_lines
+from .isolation import Sandbox, unavailable_reason
+from .routing import credentials
+
+# Non-secret provider routing the operator may set (e.g. a workspace header
+# that scopes spend); forwarded by name, recorded by name only.
+PROVIDER_SETTINGS = ("ANTHROPIC_BASE_URL", "ANTHROPIC_CUSTOM_HEADERS")
 
 
 def _claude_observability(events: list[dict], requested_model: str | None) -> tuple[str | None, dict, float | None, str | None, bool]:
@@ -59,6 +68,24 @@ class ClaudeCodeAdapter(AgentAdapter):
     name = "claude_code"
     executable = "claude"
 
+    def __init__(self, *, max_budget_usd: float | None = None, credential_file: Path | None = None) -> None:
+        self.max_budget_usd = max_budget_usd
+        self.credential_file = credential_file
+
+    def _refusal(self, reason: str, workspace: Path, executable: str, seed: int | None) -> AgentRunResult:
+        return AgentRunResult(
+            agent=self.name,
+            model=None,
+            workspace=workspace,
+            duration_s=0.0,
+            success=False,
+            returncode=None,
+            command=[self.executable],
+            stderr=reason,
+            permissions={"mode": "acceptEdits", "session_persistence": False},
+            metadata={"executable": executable, "requested_seed": seed},
+        )
+
     def run(
         self,
         prompt: str,
@@ -70,17 +97,23 @@ class ClaudeCodeAdapter(AgentAdapter):
     ) -> AgentRunResult:
         executable_path = shutil.which(self.executable)
         if executable_path is None:
-            return AgentRunResult(
-                agent=self.name,
-                model=None,
-                workspace=workspace,
-                duration_s=0.0,
-                success=False,
-                returncode=None,
-                command=[self.executable],
-                stderr="`claude` CLI not found on PATH",
-                permissions={"mode": "acceptEdits", "session_persistence": False},
-                metadata={"executable": self.executable, "requested_seed": seed},
+            return self._refusal("`claude` CLI not found on PATH", workspace, self.executable, seed)
+        if self.max_budget_usd is None or self.max_budget_usd <= 0:
+            return self._refusal("a positive --max-budget-usd is required for a paid live trial", workspace, executable_path, seed)
+        reason = unavailable_reason()
+        if reason:
+            return self._refusal(f"refusing an unisolated live run: {reason}", workspace, executable_path, seed)
+        try:
+            credential, host_environment = credentials("claude_code", self.credential_file)
+        except ValueError as exc:
+            return self._refusal(str(exc), workspace, executable_path, seed)
+        secret = host_environment.get(credential)
+        if not secret:
+            return self._refusal(
+                "no Claude credential: set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN, or pass --credential-file",
+                workspace,
+                executable_path,
+                seed,
             )
 
         if fixture is not None and fixture.exists():
@@ -99,16 +132,21 @@ class ClaudeCodeAdapter(AgentAdapter):
             "acceptEdits",
             "--no-session-persistence",
             "--no-chrome",
+            "--max-budget-usd",
+            str(self.max_budget_usd),
         ]
         if model:
             command.extend(["--model", model])
-        invocation = [*command, prompt]
+        sandbox = Sandbox.for_python_agent(self.trial_root or workspace, {"claude": Path(executable_path)})
+        forwarded = {name: host_environment[name] for name in PROVIDER_SETTINGS if host_environment.get(name)}
+        invocation = [*sandbox.argv(workspace), *command, prompt]
         recorded_command = [*command, "<PROMPT:prompt.md>"]
         timed_out = False
         try:
             proc = subprocess.run(
                 invocation,
-                cwd=workspace,
+                env=sandbox.environment({**forwarded, credential: secret}),
+                stdin=subprocess.DEVNULL,
                 capture_output=True,
                 text=True,
                 timeout=timeout_s,
@@ -129,6 +167,9 @@ class ClaudeCodeAdapter(AgentAdapter):
             stdout = ""
             stderr = f"{type(exc).__name__}: {exc}"
         duration = time.monotonic() - start
+        # Tool output can echo the environment; retain the stream shape only.
+        stdout = stdout.replace(secret, "<REDACTED>")
+        stderr = stderr.replace(secret, "<REDACTED>")
         events, unparsed_lines = parse_json_lines(stdout)
         resolved_model, usage, cost_usd, final_message, completed = _claude_observability(events, model)
         models_observed: set[str] = set()
@@ -169,6 +210,10 @@ class ClaudeCodeAdapter(AgentAdapter):
                 "session_persistence": False,
                 "chrome": False,
                 "customizations": False,
+                "max_budget_usd": self.max_budget_usd,
+                "credential": credential,
+                "provider_settings": sorted(forwarded),
+                "isolation": sandbox.evidence(),
             },
             metadata={
                 "executable": executable_path,
