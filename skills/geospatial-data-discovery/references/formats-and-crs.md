@@ -138,17 +138,20 @@ pmtiles extract input.pmtiles output.pmtiles \
 
 ### The four CRS rules to internalize
 
-1. **Storage:** WGS84 (EPSG:4326) is the lingua franca. Almost all open data is delivered in it.
-2. **Web rendering:** Web Mercator (EPSG:3857). Web maps assume it.
-3. **Metric computation:** ALWAYS a local projected CRS. Never use degrees as if they were meters.
-4. **Equal-area requirements:** Web Mercator is NOT equal-area. For area/density/proportion calculations use an equal-area projection (UTM, national grid, or a continental equal-area like EPSG:3035 for Europe).
+1. **Storage:** retain the source CRS when preserving raw data. WGS84 (EPSG:4326) is common for interchange; verify each dataset rather than assuming its CRS.
+2. **Web rendering:** EPSG:3857 is common for tiled basemaps; use the rendering stack’s actual CRS contract. Rendering coordinates do not establish analytical accuracy.
+3. **Metric computation:** use an appropriate local projected CRS or explicit geodesic calculations. Never use degrees as metres. Metre units alone do not establish distance accuracy: check distortion over the actual area and for the operation.
+4. **Equal-area requirements:** use a suitable equal-area projection (for example EPSG:3035 for continental European area comparisons) or geodesic area calculation. UTM is conformal, not equal-area; national grids have their own projection properties. A local grid can be adequate when its distortion meets the stated tolerance. Equal-area does not mean distance-preserving.
+
+Projection properties: [PROJ Transverse Mercator](https://proj.org/en/stable/operations/projections/tmerc.html)
+and [Lambert Azimuthal Equal Area](https://proj.org/en/stable/operations/projections/laea.html).
 
 ### Choosing a local projected CRS
 
 | Region | EPSG | Notes |
 |---|---|---|
 | Estonia | 3301 | L-EST97; the Estonian standard |
-| Continental Europe (analysis) | 3035 | LAEA Europe — equal-area |
+| Continental Europe (area comparison) | 3035 | LAEA Europe — equal-area; not a generic distance recommendation |
 | US | UTM zones (32613–32619), or 5070 (CONUS Albers, equal-area) | |
 | Worldwide local | UTM zone matching your area | Compute zone: `floor((lon + 180) / 6) + 1` |
 | Web rendering | 3857 | Mercator, NOT equal-area |
@@ -229,7 +232,7 @@ Treat any pipeline that mixes GeoJSON, Overture parquet, and shapefile inputs as
 
 * `gdf.buffer(100)` on EPSG:4326 — buffer in degrees is meaningless. Reproject first, buffer, then reproject back.
 * `gdf.area` on EPSG:4326 — gives squared degrees.
-* Computing area in EPSG:3857 (Web Mercator) — Mercator distortion makes this wrong by up to a factor of cos(latitude).
+* Computing area in EPSG:3857 (Web Mercator) — projected area is not ground area, and distortion grows strongly with latitude. Use a suitable equal-area or geodesic method.
 * Joining two layers without checking `gdf1.crs == gdf2.crs`.
 * Assuming a Shapefile without `.prj` is in WGS84 — it might be in a national grid.
 * Using `pyproj.Transformer` without `always_xy=True` and silently getting axis order wrong.

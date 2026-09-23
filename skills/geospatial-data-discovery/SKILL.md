@@ -20,11 +20,17 @@ not evidence that the features have the intended meaning.
    catalogs. For the user's warehouse/database, read
    `references/user-data-sources.md`; use credentials by reference and
    read-only inspection. Snapshot materialization follows the existing
-   authorization boundary.
+   authorization boundary. Before presenting current availability, coverage or
+   licensing as verified, open the provider's actual metadata/download/license
+   pages during this task. Reference notes are discovery leads, not evidence
+   of a fresh lookup. Cite the pages checked and the check date; if access is
+   unavailable, label the recommendation unverified and state what is missing.
 3. Prefer the authoritative provider for the requested meaning. Verify fields
    and code lists against current provider metadata (report unavailable access):
    ownership, active status, eligibility and missing values
    must not be inferred from a generic category. Preserve unknowns as unknown.
+   Official status alone does not prove that every alternative derives from
+   that source or is less current; support comparative claims with evidence.
 4. Check coverage and completeness using provider counts, pagination, catalog
    structure, partitions and spatial/temporal filters as applicable. Distinguish
    a sample from a complete extract and a partial catalog from absent data.

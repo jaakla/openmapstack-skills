@@ -107,6 +107,20 @@ class AcceptanceGuidanceTests(GuidanceCase):
                 self.assertRetracted(text, "Most data is open under CC-BY 4.0", path)
                 self.assertRetracted(text, "require `ehr_gid IS NOT NULL` to drop", path)
 
+    def test_current_source_verification_is_not_inherited_from_reference_notes(self) -> None:
+        text = (SKILLS_ROOT / "geospatial-data-discovery/SKILL.md").read_text()
+        self.assertIn("pages during this task", text)
+        self.assertIn("label the recommendation unverified", text)
+        self.assertIn("support comparative claims with evidence", text)
+
+    def test_projection_units_do_not_replace_operation_accuracy(self) -> None:
+        for path, text in _shipped_copies("formats-and-crs.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "UTM is conformal, not equal-area", path)
+                self.assertShips(text, "Equal-area does not mean distance-preserving", path)
+                self.assertShips(text, "or explicit geodesic calculations", path)
+                self.assertRetracted(text, "Metric computation:** ALWAYS", path)
+
     def test_parquet_guidance_requires_reopened_artifact_metadata(self) -> None:
         for path, text in _shipped_copies("formats-and-crs.md").items():
             with self.subTest(path=path):
