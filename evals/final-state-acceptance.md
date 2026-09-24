@@ -166,8 +166,9 @@ QGIS runtime check.
 The three PyQGIS checks were then run in the sandbox against the host's QGIS 3.40.15 (GDAL 3.12.2).
 **All three failed.** The candidate layer points at GeoParquet, the Ubuntu GDAL build has no
 Parquet or Arrow driver, and the map draws nothing. Shipped `qgis.md` blamed "an old GDAL"
-instead. The follow-up adds `qgis.datasources_portable`, which warns on Parquet/Arrow layers and
-which `validate` reports as `qgis.datasource_formats`. The QGIS guidance now requires
+instead. The follow-up adds `qgis.datasources_portable`, which warns on local layers outside an
+allowlist of formats every GDAL build reads, and which `validate` reports as
+`qgis.datasource_formats`. The QGIS guidance now requires
 GeoPackage/GeoJSON/FlatGeobuf layers, and live 001 requires the check. One further material trial
 must show agents follow it.
 

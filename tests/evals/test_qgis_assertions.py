@@ -98,11 +98,34 @@ class DatasourcesPortableTests(unittest.TestCase):
         ])
         result = qgis_assertions.datasources_portable(workspace)
         self.assertEqual(result.status, "warning", result.detail)
-        self.assertEqual(result.data["code"], "datasource_needs_optional_driver")
+        self.assertEqual(result.data["code"], "datasource_format_not_portable")
         self.assertEqual(
             result.data["datasources"],
             {"./data/derived/candidates.parquet": "Parquet", "./data/derived/zones.arrow|layername=zones": "Arrow"},
         )
+
+    def test_formats_outside_the_allowlist_warn_not_only_known_ones(self) -> None:
+        # A denylist passed any optional-driver format it did not name.
+        workspace = make_workspace()
+        _write_qgz(workspace / "project.qgz", ["./data/legacy.mdb|layername=parcels", "./data/export"])
+        result = qgis_assertions.datasources_portable(workspace)
+        self.assertEqual(result.status, "warning", result.detail)
+        self.assertEqual(
+            result.data["datasources"],
+            {
+                "./data/legacy.mdb|layername=parcels": ".mdb is outside the portable set",
+                "./data/export": "no extension is outside the portable set",
+            },
+        )
+
+    def test_provider_connection_strings_are_out_of_scope(self) -> None:
+        workspace = make_workspace()
+        _write_qgz(workspace / "project.qgz", [
+            "dbname='gis' host=localhost table=\"public\".\"parcels\" (geom)",
+            "./data/derived/a.shp", "./data/raster/dem.tif",
+        ])
+        result = qgis_assertions.datasources_portable(workspace)
+        self.assertEqual(result.status, "passed", result.detail)
 
     def test_missing_project_fails(self) -> None:
         result = qgis_assertions.datasources_portable(make_workspace())

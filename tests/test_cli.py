@@ -146,7 +146,7 @@ class OpenMapStackCliTests(unittest.TestCase):
         )
         check = self._check(validate_project(path), "qgis.datasource_formats")
         self.assertEqual(check.status, "warning", check.to_dict())
-        self.assertEqual(check.details["code"], "datasource_needs_optional_driver")
+        self.assertEqual(check.details["code"], "datasource_format_not_portable")
 
     def test_qgis_project_without_layers_warns(self) -> None:
         path = self._map_project_with_qgz()
