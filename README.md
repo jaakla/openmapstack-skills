@@ -2,7 +2,7 @@
 
 **Four complementary skills for geospatial decisions, data discovery, spatial SQL and reproducible analysis projects.**
 
-Install:
+Install (assume you have git and nodejs with npx already installed):
 ```bash
 npx skills@1.5.26 add jaakla/openmapstack-skills --skill open-map-stack -g
 ```
@@ -19,7 +19,7 @@ The 0.4.0 collection has four independently installable skills:
 |---|---|
 | [open-map-stack](skills/open-map-stack/SKILL.md) | Ambiguous or multi-stage GIS work; choose sources, compute, storage and delivery together. |
 | [reproducible-gis-project](skills/reproducible-gis-project/SKILL.md) | Compile or maintain the project manifest, canonical pipeline, pinned sources, corrections, validation and reruns. |
-| [geospatial-data-discovery](skills/geospatial-data-discovery/SKILL.md) | Find and assess authoritative data under known requirements. |
+| [geospatial-data-discovery](skills/geospatial-data-discovery/SKILL.md) | Find and assess open geospatial data under known requirements. |
 | [spatial-sql](skills/spatial-sql/SKILL.md) | Write, review or optimize spatial SQL on an already chosen engine. |
 
 Each skill has a small entry point and local references loaded as needed. The
@@ -27,7 +27,10 @@ generalist retains bounded-task support and material-analysis requirements when
 installed alone. Optional product help is documented in the installed
 [companion reference](skills/open-map-stack/references/companion-skills.md).
 
-Generalist guidance and canonical resources:
+
+### Open Map Stack - general guidance
+
+Includes all the skills.
 
 - [generalist SKILL.md](skills/open-map-stack/SKILL.md) — the skill entry point: triggers, global defaults, format and compute decision matrices, anti-patterns, and a quick triage guide.
 - [references/data-sources.md](skills/open-map-stack/references/data-sources.md) - lists OSM, Overture, Sentinel/Landsat, regional portals, STAC catalogs and others.
@@ -43,7 +46,17 @@ Generalist guidance and canonical resources:
 - [references/project-workflow.md](skills/open-map-stack/references/project-workflow.md) — the mandatory material-analysis workflow and delivery rules, loaded when a task needs a reproducible project.
 - [templates/](templates/) — ready scaffolds (`project.yaml`, `pipeline.py`, `presentation.yaml`, `validation.yaml`) for new projects.
 
-Additional materials:
+### Reproducible GIS project
+Well-defined GIS project manifest and pipeline skills.
+
+### Geospatial data discovery
+Geodata discovery skills - open, where possible authoritative source data for global and local coverage.
+
+### Spatial SQL
+Geospatial SQL specific skills only.
+
+
+### Additional materials:
 
 - [examples/tartu-development/](examples/tartu-development/) — a fully-worked reproducible project matching the acceptance scenario: source provenance + timestamps, explicit assumptions, two verified project overrides (a scenario attribute change with prior-value verification, and hypothetical scenario geometry), deterministic pipeline, machine-readable validation, and semantic presentation.
 - [evals/](evals/) — the eval suite grading whether an agent reaches the right analytical answer, respects the GIS-method guardrails, and reruns reproducibly, with the `openmapstack-project/v1` contract as the substrate that makes those independently checkable: `python evals/run.py --mode fixture` runs deterministic, no-LLM checks against real generated artifacts (analytical correctness against known geospatial truth, metric CRS, source immutability, schema, overrides, validation integrity, presentation contract, and clean reruns), plus adversarial cases and a pluggable live-agent benchmark (Claude Code, Codex, and any OpenAI-compatible API such as OpenRouter — URL and model via `OPENAI_COMPATIBLE_*` env, API key as a secret).
