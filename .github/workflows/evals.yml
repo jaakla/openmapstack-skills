@@ -35,7 +35,15 @@ jobs:
           echo "OPENMAPSTACK_SPATIAL_EXTENSION_DIR=${RUNNER_TEMP}/openmapstack-duckdb-extensions" >> "$GITHUB_ENV"
           OPENMAPSTACK_SPATIAL_EXTENSION_DIR="${RUNNER_TEMP}/openmapstack-duckdb-extensions" python evals/prepare_spatial.py
 
+      - name: Enable the live-agent sandbox for its tests
+        # tests/evals/test_isolation.py runs a real rootless Bubblewrap
+        # sandbox. OPENMAPSTACK_REQUIRE_SANDBOX turns a skip into a failure
+        # so the isolation guarantee cannot silently go untested.
+        run: bash scripts/ci/enable-bwrap.sh
+
       - name: Run unit tests with assertion coverage gate
+        env:
+          OPENMAPSTACK_REQUIRE_SANDBOX: "1"
         run: |
           python -m coverage run -m unittest discover -v
           python -m coverage report

@@ -178,3 +178,38 @@ their separate capable environments.
 - Run and review the [small final-state acceptance set](../evals/final-state-acceptance.md), confirming trial count and available paid budget first. Do not require historical equivalence. Capture truthful native selection and task outcomes for all four skills, standalone fallback and optional companions.
 - Finish required CI and relevant fixture checks on the final commit; run visual/QGIS evidence in the capable environment when needed for final material delivery. Resolve failures before release. Status on `534792f`: push workflows `OpenMapStack fixture evals` (run 35089132445) and `Claude Code plugin manifests` (run 35089132462) passed; `example.yml` passed on identical tree `c269df4`. Visual workflow dispatched on `534792f` passed (run 35092610173): integration_visual 2/2, mutation_tests 2/2.
 - After acceptance, build the coordinated release artifacts and publish only through the maintainer's release process. This implementation does not publish a tag or package.
+
+
+## Fixed-candidate OpenMapBench acceptance outcome (2026-09-23)
+
+The issue checklists were reconciled against recorded evidence before this increment. Packaging
+#34 is complete; final behavioral acceptance in #39 and the collection epic remain open. September
+installer results above establish their tested revisions and are not silently applied to this RC.
+
+The fixed source is `e78bae896eb647cd436004b121b8659f34092ca6`. A wheel and full/standalone snapshots
+were produced from its clean checkout; their exact identities, test counts and control outcomes
+are retained in [candidate evidence](acceptance-0.4.0-rc.json). The collection content identity is
+`sha256:ab1498765927674da25f9c3ee96d3939120d68593fd5e9d6c2dcbfb5125320e9`.
+
+OpenMapBench now has a reviewable native project-directory/check-API path, private assertion plans,
+versioned 001/070–073 and routing review packs, SUT descriptors, directory hashes and honest
+unscorable handling. Its healthy material control passes clean rerun; five intended defects are
+caught. See [current final-state acceptance](../evals/final-state-acceptance.md) for the pinned
+benchmark commit and remaining gates. Historical results remain context, not a quality oracle.
+
+A new $10 cap using `claude-sonnet-4-6` funded native attempts at benchmark `ba704e5`. Nine attempts
+reported $6.530115 before an organization monthly spend-limit rejection; $3.469885 remains authorized.
+Rootless provider isolation/native activation were exercised, with partial Bash telemetry and two
+observed CLI builtins recorded. The [fixed-candidate review](https://github.com/jaakla/OpenMapBench/blob/14409b3a9262b481bf9c806950e0eaf1363fbbe0/docs/openmapstack-acceptance-20260923.md)
+records failures and limitations: discovery quality failed, compilation exhausted per-trial caps,
+and all three material arms are unscorable because v1 hides artifact requirements; independent
+output/checker defects also remain. No material clean rerun or valid plain/skill comparison passed.
+
+**This candidate is not accepted.** Eight planned trials, companion contexts and capable visual
+checks remain missing. Correct the benchmark/producer defects and freeze changed payloads before
+retesting; preserve this result set. No tag/package has been published.
+
+A corrected candidate (`0749b07`) also failed focused acceptance; see
+[final-state acceptance](../evals/final-state-acceptance.md#corrected-candidate-outcome-2026-09-23).
+Remaining release trials run with this repository's sandboxed runner
+([ADR 0006](maintainers/decisions/0006-release-trials-in-repository-sandbox.md)), not OpenMapBench.

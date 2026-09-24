@@ -127,20 +127,46 @@ class AdapterContractTests(unittest.TestCase):
             ]
         )
 
+        seen: dict = {}
+
         def run(command, **kwargs):
             if command[-1] == "--version":
                 return subprocess.CompletedProcess(command, 0, "2.1.246 (Claude Code)\n", "")
+            seen["command"], seen["env"] = command, kwargs["env"]
             self.assertIn("stream-json", command)
             self.assertIn("--safe-mode", command)
             self.assertIn("--no-session-persistence", command)
-            return subprocess.CompletedProcess(command, 0, stream, "")
+            return subprocess.CompletedProcess(command, 0, stream + "\nsk-test-secret\n", "")
 
         with (
             patch("adapters.claude_code.shutil.which", return_value="/bin/claude"),
             patch("adapters.claude_code.subprocess.run", side_effect=run),
             patch("adapters.base.subprocess.run", side_effect=run),
+            patch("adapters.claude_code.unavailable_reason", return_value=None),
+            patch.dict(
+                os.environ,
+                {
+                    "ANTHROPIC_API_KEY": "sk-test-secret",
+                    "ANTHROPIC_CUSTOM_HEADERS": "anthropic-workspace-id: w1",
+                    "UNRELATED_HOST_SECRET": "x",
+                },
+            ),
         ):
-            result = ClaudeCodeAdapter().run("build it", self.workspace, model="claude-alias")
+            result = ClaudeCodeAdapter(max_budget_usd=0.5).run("build it", self.workspace, model="claude-alias")
+
+        # The agent runs inside the sandbox with one named credential, a
+        # budget cap and none of the host environment.
+        self.assertEqual(seen["command"][0], "bwrap")
+        self.assertEqual(seen["command"][seen["command"].index("--max-budget-usd") + 1], "0.5")
+        # Host allow rules are hidden in the sandbox, so tools are granted here.
+        self.assertIn("Bash", seen["command"][seen["command"].index("--allowedTools") + 1].split(","))
+        self.assertEqual(seen["env"]["ANTHROPIC_API_KEY"], "sk-test-secret")
+        self.assertEqual(seen["env"]["ANTHROPIC_CUSTOM_HEADERS"], "anthropic-workspace-id: w1")
+        self.assertNotIn("UNRELATED_HOST_SECRET", seen["env"])
+        self.assertNotIn("sk-test-secret", result.stdout)
+        self.assertEqual(result.permissions["isolation"]["kind"], "bubblewrap_allowlist")
+        self.assertEqual(result.permissions["credential"], "ANTHROPIC_API_KEY")
+        self.assertEqual(result.permissions["provider_settings"], ["ANTHROPIC_CUSTOM_HEADERS"])
 
         self.assertTrue(result.success)
         self.assertEqual(result.model, "claude-test-20260801")
@@ -150,6 +176,33 @@ class AdapterContractTests(unittest.TestCase):
         self.assertEqual(result.final_message, "Project created.")
         self.assertEqual(result.metadata["models_observed"], ["claude-test-20260801"])
         self.assertEqual(result.permissions["mode"], "acceptEdits")
+
+    def _claude_refusal(self, adapter: ClaudeCodeAdapter, *, isolation: str | None = None, environment=None):
+        with (
+            patch("adapters.claude_code.shutil.which", return_value="/bin/claude"),
+            patch("adapters.claude_code.subprocess.run", side_effect=AssertionError("agent must not start")),
+            patch("adapters.claude_code.unavailable_reason", return_value=isolation),
+            patch.dict(os.environ, environment or {}, clear=True),
+        ):
+            result = adapter.run("build it", self.workspace, model="claude-test")
+        self.assertFalse(result.success)
+        return result
+
+    def test_claude_refuses_a_run_without_a_budget_cap(self) -> None:
+        result = self._claude_refusal(ClaudeCodeAdapter(), environment={"ANTHROPIC_API_KEY": "k"})
+        self.assertIn("--max-budget-usd", result.stderr)
+
+    def test_claude_refuses_to_run_unisolated(self) -> None:
+        result = self._claude_refusal(
+            ClaudeCodeAdapter(max_budget_usd=1),
+            isolation="bwrap cannot create an unprivileged namespace",
+            environment={"ANTHROPIC_API_KEY": "k"},
+        )
+        self.assertIn("refusing an unisolated live run", result.stderr)
+
+    def test_claude_refuses_a_run_without_an_explicit_credential(self) -> None:
+        result = self._claude_refusal(ClaudeCodeAdapter(max_budget_usd=1))
+        self.assertIn("no Claude credential", result.stderr)
 
     def test_openai_compatible_tool_loop_writes_files_and_finishes(self) -> None:
         responses = [

@@ -214,12 +214,10 @@ Not done, and why:
 
 Two things the three-source stage left open, both outside this example:
 
-- `openmapstack verify --rerun` fails at post-rerun artifact validation
-  because the clean-rerun workspace does not copy `README.md`, so
-  `project.readme` warns and `project.status_consistency` fails on that
-  warning. The rerun executes cleanly and reproduces every output; whether
-  the harness should preserve README, or the check should not fire in a
-  rerun workspace, is a core semantics decision.
+- `openmapstack verify --rerun` failed at post-rerun artifact validation
+  because the clean-rerun workspace did not copy `README.md`. Resolved in
+  `openmapstack/rerun.py`: the rerun now carries `README.md` as
+  documentation, not as an immutable input, and this example's rerun passes.
 - Shipping `project.qgz` turns four PyQGIS checks `not_testable` wherever
   QGIS is absent, so `verify` reports WARNING rather than PASSED there. The
   Tartu example behaves the same way; it is the honest reading, not a

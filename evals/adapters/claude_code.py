@@ -1,8 +1,11 @@
 """Claude Code adapter for live evals.
 
-Invokes the `claude` CLI non-interactively against a case prompt inside the
-workspace. Requires `claude` on PATH and an authenticated account/API key —
-this module is only imported by `--mode live` runs, never by fixture CI.
+Invokes the `claude` CLI non-interactively against a case prompt inside a
+rootless Bubblewrap sandbox (see ``isolation.py``) that exposes only the trial
+directory, the Python runtime, the shipped package and the CLI. It needs an
+explicit credential (``ANTHROPIC_API_KEY``, ``CLAUDE_CODE_OAUTH_TOKEN`` or
+``--credential-file``) and a positive ``--max-budget-usd``, and refuses to run
+unisolated. Only imported by `--mode live` runs, never by fixture CI.
 """
 
 from __future__ import annotations
@@ -13,6 +16,17 @@ import time
 from pathlib import Path
 
 from .base import AgentAdapter, AgentRunResult, parse_json_lines
+from .isolation import Sandbox, unavailable_reason
+from .routing import credentials
+
+# Granted explicitly: the sandbox hides the host's Claude settings, and in
+# print mode any tool without an allow rule is refused. The sandbox, not a
+# per-command prompt, is what confines these tools.
+ALLOWED_TOOLS = ("Read", "Write", "Edit", "Glob", "Grep", "Bash", "Skill", "WebSearch", "WebFetch")
+
+# Non-secret provider routing the operator may set (e.g. a workspace header
+# that scopes spend); forwarded by name, recorded by name only.
+PROVIDER_SETTINGS = ("ANTHROPIC_BASE_URL", "ANTHROPIC_CUSTOM_HEADERS")
 
 
 def _claude_observability(events: list[dict], requested_model: str | None) -> tuple[str | None, dict, float | None, str | None, bool]:
@@ -59,6 +73,41 @@ class ClaudeCodeAdapter(AgentAdapter):
     name = "claude_code"
     executable = "claude"
 
+    def __init__(self, *, max_budget_usd: float | None = None, credential_file: Path | None = None) -> None:
+        self.max_budget_usd = max_budget_usd
+        self.credential_file = credential_file
+
+    def _refusal(self, reason: str, workspace: Path, executable: str, seed: int | None) -> AgentRunResult:
+        return AgentRunResult(
+            agent=self.name,
+            model=None,
+            workspace=workspace,
+            duration_s=0.0,
+            success=False,
+            returncode=None,
+            command=[self.executable],
+            stderr=reason,
+            permissions={"mode": "acceptEdits", "session_persistence": False},
+            metadata={"executable": executable, "requested_seed": seed},
+        )
+
+    def _preflight(self, executable_path: str | None) -> tuple[str | None, str, dict[str, str]]:
+        """A refusal reason, or ``None`` with the credential name and host environment."""
+        if executable_path is None:
+            return "`claude` CLI not found on PATH", "", {}
+        if self.max_budget_usd is None or self.max_budget_usd <= 0:
+            return "a positive --max-budget-usd is required for a paid live trial", "", {}
+        reason = unavailable_reason()
+        if reason:
+            return f"refusing an unisolated live run: {reason}", "", {}
+        try:
+            credential, host_environment = credentials("claude_code", self.credential_file)
+        except ValueError as exc:
+            return str(exc), "", {}
+        if not host_environment.get(credential):
+            return "no Claude credential: set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN, or pass --credential-file", "", {}
+        return None, credential, host_environment
+
     def run(
         self,
         prompt: str,
@@ -69,19 +118,10 @@ class ClaudeCodeAdapter(AgentAdapter):
         seed: int | None = None,
     ) -> AgentRunResult:
         executable_path = shutil.which(self.executable)
-        if executable_path is None:
-            return AgentRunResult(
-                agent=self.name,
-                model=None,
-                workspace=workspace,
-                duration_s=0.0,
-                success=False,
-                returncode=None,
-                command=[self.executable],
-                stderr="`claude` CLI not found on PATH",
-                permissions={"mode": "acceptEdits", "session_persistence": False},
-                metadata={"executable": self.executable, "requested_seed": seed},
-            )
+        reason, credential, host_environment = self._preflight(executable_path)
+        if reason or executable_path is None:
+            return self._refusal(reason or "", workspace, executable_path or self.executable, seed)
+        secret = host_environment[credential]
 
         if fixture is not None and fixture.exists():
             shutil.copytree(fixture, workspace, dirs_exist_ok=True)
@@ -97,18 +137,25 @@ class ClaudeCodeAdapter(AgentAdapter):
             "--verbose",
             "--permission-mode",
             "acceptEdits",
+            "--allowedTools",
+            ",".join(ALLOWED_TOOLS),
             "--no-session-persistence",
             "--no-chrome",
+            "--max-budget-usd",
+            str(self.max_budget_usd),
         ]
         if model:
             command.extend(["--model", model])
-        invocation = [*command, prompt]
+        sandbox = Sandbox.for_python_agent(self.trial_root or workspace, {"claude": Path(executable_path)})
+        forwarded = {name: host_environment[name] for name in PROVIDER_SETTINGS if host_environment.get(name)}
+        invocation = [*sandbox.argv(workspace), *command, prompt]
         recorded_command = [*command, "<PROMPT:prompt.md>"]
         timed_out = False
         try:
             proc = subprocess.run(
                 invocation,
-                cwd=workspace,
+                env=sandbox.environment({**forwarded, credential: secret}),
+                stdin=subprocess.DEVNULL,
                 capture_output=True,
                 text=True,
                 timeout=timeout_s,
@@ -129,6 +176,9 @@ class ClaudeCodeAdapter(AgentAdapter):
             stdout = ""
             stderr = f"{type(exc).__name__}: {exc}"
         duration = time.monotonic() - start
+        # Tool output can echo the environment; retain the stream shape only.
+        stdout = stdout.replace(secret, "<REDACTED>")
+        stderr = stderr.replace(secret, "<REDACTED>")
         events, unparsed_lines = parse_json_lines(stdout)
         resolved_model, usage, cost_usd, final_message, completed = _claude_observability(events, model)
         models_observed: set[str] = set()
@@ -169,6 +219,11 @@ class ClaudeCodeAdapter(AgentAdapter):
                 "session_persistence": False,
                 "chrome": False,
                 "customizations": False,
+                "allowed_tools": list(ALLOWED_TOOLS),
+                "max_budget_usd": self.max_budget_usd,
+                "credential": credential,
+                "provider_settings": sorted(forwarded),
+                "isolation": sandbox.evidence(),
             },
             metadata={
                 "executable": executable_path,

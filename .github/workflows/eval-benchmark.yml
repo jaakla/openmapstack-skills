@@ -29,6 +29,10 @@ on:
         description: "Per-agent timeout in seconds"
         required: false
         default: "1200"
+      max_budget_usd:
+        description: "Per-trial provider spend cap in USD (claude_code)"
+        required: false
+        default: "2"
       seed:
         description: "Optional base seed recorded for the run"
         required: false
@@ -98,6 +102,8 @@ jobs:
             claude_code)
               npm install --global @anthropic-ai/claude-code
               claude --version
+              # The adapter refuses to run Claude Code without its sandbox.
+              bash scripts/ci/enable-bwrap.sh
               ;;
             codex)
               npm install --global @openai/codex
@@ -127,6 +133,7 @@ jobs:
           OPENAI_COMPATIBLE_MODEL: ${{ github.event.inputs.openai_model || vars.OPENAI_COMPATIBLE_BENCHMARK_MODEL }}
           EVAL_REPETITIONS: ${{ github.event.inputs.repetitions || '3' }}
           EVAL_TIMEOUT: ${{ github.event.inputs.timeout || '1200' }}
+          EVAL_MAX_BUDGET_USD: ${{ github.event.inputs.max_budget_usd || '2' }}
           EVAL_SEED: ${{ github.event.inputs.seed || '' }}
           EVAL_CASES: ${{ github.event.inputs.cases || '' }}
           EVAL_ARMS: ${{ github.event.inputs.arms || 'oms' }}
@@ -152,6 +159,7 @@ jobs:
             --timeout "$EVAL_TIMEOUT"
             --json "eval-benchmark-results-$EVAL_AGENT.json"
           )
+          if [[ "$EVAL_AGENT" == "claude_code" ]]; then args+=(--max-budget-usd "$EVAL_MAX_BUDGET_USD"); fi
           if [[ -n "$EVAL_SEED" ]]; then args+=(--seed "$EVAL_SEED"); fi
           if [[ -n "$EVAL_PRICE_CATALOG_DATE" ]]; then args+=(--price-catalog-date "$EVAL_PRICE_CATALOG_DATE"); fi
           # No --case means every case that declares live mode. The list used

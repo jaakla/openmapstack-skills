@@ -253,7 +253,7 @@ def report_evidence_recomputes(
     and optional id field. This avoids accepting internally consistent prose
     or invented counters as proof that a GIS check actually ran.
     """
-    from .geodata import _connect, _read
+    from .geodata import _connect, _invalid_geometry_count, _read
 
     report = load_json(project_root(workspace, project_dir) / report_path)
     if report is None:
@@ -291,9 +291,11 @@ def report_evidence_recomputes(
             if metric == "row_count":
                 actual = con.execute(f"SELECT COUNT(*) FROM {relation}").fetchone()[0]
             elif metric == "invalid_geometry_count":
-                actual = con.execute(
-                    f"SELECT COUNT(*) FROM {relation} WHERE NOT ST_IsValid(geom)"
-                ).fetchone()[0]
+                actual = _invalid_geometry_count(con, relation, declaration.get("geometry_field"))
+                if actual is None:
+                    return failed(
+                        f"{relative} has no matching geometry column", code="geometry_column_missing"
+                    )
             elif metric in {"duplicate_count", "null_count"}:
                 field = declaration.get("field")
                 if not isinstance(field, str) or not field:

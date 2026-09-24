@@ -1148,5 +1148,25 @@ class CoverageConfigTests(unittest.TestCase):
                 )
 
 
+
+class AgentOptionTests(unittest.TestCase):
+    def test_unset_options_are_not_passed_to_the_adapter(self) -> None:
+        adapter = eval_runner._load_adapter("codex", {"max_budget_usd": None, "credential_file": None})
+        self.assertEqual(adapter.name, "codex")
+
+    def test_an_option_the_adapter_cannot_enforce_is_a_setup_failure(self) -> None:
+        # A budget cap one agent silently drops is not a cap.
+        with self.assertRaises(eval_runner.SetupFailure) as raised:
+            eval_runner._load_adapter("codex", {"max_budget_usd": 1.0})
+        self.assertIn("--max-budget-usd", str(raised.exception))
+
+    def test_claude_receives_its_budget_and_credential_file(self) -> None:
+        adapter = eval_runner._load_adapter(
+            "claude_code", {"max_budget_usd": 2.0, "credential_file": Path("/tmp/credentials.json")}
+        )
+        self.assertEqual(adapter.max_budget_usd, 2.0)
+        self.assertEqual(adapter.credential_file, Path("/tmp/credentials.json"))
+
+
 if __name__ == "__main__":
     unittest.main()

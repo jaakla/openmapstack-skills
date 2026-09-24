@@ -165,7 +165,7 @@ The `bbox` column is a struct (`xmin`, `ymin`, `xmax`, `ymax`) that Overture emi
 
 ### License note
 
-Overture data is mostly CDLA-Permissive 2.0, but Foursquare-sourced places are Apache 2.0, and OSM-derived data inherits ODbL obligations (share-alike + attribution). The `sources` array on each feature records provenance — preserve it.
+License is per theme. Base, buildings, divisions and transportation are ODbL (share-alike + attribution); places are CDLA-Permissive 2.0 or Apache 2.0 by source; addresses carry their regional sources' terms. Check the release's attribution page rather than assuming one license for Overture. The `sources` array on each feature records provenance — preserve it.
 
 ## OpenStreetMap
 
@@ -226,15 +226,15 @@ osm2pgsql -d gisdb --slim -G --hstore -C 4000 \
 
 ### Building footprints
 
-* **Microsoft Global Building Footprints** — global, public domain (ODbL where derived from OSM). Released as country-wise GeoJSON or GeoPackage on GitHub.
+* **Microsoft Global Building Footprints** — global, CDLA-Permissive 2.0. Released as country-wise GeoJSON or GeoPackage on GitHub.
 * **Google Open Buildings** — Africa, South Asia, SE Asia, LATAM. CSV + Parquet.
-* **Overture Buildings** — conflates the above with OSM and is usually the simplest entry point now.
+* **Overture Buildings** — conflates the above with OSM and is usually the simplest entry point now. The theme is ODbL.
 
 ### Elevation
 
 * **Copernicus DEM (GLO-30)** — 30m global, the modern default. Available via STAC on Microsoft Planetary Computer.
 * **SRTM** — older but proven, 30m or 90m resolution grids in global level
-* **National LiDAR-derived DTMs** — for any country with open LiDAR (Estonia: Maa- ja Ruumiamet ~1m DTM under CC-BY)
+* **National LiDAR-derived DTMs** — for any country with open LiDAR (Estonia: Maa- ja Ruumiamet ~1m DTM; verify the product-specific agency license)
 
 ### Point clouds
 
@@ -292,7 +292,7 @@ Common traps:
 * **Maa- ja Ruumiamet spatial data downloads (general)** — the Geoportal "Spatial Data" section lists ready-to-download national datasets (topographic, cadastral, addresses, orthophotos, elevations) with links to per-dataset pages:
   * Index: https://geoportaal.maaruum.ee/eng/spatial-data-p58.html
   * Many datasets offer **bulk downloads by county (maakond) and municipality** in GPKG / SHP / GeoJSON / DXF — a preferred path over WFS paging for whole-region pulls (no server-side paging, deterministic files, well-suited to reproducing a project).
-* **Maa- ja Ruumiamet (Estonian Land and Spatial Development Board, formerly Maa-amet)** — geoportaal.maaruum.ee. WMS / WFS / WMTS endpoints for base and thematic maps. Topographic data, orthophotos, LiDAR DTMs, cadastre. Most data is open under CC-BY 4.0 with attribution to Maa- ja Ruumiamet.
+* **Maa- ja Ruumiamet (Estonian Land and Spatial Development Board, formerly Maa-amet)** — geoportaal.maaruum.ee. WMS / WFS / WMTS endpoints for base and thematic maps. Topographic data, orthophotos, LiDAR DTMs, cadastre. Check the license linked by the particular dataset; do not label all agency products CC-BY. The ETAK download page links the agency’s own open-data license (checked 2026-09-23).
 * **Maa- ja Ruumiamet cadastral data** — the Geoportal's Cadastral Data page provides the authoritative cadastral unit (maaüksus) geometry/attributes as **bulk downloads by county and municipality** in GPKG / SHP / GeoJSON / DGN / DXF / TAB:
   * Catalog page: https://geoportaal.maaruum.ee/eng/spatial-data/cadastral-data-p310.html
   * Direct S3 download pattern: `https://s3.pilw.io/rp-kemit-kataster/ANDMED/{County}_maakond_KATASTER_{FORMAT}.zip` (e.g. `Tartu_maakond_KATASTER_GPKG.zip`) and `{Municipality}_KATASTER_{FORMAT}.zip` (e.g. `Tartu_linn_KATASTER_GPKG.zip`, `Tallinn_KATASTER_GPKG.zip`).
@@ -322,7 +322,11 @@ Layer naming is `etak:e_<code>_<name>_<geom>`, where `<geom>` is `j` (joon / lin
 | `etak:e_201_meri_a` / `e_202_seisuveekogu_a` / `e_203_vooluveekogu_a` | Sea / lakes / rivers |
 | `etak:e_303_haritav_maa_a` / `e_305_puittaimestik_a` | Cropland / forest |
 
-**Building filter (residential):** the `e_401_hoone_ka` schema carries `tyyp` (Estonian use-type code). Filter `tyyp = 10` (Elu- või ühiskondlik hoone — residential or public) and require `ehr_gid IS NOT NULL` to drop foundation-only outlines (`tyyp = 30`). Use `ads_lahiaadress` for the postal address. Curl-ready example for a Tartu bbox in EPSG:3301:
+**Building semantics:** inspect the current layer schema and `tyyp` code list before filtering. A request for building footprints is not a request for residential/public buildings only. `tyyp = 10` is a residential/public subset, not a universal “real building” predicate. `ehr_gid` is a building-registry linkage, not proof of physical existence: do not require `ehr_gid IS NOT NULL` unless registry linkage is part of the user's requested population. Distinguish building, outbuilding/industrial, foundation, ruin and construction categories using verified type definitions; disclose any exclusions. Use `ads_lahiaadress` where an address is needed.
+
+**Verify access, terms and identity** against the [ETAK download page](https://geoportaal.maaruum.ee/est/ruumiandmed/eesti-topograafia-andmekogu/laadi-etak-andmed-alla-p609.html) and its [agency open-data license](https://geoportaal.maaruum.ee/avaandmete-litsents) (checked 2026-09-23). The page offers national, thematic and map-sheet downloads; verify any finer packaging rather than promising county/municipality files. It says downloads update weekly. Retain the actual bytes and SHA-256 (or a genuinely immutable provider version); a filename, URL or retrieval date alone is not an immutable pin. Record the license link, provider/dataset and data age or extraction date; include the terms or link when redistributing. Do not substitute CC-BY for these terms. If current metadata cannot be retrieved, report that limitation instead of asserting it was verified.
+
+Bbox request example for Tartu in EPSG:3301 (this first page alone is not a complete extract):
 
 ```bash
 curl "https://gsavalik.envir.ee/geoserver/etak/wfs?service=WFS&version=2.0.0&request=GetFeature\

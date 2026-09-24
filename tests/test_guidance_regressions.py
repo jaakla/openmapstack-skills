@@ -85,6 +85,79 @@ class GeographyIndexGuidanceTests(GuidanceCase):
                 self.assertRetracted(text, retracted, path)
 
 
+class AcceptanceGuidanceTests(GuidanceCase):
+    """Content regressions only; native task-quality review remains a live gate."""
+
+    def test_geography_support_and_projected_input_are_not_confused(self) -> None:
+        for path, text in _shipped_copies("spatial-sql.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "geodetic CRSs beyond EPSG:4326", path)
+                self.assertShips(text, "ST_Transform(geom, 4326)::geography", path)
+                self.assertRetracted(text, "rejects the cast for any SRID other than 4326", path)
+                self.assertRetracted(text, "SRID 4326, only", path)
+
+    def test_etak_license_filter_and_pin_corrections_ship_together(self) -> None:
+        for path, text in _shipped_copies("data-sources.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "https://geoportaal.maaruum.ee/avaandmete-litsents", path)
+                self.assertShips(text, "Do not substitute CC-BY for these terms", path)
+                self.assertShips(text, "not a universal “real building” predicate", path)
+                self.assertShips(text, "do not require `ehr_gid IS NOT NULL`", path)
+                self.assertShips(text, "actual bytes and SHA-256", path)
+                self.assertRetracted(text, "Most data is open under CC-BY 4.0", path)
+                self.assertRetracted(text, "require `ehr_gid IS NOT NULL` to drop", path)
+
+    def test_building_footprint_licenses_match_the_providers(self) -> None:
+        # Checked 2026-09-23 against docs.overturemaps.org/attribution and the
+        # microsoft/GlobalMLBuildingFootprints README. A live discovery trial
+        # repeated both retracted claims from this file.
+        for path, text in _shipped_copies("data-sources.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "Base, buildings, divisions and transportation are ODbL", path)
+                self.assertShips(text, "Microsoft Global Building Footprints** — global, CDLA-Permissive 2.0", path)
+                self.assertRetracted(text, "Overture data is mostly CDLA-Permissive 2.0", path)
+                self.assertRetracted(text, "Building Footprints** — global, public domain", path)
+
+    def test_coded_selection_attributes_are_recorded_as_semantic_predicates(self) -> None:
+        # A live material trial documented the zoning filter only as free-text
+        # selection.filter and failed provenance.semantic_predicate_documented.
+        for path, text in _shipped_copies("project-workflow.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "as `selection.semantic_predicates` (`field`, `domain_value`)", path)
+                self.assertShips(text, "a free-text `selection.filter` does not document it", path)
+
+    def test_project_skills_require_a_clean_validate_before_delivery(self) -> None:
+        # Live material trials delivered projects that `openmapstack validate`
+        # fails; the agent never ran it under "when the CLI is available".
+        for name in ("open-map-stack", "reproducible-gis-project"):
+            text = (SKILLS_ROOT / name / "SKILL.md").read_text(encoding="utf-8")
+            with self.subTest(skill=name):
+                self.assertIn("python3 -m openmapstack --version", text)
+                self.assertIn("do not deliver while", text)
+                self.assertNotIn("path when the CLI\nis available", text)
+
+    def test_current_source_verification_is_not_inherited_from_reference_notes(self) -> None:
+        text = (SKILLS_ROOT / "geospatial-data-discovery/SKILL.md").read_text()
+        self.assertIn("pages during this task", text)
+        self.assertIn("label the recommendation unverified", text)
+        self.assertIn("support comparative claims with evidence", text)
+
+    def test_projection_units_do_not_replace_operation_accuracy(self) -> None:
+        for path, text in _shipped_copies("formats-and-crs.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "UTM is conformal, not equal-area", path)
+                self.assertShips(text, "Equal-area does not mean distance-preserving", path)
+                self.assertShips(text, "or explicit geodesic calculations", path)
+                self.assertRetracted(text, "Metric computation:** ALWAYS", path)
+
+    def test_parquet_guidance_requires_reopened_artifact_metadata(self) -> None:
+        for path, text in _shipped_copies("formats-and-crs.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "does not by itself produce GeoParquet", path)
+                self.assertShips(text, "Reopen the written artifact", path)
+                self.assertShips(text, "including empty outputs", path)
+
+
 class PaginationCompletenessGuidanceTests(GuidanceCase):
     """`bounded-discovery`: completeness comes from the paged total, not from hits."""
 

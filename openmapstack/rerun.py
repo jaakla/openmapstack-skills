@@ -275,6 +275,12 @@ def prepare_clean_workspace(
             )
     for path, field_name in declared_paths:
         _copy_clean_rerun_path(project_root, rerun_root, path, field_name, preserved)
+    # Documentation, not a derived output: the post-rerun artifact validation
+    # expects it, so a project marked validated would otherwise fail on a
+    # missing README. Not an immutable input: a pipeline may regenerate it.
+    readme = project_root / "README.md"
+    if readme.is_file() and not readme.is_symlink():
+        shutil.copy2(readme, rerun_root / "README.md")
     return command, preserved, project
 
 

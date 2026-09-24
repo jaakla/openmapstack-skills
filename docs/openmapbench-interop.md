@@ -12,10 +12,11 @@ of the skill/collection payload it publishes.
 > how systems are compared.
 
 Neither side copies the other's implementation. OpenMapBench consumes a released
-`openmapstack` package through the API below. The historical live benchmark code
-under `evals/` is transitional until parity exists in
-[OpenMapBench #2](https://github.com/jaakla/OpenMapBench/issues/2); it is not the
-target ownership model.
+`openmapstack` package through the API below. Generic live benchmarking under
+`evals/` is transitional until parity exists in
+[OpenMapBench #2](https://github.com/jaakla/OpenMapBench/issues/2). OpenMapStack's
+own release trials stay here
+([ADR 0006](maintainers/decisions/0006-release-trials-in-repository-sandbox.md)).
 
 OpenMapStack-owned code for this boundary:
 `openmapstack/api.py`, `openmapstack/schemas/`, and the skill/collection snapshot

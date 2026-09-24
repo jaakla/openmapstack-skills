@@ -34,8 +34,11 @@ CLI setup and the worked example's runtime requirements.
    Derive maps, QGIS projects and reports from that pipeline and manifest;
    avoid independent presentation logic that silently changes the analysis.
 4. Execute relevant checks, retain machine-readable results and run evidence,
-   and perform a clean rerun. Missing tools or unknown data semantics remain
-   visible limitations. A stated intention to validate is not validation.
+   and perform a clean rerun. Check whether the `openmapstack` CLI is installed
+   (`openmapstack --version` or `python3 -m openmapstack --version`); if it is,
+   run `openmapstack validate` and do not deliver while it reports a failure.
+   Missing tools or unknown data semantics remain visible limitations. A stated
+   intention to validate is not validation.
 5. Deliver the project, source/override policy, runtime instructions and
    substantive method limitations together. Preserve the full presentation
    and QGIS obligations in the workflow reference; a dashboard alone is not

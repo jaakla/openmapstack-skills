@@ -74,6 +74,10 @@ class AgentAdapter:
 
     name = "base"
     executable = ""
+    # The per-trial directory the runner stages (the agent works in a
+    # subdirectory; injected guidance sits beside it). Set before ``run`` so
+    # an isolating adapter can expose exactly this tree.
+    trial_root: Path | None = None
 
     def is_available(self) -> bool:
         return bool(self.executable and shutil.which(self.executable))
@@ -95,19 +99,23 @@ class AgentAdapter:
         return result, time.monotonic() - start
 
     def cli_version(self, executable_path: str) -> str | None:
-        """Read the exact installed CLI version without turning lookup into a run failure."""
-        try:
-            proc = subprocess.run(
-                [executable_path, "--version"],
-                capture_output=True,
-                text=True,
-                timeout=10,
-                check=False,
-            )
-        except (OSError, subprocess.SubprocessError):
-            return None
-        output = (proc.stdout or proc.stderr).strip()
-        return output or None
+        return cli_version(executable_path)
+
+
+def cli_version(executable_path: str) -> str | None:
+    """Read the exact installed CLI version without turning lookup into a run failure."""
+    try:
+        proc = subprocess.run(
+            [executable_path, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    output = (proc.stdout or proc.stderr).strip()
+    return output or None
 
 
 def parse_json_lines(stdout: str) -> tuple[list[dict[str, Any]], list[str]]:

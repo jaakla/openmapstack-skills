@@ -147,7 +147,7 @@ Important invariants:
 - live results normalize provider-specific execution into `openmapstack-agent-run/v1`; raw vendor events remain audit evidence rather than scoring semantics;
 - final assistant prose is retained for audit but correctness comes from produced artifacts and deterministic checks.
 
-The live adapters (`claude_code`, `codex`, `openai_compatible`) are compatibility surfaces. Their model IDs, environment variables, event formats, and quirks must not leak into shared project/check schemas.
+The live adapters (`claude_code`, `codex`, `openai_compatible`) are compatibility surfaces. Their model IDs, environment variables, event formats, and quirks must not leak into shared project/check schemas. Release-evidence trials must not let the agent read this repository; `claude_code` enforces that with the rootless sandbox in `evals/adapters/isolation.py` ([ADR 0006](decisions/0006-release-trials-in-repository-sandbox.md)).
 
 ## CI/runtime split
 
