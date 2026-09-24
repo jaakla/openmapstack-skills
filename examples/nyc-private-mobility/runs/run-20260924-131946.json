@@ -1,10 +1,10 @@
 {
-  "run_id": "run-20260923-103833",
-  "started_at": "2026-09-23T10:38:31.767560+00:00",
-  "completed_at": "2026-09-23T10:38:33.009731+00:00",
+  "run_id": "run-20260924-131946",
+  "started_at": "2026-09-24T13:19:45.507789+00:00",
+  "completed_at": "2026-09-24T13:19:46.187630+00:00",
   "status": "passed",
-  "inputs_hash": "sha256:5fc443c54cb4ad68f6f3033f7d6c8d8c20cb2532e9d588e8bd296a915ef9ae09",
-  "outputs_hash": "sha256:f658deb4222c972f49b6a9c637d13e09688c64164c3948717e6d299426e68d43",
+  "inputs_hash": "sha256:1cf94f739ac93ee4f3f7924fd01770f8774f57af391ac3ce289da8420cef7933",
+  "outputs_hash": "sha256:650b1e04e0cdc5c16c79647e96eef675914f06930420fc1401c99f397d56f0e6",
   "environment": {
     "python": "3.14.4",
     "duckdb": "1.5.5",
@@ -69,7 +69,7 @@
     },
     {
       "path": "pipeline.py",
-      "sha256": "sha256:d6d18e866f1a188b7e8b1a2c8125e4bfbcc3f52c20ee296bd33f4a104a090b59"
+      "sha256": "sha256:eb2228daa579df967cc3be959eff94a21b281a5513033aa77a333f95627136b0"
     }
   ],
   "outputs": [
@@ -91,7 +91,7 @@
     },
     {
       "path": "project.qgz",
-      "sha256": "sha256:234f1b62ebb640a55d4b1856fac8744a4b7ecf587272853ae22746662a0434ed"
+      "sha256": "sha256:1558ff22c7a695314ad1d2e30ffde79e1b149ed5b3cacdd2ca00ce3ff57c16fd"
     }
   ]
 }

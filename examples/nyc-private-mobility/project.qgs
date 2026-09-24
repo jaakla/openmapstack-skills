@@ -39,12 +39,12 @@
       <customproperties>
         <Option />
       </customproperties>
-      <layer-tree-layer checked="Qt::Checked" expanded="1" id="hub_candidates_layer" legend_exp="" legend_split_behavior="0" name="Hub Candidates (ranked, tenant alpha)" patch_size="-1,-1" providerKey="ogr" source="/home/jaak/codeman-cases/open-gis/examples/nyc-private-mobility/data/derived/hub-candidates.geojson">
+      <layer-tree-layer checked="Qt::Checked" expanded="1" id="hub_candidates_layer" legend_exp="" legend_split_behavior="0" name="Hub Candidates (ranked, tenant alpha)" patch_size="-1,-1" providerKey="ogr" source="./data/derived/hub-candidates.geojson">
         <customproperties>
           <Option />
         </customproperties>
       </layer-tree-layer>
-      <layer-tree-layer checked="Qt::Checked" expanded="1" id="zone_metrics_layer" legend_exp="" legend_split_behavior="0" name="All Zones (scored context)" patch_size="-1,-1" providerKey="ogr" source="/home/jaak/codeman-cases/open-gis/examples/nyc-private-mobility/data/derived/zone-metrics.geojson">
+      <layer-tree-layer checked="Qt::Checked" expanded="1" id="zone_metrics_layer" legend_exp="" legend_split_behavior="0" name="All Zones (scored context)" patch_size="-1,-1" providerKey="ogr" source="./data/derived/zone-metrics.geojson">
         <customproperties>
           <Option />
         </customproperties>
@@ -149,7 +149,7 @@
         <ymax>40.77499999999999858</ymax>
       </wgs84extent>
       <id>zone_metrics_layer</id>
-      <datasource>/home/jaak/codeman-cases/open-gis/examples/nyc-private-mobility/data/derived/zone-metrics.geojson</datasource>
+      <datasource>./data/derived/zone-metrics.geojson</datasource>
       <keywordList>
         <value />
       </keywordList>
@@ -566,7 +566,7 @@
         <ymax>40.77499999999999858</ymax>
       </wgs84extent>
       <id>hub_candidates_layer</id>
-      <datasource>/home/jaak/codeman-cases/open-gis/examples/nyc-private-mobility/data/derived/hub-candidates.geojson</datasource>
+      <datasource>./data/derived/hub-candidates.geojson</datasource>
       <keywordList>
         <value />
       </keywordList>
