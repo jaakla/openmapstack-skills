@@ -82,6 +82,9 @@ assertions:
         - { check_id: no_null_cadastral_id, evidence_field: nulls, metric: null_count, path: data/derived/candidate-parcels.parquet, field: cadastral_id }
 
   - assert: qgis.static_valid
+  # GeoParquet layers open invalid in QGIS builds without GDAL's optional
+  # Parquet driver, including stock Ubuntu packages.
+  - assert: qgis.datasources_portable
   - assert: qgis.styles_declared
   # A layer with no declared CRS is assumed to be in the project CRS and
   # never reprojected — which put the Web Mercator basemap 1500 km from
