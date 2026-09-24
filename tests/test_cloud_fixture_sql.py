@@ -23,6 +23,7 @@ import importlib.util
 import io
 import re
 import unittest
+import xml.etree.ElementTree as ET
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -476,6 +477,110 @@ class ThreeSourceExampleTests(unittest.TestCase):
         ineligible = [row[10] for row in rows if row not in pool]
         self.assertTrue(all(score is None for score in ineligible),
                         "a zone outside the eligibility thresholds must carry no score")
+
+
+def _load_pipeline():
+    spec = importlib.util.spec_from_file_location("nyc_pipeline", EXAMPLE / "pipeline.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+try:  # PyQGIS has no PyPI distribution; it comes from a system QGIS install.
+    import qgis.core as _qgis_core  # noqa: F401
+
+    PYQGIS_AVAILABLE = True
+except Exception:  # noqa: BLE001
+    PYQGIS_AVAILABLE = False
+
+
+class QgisProjectBuilderTests(unittest.TestCase):
+    """The project is written by QGIS where PyQGIS exists and by a
+    deterministic builder where it does not. Two writers for one artifact is
+    only safe if they agree, so the agreement is asserted rather than assumed.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.pipeline = _load_pipeline()
+        cls.manifest = yaml.safe_load((EXAMPLE / "project.yaml").read_text(encoding="utf-8"))
+
+    @staticmethod
+    def _summary(xml: str) -> dict:
+        """What the two writers must agree on: the map, not the file bytes."""
+        root = ET.fromstring(xml)
+        layers = {}
+        for layer in root.findall("./projectlayers/maplayer"):
+            identifier = layer.findtext("id")
+            renderer = layer.find("renderer-v2")
+            layers[identifier] = {
+                "datasource": layer.findtext("datasource"),
+                "name": layer.findtext("layername"),
+                "provider": layer.findtext("provider"),
+                "crs": layer.findtext("./srs/spatialrefsys/authid"),
+                "renderer": renderer.get("type") if renderer is not None else None,
+                "renderer_attr": renderer.get("attr") if renderer is not None else None,
+            }
+        return {
+            "project_crs": root.findtext("./projectCrs/spatialrefsys/authid"),
+            "tree": sorted(node.get("id") for node in root.findall(".//layer-tree-layer")),
+            "groups": sorted(node.get("name") for node in root.findall(".//layer-tree-group") if node.get("name")),
+            "layers": layers,
+        }
+
+    def test_the_fallback_builder_declares_every_layer_the_spec_names(self) -> None:
+        summary = self._summary(self.pipeline._build_qgis_xml(self.manifest))
+        self.assertEqual(
+            sorted(summary["layers"]), sorted(spec["id"] for spec in self.pipeline.QGIS_LAYERS)
+        )
+        self.assertEqual(summary["project_crs"], "EPSG:4326")
+        basemap = summary["layers"][self.pipeline.BASEMAP_LAYER_ID]
+        # The tiles are Web Mercator; calling them 4326 misplaces the basemap.
+        self.assertEqual(basemap["crs"], "EPSG:3857")
+        candidates = summary["layers"][self.pipeline.CANDIDATES_LAYER_ID]
+        self.assertEqual(candidates["renderer"], "graduatedSymbol")
+        self.assertEqual(candidates["renderer_attr"], "final_score")
+
+    def test_the_fallback_builder_does_not_claim_qgis_wrote_it(self) -> None:
+        """A file asserting a QGIS version that never touched it is a
+        provenance claim this project has no business making."""
+        root = ET.fromstring(self.pipeline._build_qgis_xml(self.manifest))
+        self.assertEqual(root.get("version"), self.pipeline.BUILDER_VERSION)
+
+    def test_the_fallback_builder_is_byte_stable(self) -> None:
+        first = self.pipeline._build_qgis_xml(self.manifest)
+        self.assertEqual(first, self.pipeline._build_qgis_xml(self.manifest))
+
+    @unittest.skipUnless(PYQGIS_AVAILABLE, "PyQGIS is not installed in this environment")
+    def test_both_writers_describe_the_same_map(self) -> None:
+        authored = self.pipeline._strip_volatile(self.pipeline._build_qgis_xml_with_qgis(self.manifest))
+        built = self.pipeline._strip_volatile(self.pipeline._build_qgis_xml(self.manifest))
+        by_qgis, by_builder = self._summary(authored), self._summary(built)
+        self.assertEqual(by_qgis["project_crs"], by_builder["project_crs"])
+        self.assertEqual(by_qgis["tree"], by_builder["tree"])
+        self.assertEqual(by_qgis["groups"], by_builder["groups"])
+        self.assertEqual(sorted(by_qgis["layers"]), sorted(by_builder["layers"]))
+        for identifier, qgis_layer in by_qgis["layers"].items():
+            with self.subTest(layer=identifier):
+                builder_layer = by_builder["layers"][identifier]
+                self.assertEqual(qgis_layer["name"], builder_layer["name"])
+                self.assertEqual(qgis_layer["provider"], builder_layer["provider"])
+                self.assertEqual(qgis_layer["crs"], builder_layer["crs"])
+                self.assertEqual(qgis_layer["renderer"], builder_layer["renderer"])
+                self.assertEqual(qgis_layer["renderer_attr"], builder_layer["renderer_attr"])
+                self.assertEqual(
+                    Path(str(qgis_layer["datasource"])).name,
+                    Path(str(builder_layer["datasource"])).name,
+                )
+
+    @unittest.skipUnless(PYQGIS_AVAILABLE, "PyQGIS is not installed in this environment")
+    def test_the_qgis_writer_is_byte_stable_after_normalisation(self) -> None:
+        """QGIS stamps a save time, mints UUIDs and colours default symbols at
+        random, so its output is not reproducible as written."""
+        first = self.pipeline._strip_volatile(self.pipeline._build_qgis_xml_with_qgis(self.manifest))
+        second = self.pipeline._strip_volatile(self.pipeline._build_qgis_xml_with_qgis(self.manifest))
+        self.assertEqual(first, second)
+        self.assertIn(f'version="{_qgis_core.Qgis.QGIS_VERSION}"', first)
 
 
 class ProvisionCommandTests(unittest.TestCase):

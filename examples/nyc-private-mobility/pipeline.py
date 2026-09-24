@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import re
 import sys
 import xml.etree.ElementTree as ET
 import zipfile
@@ -106,8 +107,57 @@ CRS_DEFINITIONS = {
         "geographicflag": "false",
     },
 }
+QGIS_DOCTYPE = "<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>\n"
+#: Names the fallback builder rather than impersonating a QGIS release.
+BUILDER_VERSION = "3.40.0"
 CANDIDATES_LAYER_ID = "hub_candidates_layer"
+ZONES_LAYER_ID = "zone_metrics_layer"
 BASEMAP_LAYER_ID = "osm_basemap_layer"
+
+#: The one description of the map, consumed by both generators. Keeping it here
+#: rather than in either builder is what lets the equivalence test compare them
+#: without restating the intent a third time.
+QGIS_LAYERS = (
+    {
+        "id": CANDIDATES_LAYER_ID,
+        "name": "Hub Candidates (ranked, tenant alpha)",
+        "provider": "ogr",
+        "source": "./data/derived/hub-candidates.geojson",
+        "group": "result",
+        "epsg": 4326,
+        "geometry": "Polygon",
+        "graduated_on": "final_score",
+    },
+    {
+        "id": ZONES_LAYER_ID,
+        "name": "All Zones (scored context)",
+        "provider": "ogr",
+        "source": "./data/derived/zone-metrics.geojson",
+        "group": "result",
+        "epsg": 4326,
+        "geometry": "Polygon",
+        "graduated_on": None,
+    },
+    {
+        "id": BASEMAP_LAYER_ID,
+        "name": "OpenStreetMap (XYZ)",
+        "provider": "wms",
+        "source": "type=xyz&url=https://tile.openstreetmap.org/{z}/{x}/{y}.png&zmax=19&zmin=0",
+        "group": "context",
+        # Web Mercator: the tiles are, and saying 4326 would misplace them.
+        "epsg": 3857,
+        "geometry": None,
+        "graduated_on": None,
+    },
+)
+
+#: Quartiles of the 0-100 score, so the legend reads like the dashboard table.
+SCORE_BANDS = (
+    (0.0, 50.0, "Lower half (0-50)", (255, 245, 235, 140), (253, 174, 107, 255)),
+    (50.0, 65.0, "Moderate (50-65)", (253, 208, 162, 170), (253, 141, 60, 255)),
+    (65.0, 75.0, "Strong (65-75)", (253, 141, 60, 190), (230, 85, 13, 255)),
+    (75.0, 100.0, "Leading (75-100)", (217, 71, 1, 210), (140, 45, 4, 255)),
+)
 
 
 def log(message: str) -> None:
@@ -338,6 +388,30 @@ def write_outputs(duck, metrics: list[dict], candidates: list[dict]) -> None:
                                    separators=(",", ":")))
     payload = '{"type": "FeatureCollection", "features": [' + ",\n".join(features) + "]}\n"
     (DERIVED / "hub-candidates.geojson").write_text(payload, encoding="utf-8")
+
+    # Every zone, not only the eligible ones: the map needs the context that
+    # makes a ranked candidate legible, and QGIS reads GeoJSON everywhere
+    # while the Parquet driver is not guaranteed to be present.
+    context = []
+    for zone in sorted(metrics, key=lambda item: item["zone_id"]):
+        geometry = duck.execute("SELECT ST_AsGeoJSON(ST_GeomFromWKB(?))", [zone["geom_wkb"]]).fetchone()[0]
+        context.append(json.dumps({
+            "type": "Feature",
+            "geometry": json.loads(geometry),
+            "properties": {
+                "zone_id": zone["zone_id"],
+                "zone_name": zone["zone_name"],
+                "trips_total": zone["trips_total"],
+                "fleet_present": zone["fleet_present"],
+                "hub_distance_m": zone["hub_distance_m"],
+                "market_score": zone["market_score"],
+                "final_score": zone["final_score"],
+                "eligible": zone["final_score"] is not None,
+            },
+        }, separators=(",", ":")))
+    (DERIVED / "zone-metrics.geojson").write_text(
+        '{"type": "FeatureCollection", "features": [' + ",\n".join(context) + "]}\n", encoding="utf-8"
+    )
     log(f"wrote {len(metrics)} zone metrics and {len(candidates)} candidate zones")
 
 
@@ -645,17 +719,24 @@ def _candidate_renderer(parent: ET.Element) -> None:
         ET.SubElement(layer, "prop", k="outline_width", v="0.46")
 
 
-def write_qgis_project(manifest: dict) -> None:
-    """Generate project.qgs and the project.qgz archive beside it.
+def pyqgis_available() -> bool:
+    try:
+        import qgis.core  # noqa: F401
+    except Exception:  # noqa: BLE001 - a broken install is as unusable as none
+        return False
+    return True
 
-    Generated rather than hand-authored so the datasources cannot drift from
-    the outputs that actually exist -- the failure the Tartu example's static
-    check was added to catch. Only GeoJSON is referenced: the derived Parquet
-    needs a GDAL Parquet driver that a given QGIS install may not have, and a
-    layer that fails to load is worse than one that is absent.
+
+def _build_qgis_xml(manifest: dict) -> str:
+    """The deterministic fallback builder.
+
+    It writes QGIS's format by hand, so it must not claim QGIS wrote it: the
+    version attribute names this builder, and `qgis_authored` records that no
+    QGIS was involved. A file asserting `version="3.44.3"` when no 3.44.3 ever
+    touched it is the kind of provenance claim this project exists to refuse.
     """
-    groups = manifest["presentation"]["map"]["layer_groups"]
-    root = ET.Element("qgis", projectname="northstar-nyc-hub-siting", version="3.44.3")
+    groups = {group["id"]: group["title"] for group in manifest["presentation"]["map"]["layer_groups"]}
+    root = ET.Element("qgis", projectname="northstar-nyc-hub-siting", version=BUILDER_VERSION)
     ET.SubElement(root, "homePath", path="")
     ET.SubElement(root, "title").text = manifest["project"]["title"]
     ET.SubElement(root, "autotransaction", active="0")
@@ -665,59 +746,262 @@ def write_qgis_project(manifest: dict) -> None:
 
     tree = ET.SubElement(root, "layer-tree-group")
     ET.SubElement(tree, "customproperties")
-    layer_ids = {
-        "result": (CANDIDATES_LAYER_ID, "Hub Candidates (ranked, tenant alpha)", "ogr"),
-        "context": (BASEMAP_LAYER_ID, "OpenStreetMap (XYZ)", "wms"),
-    }
-    for group in groups:
-        node = ET.SubElement(
-            tree, "layer-tree-group", name=group["title"], expanded="1", checked="Qt.Checked"
-        )
-        layer_id, layer_name, provider = layer_ids[group["id"]]
-        ET.SubElement(
-            node, "layer-tree-layer", id=layer_id, name=layer_name,
-            providerKey=provider, expanded="1", checked="Qt.Checked",
-        )
+    for group_id, title in groups.items():
+        node = ET.SubElement(tree, "layer-tree-group", name=title, expanded="1", checked="Qt.Checked")
+        for layer in QGIS_LAYERS:
+            if layer["group"] != group_id:
+                continue
+            ET.SubElement(
+                node, "layer-tree-layer", id=layer["id"], name=layer["name"],
+                providerKey=layer["provider"], expanded="1", checked="Qt.Checked",
+            )
 
     layers = ET.SubElement(root, "projectlayers")
-    vector = ET.SubElement(
-        layers, "maplayer", type="vector", geometry="Polygon",
-        hasScaleBasedVisibilityFlag="0", readOnly="0", maxScale="0", minScale="1e+08",
-        styleCategories="AllStyleCategories",
-    )
-    ET.SubElement(vector, "id").text = CANDIDATES_LAYER_ID
-    ET.SubElement(vector, "datasource").text = "./data/derived/hub-candidates.geojson"
-    ET.SubElement(vector, "layername").text = layer_ids["result"][1]
-    _srs(vector, 4326)
-    ET.SubElement(vector, "provider").text = "ogr"
-    _candidate_renderer(vector)
-
-    raster = ET.SubElement(
-        layers, "maplayer", type="raster", hasScaleBasedVisibilityFlag="0",
-        maxScale="0", minScale="1e+08", styleCategories="AllStyleCategories",
-    )
-    ET.SubElement(raster, "id").text = BASEMAP_LAYER_ID
-    ET.SubElement(raster, "datasource").text = (
-        "type=xyz&url=https://tile.openstreetmap.org/{z}/{x}/{y}.png&zmax=19&zmin=0"
-    )
-    ET.SubElement(raster, "layername").text = layer_ids["context"][1]
-    # Web Mercator: the tiles are, and saying 4326 here would misplace them.
-    _srs(raster, 3857)
-    ET.SubElement(raster, "provider").text = "wms"
-    ET.SubElement(ET.SubElement(raster, "pipe"), "rasterrenderer", type="singlebandcolordata",
-                  band="1", opacity="1", alphaBand="-1")
+    for layer in QGIS_LAYERS:
+        if layer["provider"] == "ogr":
+            element = ET.SubElement(
+                layers, "maplayer", type="vector", geometry=layer["geometry"],
+                hasScaleBasedVisibilityFlag="0", readOnly="0", maxScale="0", minScale="1e+08",
+                styleCategories="AllStyleCategories",
+            )
+        else:
+            element = ET.SubElement(
+                layers, "maplayer", type="raster", hasScaleBasedVisibilityFlag="0",
+                maxScale="0", minScale="1e+08", styleCategories="AllStyleCategories",
+            )
+        ET.SubElement(element, "id").text = layer["id"]
+        ET.SubElement(element, "datasource").text = layer["source"]
+        ET.SubElement(element, "layername").text = layer["name"]
+        _srs(element, layer["epsg"])
+        ET.SubElement(element, "provider").text = layer["provider"]
+        if layer["provider"] == "wms":
+            ET.SubElement(ET.SubElement(element, "pipe"), "rasterrenderer",
+                          type="singlebandcolordata", band="1", opacity="1", alphaBand="-1")
+        elif layer["graduated_on"]:
+            _graduated_renderer(element, layer["graduated_on"])
+        else:
+            _single_symbol_renderer(element)
 
     properties = ET.SubElement(root, "properties")
     spatial = ET.SubElement(properties, "SpatialRefSys")
     enabled = ET.SubElement(spatial, "ProjectionsEnabled")
     enabled.set("type", "int")
     enabled.text = "1"
-    ET.indent(root, space="  ")
-    xml = (
-        "<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>\n"
-        + ET.tostring(root, encoding="unicode")
-        + "\n"
+    return _canonical_xml(ET.tostring(root, encoding="unicode"))
+
+
+def _graduated_renderer(parent: ET.Element, attribute: str) -> None:
+    renderer = ET.SubElement(
+        parent, "renderer-v2", type="graduatedSymbol", attr=attribute,
+        graduatedMethod="GraduatedColor", enableorderby="0",
     )
+    ranges = ET.SubElement(renderer, "ranges")
+    symbols = ET.SubElement(renderer, "symbols")
+    for index, (lower, upper, label, fill, outline) in enumerate(SCORE_BANDS):
+        ET.SubElement(ranges, "range", lower=str(lower), upper=str(upper),
+                      symbol=str(index), label=label, render="true")
+        _fill_symbol(symbols, str(index), fill, outline)
+
+
+def _single_symbol_renderer(parent: ET.Element) -> None:
+    renderer = ET.SubElement(parent, "renderer-v2", type="singleSymbol", enableorderby="0")
+    _fill_symbol(ET.SubElement(renderer, "symbols"), "0", (180, 180, 180, 60), (120, 120, 120, 200))
+
+
+def _fill_symbol(parent: ET.Element, name: str, fill, outline) -> None:
+    symbol = ET.SubElement(parent, "symbol", type="fill", name=name, alpha="1")
+    layer = ET.SubElement(symbol, "layer")
+    layer.set("class", "SimpleFill")
+    layer.set("enabled", "1")
+    ET.SubElement(layer, "prop", k="color", v=",".join(str(part) for part in fill))
+    ET.SubElement(layer, "prop", k="outline_color", v=",".join(str(part) for part in outline))
+    ET.SubElement(layer, "prop", k="outline_width", v="0.46")
+
+
+def _build_qgis_xml_with_qgis(manifest: dict) -> str:
+    """Let QGIS write its own format, then hand back the document.
+
+    Preferred wherever PyQGIS is importable: QGIS is the authority on its file
+    format, and the version attribute then names the release that really
+    produced the file rather than one this code asserted.
+    """
+    import tempfile
+
+    from qgis.core import (  # type: ignore[import-not-found]
+        QgsCoordinateReferenceSystem,
+        QgsFillSymbol,
+        QgsGraduatedSymbolRenderer,
+        QgsLayerTreeLayer,
+        QgsLineSymbol,
+        QgsMarkerSymbol,
+        QgsProject,
+        QgsRasterLayer,
+        QgsRendererRange,
+        QgsSingleSymbolRenderer,
+        QgsVectorLayer,
+    )
+
+    from openmapstack.checks.qgis import _qgis_application
+
+    _qgis_application()
+    project = QgsProject.instance()
+    project.clear()
+    project.setTitle(manifest["project"]["title"])
+    project.setCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
+
+    identifiers: dict[str, str] = {}
+    titles = {group["id"]: group["title"] for group in manifest["presentation"]["map"]["layer_groups"]}
+    root = project.layerTreeRoot()
+    nodes = {group_id: root.addGroup(title) for group_id, title in titles.items()}
+
+    for spec in QGIS_LAYERS:
+        absolute = (ROOT / spec["source"][2:]).as_posix() if spec["source"].startswith("./") else spec["source"]
+        if spec["provider"] == "ogr":
+            layer = QgsVectorLayer(absolute, spec["name"], "ogr")
+            if not layer.isValid():
+                raise SystemExit(f"QGIS could not load {spec['source']}; the project would ship a dead layer")
+            if spec["graduated_on"]:
+                ranges = [
+                    QgsRendererRange(lower, upper, _qgs_fill(QgsFillSymbol, fill, outline), label)
+                    for lower, upper, label, fill, outline in SCORE_BANDS
+                ]
+                renderer = QgsGraduatedSymbolRenderer(spec["graduated_on"], ranges)
+                # A graduated renderer keeps a source symbol it derives ranges
+                # from, and defaults it to a *randomly coloured* one. It is
+                # never drawn, but it is serialised, so leaving it default
+                # makes every written project differ from the last.
+                renderer.setSourceSymbol(_qgs_fill(QgsFillSymbol, SCORE_BANDS[0][3], SCORE_BANDS[0][4]))
+                layer.setRenderer(renderer)
+            else:
+                layer.setRenderer(QgsSingleSymbolRenderer(_qgs_fill(QgsFillSymbol, (180, 180, 180, 60), (120, 120, 120, 200))))
+        else:
+            layer = QgsRasterLayer(spec["source"], spec["name"], "wms")
+            layer.setCrs(QgsCoordinateReferenceSystem(f"EPSG:{spec['epsg']}"))
+        # addMapLayer(..., False) keeps the tree ours: QGIS would otherwise
+        # also insert the layer at the root and the groups would be empty.
+        _pin_elevation_symbols(layer, QgsLineSymbol, QgsFillSymbol, QgsMarkerSymbol)
+        project.addMapLayer(layer, False)
+        nodes[spec["group"]].addChildNode(QgsLayerTreeLayer(layer))
+        # QGIS mints a layer id as name + timestamp + UUID, so a project it
+        # writes is never byte-identical to the last one even when nothing
+        # changed. The ids are internal handles, not content, so they are
+        # rewritten to the stable ones this module already declares -- which
+        # is also what lets the two builders be compared at all.
+        identifiers[layer.id()] = spec["id"]
+
+    with tempfile.TemporaryDirectory() as directory:
+        written = Path(directory) / "project.qgz"
+        if not project.write(str(written)):
+            raise SystemExit("QGIS refused to write project.qgz")
+        with zipfile.ZipFile(written) as archive:
+            name = next(item for item in archive.namelist() if item.endswith(".qgs"))
+            xml = archive.read(name).decode("utf-8")
+    for generated, stable in identifiers.items():
+        xml = xml.replace(generated, stable)
+    return _stabilise_symbol_ids(xml)
+
+
+def _stabilise_symbol_ids(xml: str) -> str:
+    """Replace QGIS's per-symbol-layer UUIDs with positional identifiers.
+
+    Like the layer ids these are internal handles rather than content, and
+    QGIS mints fresh ones on every write. Numbering them by order of first
+    appearance keeps the document stable while remaining unique within it.
+    """
+    seen: dict[str, str] = {}
+    for match in re.findall(r"\{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}", xml):
+        if match not in seen:
+            seen[match] = "{symbol-%03d}" % len(seen)
+    for generated, stable in seen.items():
+        xml = xml.replace(generated, stable)
+    return xml
+
+
+def _pin_elevation_symbols(layer, line_class, fill_class, marker_class) -> None:
+    """Give the elevation-profile symbols fixed colours.
+
+    Nothing in this map draws an elevation profile, but QGIS serialises the
+    properties anyway and defaults each of the three symbols to a *randomly
+    coloured* one. Left alone they are the last reason two projects written
+    from identical inputs differ.
+    """
+    try:
+        properties = layer.elevationProperties()
+        properties.setProfileLineSymbol(line_class.createSimple({"color": "120,120,120,255"}))
+        properties.setProfileFillSymbol(fill_class.createSimple({"color": "120,120,120,255"}))
+        properties.setProfileMarkerSymbol(marker_class.createSimple({"color": "120,120,120,255"}))
+    except Exception:  # noqa: BLE001 - older PyQGIS without these setters
+        pass
+
+
+def _qgs_fill(symbol_class, fill, outline):
+    return symbol_class.createSimple({
+        "color": ",".join(str(part) for part in fill),
+        "outline_color": ",".join(str(part) for part in outline),
+        "outline_width": "0.46",
+    })
+
+
+def _strip_volatile(xml: str) -> str:
+    """Remove what QGIS varies between two saves of identical content.
+
+    A QGIS-authored project is not reproducible as written: it stamps the save
+    time, mints a random attachment id for the project style database, and
+    emits the per-layer snapping settings in arbitrary order. None of that is
+    content, and leaving it makes the committed artifact churn on every run
+    and the clean-rerun output comparison fail on a file that never changed.
+
+    The layer ids, symbol ids and elevation symbols are dealt with where they
+    are created, because they can be pinned rather than patched.
+    """
+    # Canonicalise first: the substitutions below match attributes in sorted
+    # order, which is only guaranteed after this call.
+    xml = _canonical_xml(xml)
+    xml = re.sub(r'saveDateTime="[^"]*"', 'saveDateTime=""', xml)
+    xml = re.sub(r'attachment:///[A-Za-z0-9_]+_styles\.db', "attachment:///styles.db", xml)
+    # QGIS adds an annotation layer with a fresh UUID, and stamps creation
+    # metadata. Blanked rather than pinned to an invented date: the run record
+    # is where "when did this run" is answered honestly.
+    xml = re.sub(r"Annotations_[0-9a-f]{8}(?:_[0-9a-f]{4}){3}_[0-9a-f]{12}", "Annotations_main", xml)
+    xml = re.sub(r'(<date[^>]*type="Created"[^>]*value=")[^"]*(")', r"\1\2", xml)
+    xml = re.sub(r"<creation>[^<]*</creation>", "<creation></creation>", xml)
+    return xml
+
+
+def _canonical_xml(xml: str) -> str:
+    """Re-serialise with attributes sorted and indentation normalised.
+
+    Qt writes an element's attributes in hash order, which differs between
+    processes, so two QGIS projects with identical content are not identical
+    files. Sorting them is what finally makes the artifact reproducible -- and
+    it is also what lets the two builders be compared as text at all, since
+    they would otherwise differ only in attribute order.
+    """
+    root = ET.fromstring(xml)
+    for element in root.iter():
+        if len(element.attrib) > 1:
+            ordered = sorted(element.attrib.items())
+            element.attrib.clear()
+            element.attrib.update(ordered)
+    ET.indent(root, space="  ")
+    return QGIS_DOCTYPE + ET.tostring(root, encoding="unicode") + "\n"
+
+
+def write_qgis_project(manifest: dict) -> None:
+    """Write project.qgs and project.qgz, preferring QGIS's own writer.
+
+    Generated rather than hand-authored so the datasources cannot drift from
+    the outputs that exist -- the failure the Tartu example's static check was
+    added to catch. When PyQGIS is importable the file is written by QGIS
+    itself; otherwise the deterministic builder produces an equivalent project
+    so the pipeline still runs anywhere DuckDB does. A test asserts the two
+    agree on layers, CRSs, datasources and renderers.
+    """
+    if pyqgis_available():
+        xml, authored_by = _build_qgis_xml_with_qgis(manifest), "qgis"
+    else:
+        xml, authored_by = _build_qgis_xml(manifest), "deterministic-builder"
+    xml = _strip_volatile(xml)
     (ROOT / "project.qgs").write_text(xml, encoding="utf-8")
     # A fixed timestamp keeps the archive byte-identical across reruns, which
     # the clean-rerun output comparison depends on.
@@ -725,7 +1009,7 @@ def write_qgis_project(manifest: dict) -> None:
     info.compress_type = zipfile.ZIP_DEFLATED
     with zipfile.ZipFile(ROOT / "project.qgz", "w") as archive:
         archive.writestr(info, xml)
-    log("wrote project.qgs and project.qgz")
+    log(f"wrote project.qgs and project.qgz (authored by {authored_by})")
 
 
 def validate_qgis_project(manifest: dict) -> dict:

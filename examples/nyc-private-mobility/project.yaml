@@ -6,7 +6,7 @@ project:
     fleet and hub coverage and account demand, and show ranked candidate zones on an interactive map while
     respecting all database access restrictions.
   created_at: '2026-09-17T00:00:00Z'
-  updated_at: '2026-09-22T19:48:31.922862+00:00'
+  updated_at: '2026-09-23T10:38:33.009731+00:00'
   status: validated
 interpretation:
   objective: Rank NYC taxi zones as operations/charging-hub candidates for tenant alpha by combining three
@@ -389,6 +389,10 @@ outputs:
     path: data/derived/hub-candidates.geojson
     format: GeoJSON (EPSG:4326)
     generated_by: export_candidates
+  zone_metrics_geojson:
+    path: data/derived/zone-metrics.geojson
+    format: GeoJSON (EPSG:4326)
+    generated_by: combine_metrics
   qgis_project:
     path: project.qgz
     format: QGIS project archive (EPSG:4326)
@@ -410,14 +414,14 @@ validation:
     expression: demand_accounts >= 40 AND hub_distance_m >= 1500 AND fleet_present <= 6
 runs:
   latest:
-    id: run-20260922-194831
-    started_at: '2026-09-22T19:48:31.599343+00:00'
-    completed_at: '2026-09-22T19:48:31.922862+00:00'
+    id: run-20260923-103833
+    started_at: '2026-09-23T10:38:31.767560+00:00'
+    completed_at: '2026-09-23T10:38:33.009731+00:00'
     status: passed
-    inputs_hash: sha256:a26b3e85e4dfb85bc9709804324f796381aa2c723e3f58e4bb9903a7ab4de1b6
-    outputs_hash: sha256:af20c65c440950452a316c89096d6e77744a74fd03e5c3431da2e57490753009
+    inputs_hash: sha256:5fc443c54cb4ad68f6f3033f7d6c8d8c20cb2532e9d588e8bd296a915ef9ae09
+    outputs_hash: sha256:f658deb4222c972f49b6a9c637d13e09688c64164c3948717e6d299426e68d43
     record:
-      path: runs/run-20260922-194831.json
+      path: runs/run-20260923-103833.json
     validation_report:
       path: validation/latest-report.json
 runtime:
@@ -441,12 +445,8 @@ presentation:
     layers:
     - source: hub_candidates_geojson
       semantic_role: primary_result
-    - source: taxi_zones
+    - source: zone_metrics_geojson
       semantic_role: context
-    - source: hubs
-      semantic_role: constraint
-    - source: fleet_positions
-      semantic_role: source
     layer_groups:
     - id: result
       title: Hub Candidates (ranked, tenant alpha)

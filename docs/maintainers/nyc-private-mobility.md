@@ -222,3 +222,31 @@ Two things the three-source stage left open, both outside this example:
   QGIS is absent, so `verify` reports WARNING rather than PASSED there. The
   Tartu example behaves the same way; it is the honest reading, not a
   regression.
+
+## The QGIS project has two writers
+
+`pipeline.py` writes `project.qgz` through **QGIS itself** when PyQGIS is
+importable, and through a deterministic XML builder when it is not. The
+pipeline must keep running wherever DuckDB does — the credential-free
+acceptance gate and the fixture evals have no QGIS — but a hand-built file
+should not be the authority on QGIS's own format when the real thing is
+available.
+
+`QGIS_LAYERS` is the single description both writers consume, and
+`tests/test_cloud_fixture_sql.py::QgisProjectBuilderTests` asserts they agree
+on layers, CRSs, datasources and renderers. Two writers for one artifact are
+only safe while that holds.
+
+**QGIS does not write reproducibly.** Measured against 3.40.15, a project
+saved twice from identical inputs differs in six ways: `saveDateTime`; layer
+ids (name + timestamp + UUID); one UUID per symbol layer; the annotation
+layer's id; `Created`/`creation` metadata; a random attachment id for the
+project style database; randomly coloured default symbols (the graduated
+renderer's source symbol and all three elevation-profile symbols, none of
+which this map draws); and attribute order, which Qt emits from a hash and
+therefore varies between processes.
+
+Ids and symbols are pinned where they are created; the rest is normalised on
+the way out, including canonicalising the document with sorted attributes.
+The result is byte-identical across runs **within one writer and one QGIS
+version** — which is also what makes the two writers comparable as text.
