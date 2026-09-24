@@ -134,6 +134,10 @@ class AcceptanceGuidanceTests(GuidanceCase):
             with self.subTest(skill=name):
                 self.assertIn("python3 -m openmapstack --version", text)
                 self.assertIn("do not deliver while", text)
+                # A live 001 trial built dashboard layers with one-off scripts,
+                # declared them as outputs, and failed its clean rerun.
+                self.assertIn("openmapstack verify project.yaml --rerun", text)
+                self.assertIn("never from a one-off script", text)
                 self.assertNotIn("path when the CLI\nis available", text)
 
     def test_qgis_layers_use_formats_every_build_reads(self) -> None:
