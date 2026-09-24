@@ -1334,12 +1334,20 @@ def run_case(
 
         if "clean_rerun" in execution_config:
             rerun_workspace_path = Path(tempfile.mkdtemp(prefix=f"openmapstack-eval-{case_dir.name}-rerun-"))
-            clean_rerun_result = perform_clean_rerun(
-                project_path,
-                rerun_workspace_path,
-                timeout_s,
-                forbidden_fragments=eval_forbidden_rerun_fragments(),
-            )
+            if case_mode == "live":
+                # A live agent wrote this pipeline; never execute it on the host.
+                from adapters.isolation import sandboxed_clean_rerun
+
+                clean_rerun_result = sandboxed_clean_rerun(
+                    project_path, rerun_workspace_path, timeout_s, eval_forbidden_rerun_fragments()
+                )
+            else:
+                clean_rerun_result = perform_clean_rerun(
+                    project_path,
+                    rerun_workspace_path,
+                    timeout_s,
+                    forbidden_fragments=eval_forbidden_rerun_fragments(),
+                )
         else:
             rerun_generator_cmd = execution_config.get("rerun_generator")
             if rerun_generator_cmd:

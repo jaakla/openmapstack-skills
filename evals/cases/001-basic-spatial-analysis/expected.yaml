@@ -16,6 +16,9 @@ fixture:
 live:
   prompt_file: prompt.md
   agent_workdir: project
+  # The release gate requires the delivered project to rebuild in a clean
+  # workspace; the fixture control proves reruns separately in case 005.
+  clean_rerun: {}
   fixtures:
     - { source: ../../fixtures/mini-tartu/parcels.geojson, destination: project/data/source/parcels.geojson }
     - { source: ../../fixtures/mini-tartu/roads.geojson, destination: project/data/source/roads.geojson }
@@ -118,6 +121,21 @@ assertions:
     args: { groups: [analysis, user_overrides] }
   - assert: presentation.controls_match_pipeline
   - assert: presentation.edit_targets_reference_real_sources
+
+  - assert: rerun.no_chat_dependency
+    modes: [live]
+  - assert: rerun.clean_execution_succeeded
+    modes: [live]
+    args: { rerun_workspace: "$RERUN" }
+  - assert: rerun.outputs_semantically_equal
+    modes: [live]
+    args:
+      rerun_workspace: "$RERUN"
+      paths:
+        - data/derived/candidate-parcels.parquet
+  - assert: rerun.validation_report_reproducible
+    modes: [live]
+    args: { rerun_workspace: "$RERUN" }
 
   - assert: overrides.source_files_byte_identical
     args:

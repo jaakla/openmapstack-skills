@@ -18,6 +18,7 @@ unavailable.
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -175,3 +176,51 @@ class Sandbox:
             "variables": dict(sorted(self.variables.items())),
             "network": "shared",
         }
+
+
+RERUN_SCRIPT = """
+import json, sys
+from pathlib import Path
+from openmapstack.rerun import perform_clean_rerun
+project, rerun, timeout, forbidden = sys.argv[1], sys.argv[2], float(sys.argv[3]), json.loads(sys.argv[4])
+evidence = perform_clean_rerun(Path(project), Path(rerun), timeout, forbidden_fragments=forbidden)
+print(json.dumps(evidence, default=str))
+"""
+
+
+def sandboxed_clean_rerun(
+    project: Path, rerun: Path, timeout_s: float, forbidden_fragments: tuple[str, ...] = ()
+) -> dict[str, object]:
+    """Run ``perform_clean_rerun`` on an agent-written project inside the sandbox.
+
+    The canonical pipeline a live agent delivered is untrusted code; the host
+    runner must not execute it. The delivered project is read-only here and
+    only the rerun workspace is writable. Fails closed when no sandbox exists.
+    """
+    reason = unavailable_reason()
+    if reason:
+        return {"status": "failed", "stage": "isolation", "error": f"refusing an unisolated clean rerun: {reason}"}
+    sandbox = Sandbox.for_python_agent(rerun, {})
+    sandbox.read_only.append(project.resolve())
+    argv = [
+        *sandbox.argv(rerun),
+        "python3", "-c", RERUN_SCRIPT,
+        str(project.resolve()), str(rerun.resolve()), str(timeout_s), json.dumps(list(forbidden_fragments)),
+    ]
+    try:
+        proc = subprocess.run(
+            argv, env=sandbox.environment({}), capture_output=True, text=True, timeout=timeout_s + 120, check=False
+        )
+    except subprocess.TimeoutExpired:
+        return {"status": "failed", "stage": "isolation", "error": f"sandboxed clean rerun exceeded {timeout_s + 120}s"}
+    try:
+        evidence = json.loads(proc.stdout.strip().splitlines()[-1])
+    except (IndexError, ValueError):
+        return {
+            "status": "failed",
+            "stage": "isolation",
+            "error": f"sandboxed clean rerun produced no evidence (status {proc.returncode}): {proc.stderr[-400:]}",
+        }
+    evidence["isolation"] = sandbox.evidence()
+    return evidence
+

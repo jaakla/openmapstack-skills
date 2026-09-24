@@ -20,7 +20,7 @@ from unittest.mock import patch
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "evals"))
 
-from adapters.isolation import PACKAGE_DIR, Sandbox, symlink_chain, unavailable_reason  # noqa: E402
+from adapters.isolation import PACKAGE_DIR, Sandbox, sandboxed_clean_rerun, symlink_chain, unavailable_reason  # noqa: E402
 
 UNAVAILABLE = unavailable_reason()
 REQUIRED = os.environ.get("OPENMAPSTACK_REQUIRE_SANDBOX") == "1"
@@ -114,6 +114,36 @@ class SandboxTests(unittest.TestCase):
         self.assertEqual(Path(report["package"]).parent, PACKAGE_DIR)
         self.assertFalse(report["package_writable"])
         self.assertEqual(written, "ok")
+
+    def test_clean_rerun_of_agent_code_is_confined(self) -> None:
+        # The runner used to execute a live agent's pipeline on the host.
+        with tempfile.TemporaryDirectory(prefix="openmapstack-isolation-test-") as temporary:
+            base = Path(temporary).resolve()
+            project, rerun = base / "project", base / "rerun"
+            (project / "data/source").mkdir(parents=True)
+            rerun.mkdir()
+            (project / "project.yaml").write_text("runtime: {implementation: {pipeline: pipeline.py}}\n")
+            (project / "data/source/input.txt").write_text("x\n")
+            (project / "pipeline.py").write_text(
+                "import json, sys\n"
+                "from pathlib import Path\n"
+                f"seen = {{'repo_tests': Path({str(REPO_ROOT / 'tests')!r}).exists()}}\n"
+                "try:\n"
+                f"    Path({str(project / 'tampered.txt')!r}).write_text('x')\n"
+                "    seen['project_writable'] = True\n"
+                "except OSError:\n"
+                "    seen['project_writable'] = False\n"
+                "Path('seen.json').write_text(json.dumps(seen))\n"
+            )
+            evidence = sandboxed_clean_rerun(project, rerun, 60)
+            seen = json.loads((rerun / "seen.json").read_text())
+            tampered = (project / "tampered.txt").exists()
+
+        # The minimal manifest fails artifact validation; execution itself ran.
+        self.assertEqual(evidence["stage"], "artifact_validation", evidence)
+        self.assertEqual(evidence["isolation"]["kind"], "bubblewrap_allowlist")
+        self.assertEqual(seen, {"repo_tests": False, "project_writable": False})
+        self.assertFalse(tampered)
 
 
 if __name__ == "__main__":
