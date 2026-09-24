@@ -148,6 +148,20 @@ class OpenMapStackCliTests(unittest.TestCase):
         self.assertEqual(check.status, "warning", check.to_dict())
         self.assertEqual(check.details["code"], "datasource_format_not_portable")
 
+    def test_qgis_layer_crs_that_contradicts_its_data_fails(self) -> None:
+        path = self._map_project_with_qgz(self._layer("roads", "EPSG:3301"))
+        (self.root / "data").mkdir(exist_ok=True)
+        (self.root / "data" / "roads.geojson").write_text('{"type": "FeatureCollection", "features": []}', encoding="utf-8")
+        qgz = self.root / "project.qgz"
+        with zipfile.ZipFile(qgz) as archive:
+            xml = archive.read("project.qgs").decode()
+        with zipfile.ZipFile(qgz, "w") as archive:
+            archive.writestr("project.qgs", xml.replace("<layername>roads</layername>", "<layername>roads</layername><datasource>./data/roads.geojson</datasource>"))
+        result = validate_project(path)
+        check = self._check(result, "qgis.layer_crs_data")
+        self.assertEqual(check.status, "failed", check.to_dict())
+        self.assertFalse(result.ok())
+
     def test_qgis_project_without_layers_warns(self) -> None:
         path = self._map_project_with_qgz()
         result = validate_project(path)

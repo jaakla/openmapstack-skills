@@ -27,6 +27,18 @@ class StaticValidTests(unittest.TestCase):
         result = qgis_assertions.static_valid(workspace)
         self.assertEqual(result.status, "passed")
 
+    def test_absolute_path_fails_even_when_it_exists(self) -> None:
+        workspace = make_workspace()
+        layer = workspace / "data" / "layer.geojson"
+        layer.parent.mkdir()
+        layer.write_text("{}", encoding="utf-8")
+        _write_qgz(workspace / "project.qgz", [str(layer.resolve()), "C:\\data\\layer.gpkg|layername=a"])
+        result = qgis_assertions.static_valid(workspace)
+        self.assertEqual(result.status, "failed", result.detail)
+        self.assertEqual(result.data["code"], "broken_datasource")
+        self.assertEqual(len(result.data["errors"]), 2)
+        self.assertIn("absolute path", result.detail)
+
     def test_missing_file_fails(self) -> None:
         workspace = make_workspace()
         result = qgis_assertions.static_valid(workspace)
@@ -131,6 +143,80 @@ class DatasourcesPortableTests(unittest.TestCase):
         result = qgis_assertions.datasources_portable(make_workspace())
         self.assertEqual(result.status, "failed")
         self.assertEqual(result.data["code"], "file_missing")
+
+
+def _write_layer_qgz(path, layers):
+    body = "".join(
+        f"<maplayer><layername>{name}</layername><datasource>{source}</datasource>"
+        f"<srs><spatialrefsys><authid>{authid}</authid></spatialrefsys></srs></maplayer>"
+        for name, source, authid in layers
+    )
+    with zipfile.ZipFile(path, "w") as zf:
+        zf.writestr("project.qgs", f'<?xml version="1.0"?><qgis><projectlayers>{body}</projectlayers></qgis>')
+
+
+def _write_geojson(path, crs=None):
+    import json
+
+    payload = {"type": "FeatureCollection", "features": []}
+    if crs:
+        payload["crs"] = {"type": "name", "properties": {"name": crs}}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_gpkg(path, table, epsg):
+    import sqlite3
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(path) as connection:
+        connection.execute("CREATE TABLE gpkg_spatial_ref_sys (srs_id INTEGER, organization TEXT, organization_coordsys_id INTEGER)")
+        connection.execute("CREATE TABLE gpkg_geometry_columns (table_name TEXT, srs_id INTEGER)")
+        connection.execute("INSERT INTO gpkg_spatial_ref_sys VALUES (?, 'EPSG', ?)", (epsg, epsg))
+        connection.execute("INSERT INTO gpkg_geometry_columns VALUES (?, ?)", (table, epsg))
+    connection.close()
+
+
+class LayerCrsMatchesDataTests(unittest.TestCase):
+    """A live 001 trial declared EPSG:3301 on WGS84 GeoJSON; QGIS drew the
+    roads a few metres from the Estonian grid's origin."""
+
+    def test_geojson_without_crs_member_is_wgs84(self) -> None:
+        workspace = make_workspace()
+        _write_geojson(workspace / "data" / "roads.geojson")
+        _write_layer_qgz(workspace / "project.qgz", [("Roads", "./data/roads.geojson", "EPSG:3301")])
+        result = qgis_assertions.layer_crs_matches_data(workspace)
+        self.assertEqual(result.status, "failed", result.detail)
+        self.assertEqual(result.data["code"], "layer_crs_mismatch")
+        self.assertEqual(result.data["layers"], {"Roads": {"declared": "EPSG:3301", "data": "EPSG:4326"}})
+
+    def test_matching_geojson_and_geopackage_layers_pass(self) -> None:
+        workspace = make_workspace()
+        _write_geojson(workspace / "data" / "roads.geojson", crs="urn:ogc:def:crs:EPSG::3301")
+        _write_geojson(workspace / "data" / "pois.geojson", crs="urn:ogc:def:crs:OGC:1.3:CRS84")
+        _write_gpkg(workspace / "data" / "parcels.gpkg", "parcels", 3301)
+        _write_layer_qgz(workspace / "project.qgz", [
+            ("Roads", "./data/roads.geojson", "EPSG:3301"),
+            ("POIs", "./data/pois.geojson", "EPSG:4326"),
+            ("Parcels", "./data/parcels.gpkg|layername=parcels", "EPSG:3301"),
+            ("Basemap", "type=xyz&amp;url=https://tile.openstreetmap.org/{z}/{x}/{y}.png", "EPSG:3857"),
+        ])
+        result = qgis_assertions.layer_crs_matches_data(workspace)
+        self.assertEqual(result.status, "passed", result.detail)
+        self.assertEqual(len(result.data["layers"]), 3)
+
+    def test_geopackage_mismatch_fails(self) -> None:
+        workspace = make_workspace()
+        _write_gpkg(workspace / "data" / "parcels.gpkg", "parcels", 3301)
+        _write_layer_qgz(workspace / "project.qgz", [("Parcels", "./data/parcels.gpkg|layername=parcels", "EPSG:4326")])
+        result = qgis_assertions.layer_crs_matches_data(workspace)
+        self.assertEqual(result.status, "failed", result.detail)
+
+    def test_nothing_comparable_is_not_testable(self) -> None:
+        workspace = make_workspace()
+        _write_layer_qgz(workspace / "project.qgz", [("Missing", "./data/missing.geojson", "EPSG:4326")])
+        result = qgis_assertions.layer_crs_matches_data(workspace)
+        self.assertEqual(result.status, "not_testable", result.detail)
 
 
 class RuntimeLoadUnavailableTests(unittest.TestCase):

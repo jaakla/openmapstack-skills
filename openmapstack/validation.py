@@ -640,6 +640,7 @@ class _Validator:
                 self.add("qgis.project", "passed", "project.qgz exists", path="project.qgz")
                 self._qgis_layer_crs()
                 self._qgis_datasource_formats()
+                self._qgis_layer_crs_data()
 
     def _runtime_parameters(self) -> None:
         """Delegates to ``verify``'s ``project.parameters_match_steps``.
@@ -662,6 +663,12 @@ class _Validator:
         result = qgis_checks.datasources_portable(self.root)
         if result.status in {"passed", "warning"}:
             self.add("qgis.datasource_formats", result.status, result.detail, path="project.qgz", **result.data)
+
+    def _qgis_layer_crs_data(self) -> None:
+        """Delegates to ``verify``'s ``qgis.layer_crs_matches_data``."""
+        result = qgis_checks.layer_crs_matches_data(self.root)
+        if result.status in {"passed", "failed"}:
+            self.add("qgis.layer_crs_data", result.status, result.detail, path="project.qgz", **result.data)
 
     def _qgis_layer_crs(self) -> None:
         """Every map layer must declare a complete CRS, with reprojection on.
