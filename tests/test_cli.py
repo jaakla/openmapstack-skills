@@ -153,6 +153,35 @@ class OpenMapStackCliTests(unittest.TestCase):
         self.assertEqual(check.status, "failed")
         self.assertEqual(check.details["code"], "not_a_zip")
 
+    # ---- runtime.parameters ----------------------------------------------
+    # validate must apply verify's parameter rules: a live trial delivered a
+    # parameter bound to a field its step did not declare, and validate passed.
+
+    def _project_with_parameter(self, **parameter) -> Path:
+        project = deepcopy(valid_manifest())
+        project["processing"]["steps"][0]["min_area_m2"] = 8000
+        project["runtime"]["implementation"]["parameters"] = [
+            {"id": "min_area_m2", "type": "integer", "canonical": 8000,
+             "binding": {"argument": "--min-area-m2"}, **parameter}
+        ]
+        return self.write_project(project, artifacts=True)
+
+    def test_parameter_bound_to_its_step_field_passes(self) -> None:
+        result = validate_project(self._project_with_parameter(step="load", field="min_area_m2"))
+        check = self._check(result, "runtime.parameters")
+        self.assertEqual(check.status, "passed", check.to_dict())
+
+    def test_parameter_bound_to_an_undeclared_step_field_fails(self) -> None:
+        result = validate_project(self._project_with_parameter(step="load", field="area_m2"))
+        check = self._check(result, "runtime.parameters")
+        self.assertEqual(check.status, "failed", check.to_dict())
+        self.assertIn("area_m2", check.message)
+        self.assertFalse(result.ok())
+
+    def test_projects_without_parameters_get_no_parameter_check(self) -> None:
+        result = validate_project(self.write_project(artifacts=True))
+        self.assertIsNone(self._check(result, "runtime.parameters"))
+
     def test_preflight_allows_not_yet_generated_artifacts(self) -> None:
         path = self.write_project(artifacts=False)
         result = validate_project(path, artifacts=False)

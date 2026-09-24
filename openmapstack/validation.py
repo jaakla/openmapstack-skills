@@ -17,6 +17,7 @@ from .integrity import (
     normalize_digest,
     sha256_file,
 )
+from .parameters import ParameterError, declared_parameters
 from .project import ProjectError, get_in, load_json, load_project, project_path, step_outputs
 from .sampling import run_mode, run_record_errors
 from .schema import project_schema_errors
@@ -521,6 +522,7 @@ class _Validator:
                     f"{len(dependencies)} clean-run dependencies resolve inside the project",
                     path="runtime.implementation.dependencies",
                 )
+        self._runtime_parameters()
         environment = get_in(self.project, "runtime", "environment")
         if not isinstance(environment, dict) or not environment:
             self.add("runtime.environment", "warning", "runtime.environment does not pin tool versions", path="runtime.environment")
@@ -637,6 +639,27 @@ class _Validator:
             else:
                 self.add("qgis.project", "passed", "project.qgz exists", path="project.qgz")
                 self._qgis_layer_crs()
+
+    def _runtime_parameters(self) -> None:
+        """Declared runtime parameters must be well-formed and agree with their steps.
+
+        Uses the same rules as ``verify``'s ``project.parameters_match_steps``;
+        a live trial delivered a project this validator passed and ``verify``
+        failed on a parameter bound to a field its step did not declare.
+        """
+        if get_in(self.project, "runtime", "implementation", "parameters") is None:
+            return
+        try:
+            parameters = declared_parameters(self.project)
+        except ParameterError as exc:
+            self.add("runtime.parameters", "failed", str(exc), path="runtime.implementation.parameters")
+            return
+        self.add(
+            "runtime.parameters",
+            "passed",
+            f"{len(parameters)} runtime parameter(s) are well-formed and agree with their steps",
+            path="runtime.implementation.parameters",
+        )
 
     def _qgis_layer_crs(self) -> None:
         """Every map layer must declare a complete CRS, with reprojection on.
