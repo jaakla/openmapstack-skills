@@ -172,6 +172,22 @@ allowlist of formats every GDAL build reads, and which `validate` reports as
 GeoPackage/GeoJSON/FlatGeobuf layers, and live 001 requires the check. One further material trial
 must show agents follow it.
 
+## Material 001 at `12fde5f` (2026-09-24)
+
+Candidate `12fde5f` (collection `sha256:f9d5fe88cf56a24ce9ba353a1938f8e18da8ee742afc3d173a98f1ab538ce008`),
+under a new $10 authorization. The portable-format rule held: `qgis.datasources_portable` passed,
+and in the sandbox all three PyQGIS checks passed against the host's QGIS 3.40.15. Every layer
+was valid, matched the manifest and rendered.
+
+Material 001 **failed** `rerun.clean_execution_succeeded`. The agent built WGS84 GeoJSON layers for
+the dashboard with one-off scripts, not the pipeline. It declared them as outputs, as `validate`
+requires, and the pipeline hashes them in its run record. So the clean rerun crashed on a file the
+pipeline never writes. The agent never ran a clean rerun; the guidance said to, without naming
+`openmapstack verify project.yaml --rerun`. 63 turns, **$3.656927** (record `2357eb7d`).
+
+Follow-up: both project skills now name that command and say every derived file must come from the
+canonical pipeline.
+
 ## Running the remaining trials
 
 Freeze a clean candidate at or after `250c99c` and confirm a new spend authorization first.
