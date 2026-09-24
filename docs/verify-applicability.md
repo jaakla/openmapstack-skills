@@ -63,7 +63,7 @@ checker where applicable.
 | `qgis.layers_match_manifest` | `project.qgz` exists | QGIS layers correspond to declared presentation sources | malformed QGIS document fails | 001, 006 |
 | `rerun.no_chat_dependency` | always | declared implementation files do not depend on chat/transcript state | missing canonical dependencies are `not_testable` | 005 |
 | `rerun.clean_execution_succeeded` | `--rerun` | canonical pipeline succeeds and post-run validation passes in an empty workspace | unstartable or failed execution fails; absent runner evidence is `not_testable` | 005 |
-| `rerun.outputs_semantically_equal` | `--rerun` and at least one readable geodata output | normalized outputs are equivalent across runs | DuckDB Spatial for Parquet; normalization failures are `not_testable` | 005 |
+| `rerun.outputs_semantically_equal` | `--rerun` and at least one readable geodata output | normalized outputs are equivalent across runs (GeoJSON/JSON, Parquet, GeoPackage without its write timestamp; other formats by bytes) | DuckDB Spatial for Parquet; normalization failures are `not_testable` | 005 |
 | `rerun.validation_report_reproducible` | `--rerun` | validation evidence reproduces after nondeterministic fields are removed | missing report in either run is `not_testable` | 005 |
 | `overrides.source_files_byte_identical` | `--rerun` and immutable source/override files exist | clean rerun did not mutate declared inputs | missing files/workspace are `not_testable` | 001, 002, 005, 911 |
 

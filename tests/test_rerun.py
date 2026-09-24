@@ -255,6 +255,37 @@ class RerunNormalizationTests(unittest.TestCase):
         )
         self.assertEqual(result.status, "passed", result.detail)
 
+    def write_geopackage(self, root: Path, *, last_change: str, name: str = "P1") -> None:
+        import sqlite3
+
+        path = root / "candidates.gpkg"
+        with sqlite3.connect(path) as connection:
+            connection.execute(
+                "CREATE TABLE gpkg_contents (table_name TEXT, data_type TEXT, srs_id INTEGER,"
+                " min_x REAL, min_y REAL, max_x REAL, max_y REAL, last_change TEXT)"
+            )
+            connection.execute(
+                "INSERT INTO gpkg_contents VALUES ('candidates', 'features', 3301, 0, 0, 1, 1, ?)", (last_change,)
+            )
+            connection.execute("CREATE TABLE candidates (fid INTEGER PRIMARY KEY, id TEXT, geom BLOB)")
+            connection.execute("INSERT INTO candidates VALUES (1, ?, ?)", (name, b"GP\x00\x01"))
+        connection.close()
+
+    def test_geopackage_write_timestamp_is_not_a_semantic_change(self) -> None:
+        # A live 001 rebuild differed from the delivered GeoPackage only in
+        # gpkg_contents.last_change, and a byte hash called it changed.
+        self.write_geopackage(self.original, last_change="2026-09-24T13:14:45.510Z")
+        self.write_geopackage(self.rerun, last_change="2026-09-24T13:16:29.794Z")
+        result = rerun_assertions.outputs_semantically_equal(self.original, str(self.rerun), ["candidates.gpkg"])
+        self.assertEqual(result.status, "passed", result.detail)
+
+    def test_geopackage_feature_change_fails(self) -> None:
+        self.write_geopackage(self.original, last_change="t1")
+        self.write_geopackage(self.rerun, last_change="t1", name="P2")
+        result = rerun_assertions.outputs_semantically_equal(self.original, str(self.rerun), ["candidates.gpkg"])
+        self.assertEqual(result.status, "failed", result.detail)
+        self.assertEqual(result.data["code"], "output_semantically_changed")
+
     def test_semantically_changed_output_fails(self) -> None:
         self.write_json_pair("result.json", {"count": 3}, {"count": 4})
         result = rerun_assertions.outputs_semantically_equal(
