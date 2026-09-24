@@ -1,12 +1,12 @@
 {
-  "run_id": "run-20260922-194831",
-  "started_at": "2026-09-22T19:48:31.599343+00:00",
-  "completed_at": "2026-09-22T19:48:31.922862+00:00",
+  "run_id": "run-20260923-103833",
+  "started_at": "2026-09-23T10:38:31.767560+00:00",
+  "completed_at": "2026-09-23T10:38:33.009731+00:00",
   "status": "passed",
-  "inputs_hash": "sha256:a26b3e85e4dfb85bc9709804324f796381aa2c723e3f58e4bb9903a7ab4de1b6",
-  "outputs_hash": "sha256:af20c65c440950452a316c89096d6e77744a74fd03e5c3431da2e57490753009",
+  "inputs_hash": "sha256:5fc443c54cb4ad68f6f3033f7d6c8d8c20cb2532e9d588e8bd296a915ef9ae09",
+  "outputs_hash": "sha256:f658deb4222c972f49b6a9c637d13e09688c64164c3948717e6d299426e68d43",
   "environment": {
-    "python": "3.12.14",
+    "python": "3.14.4",
     "duckdb": "1.5.5",
     "analysis_crs": "EPSG:32618"
   },
@@ -69,7 +69,7 @@
     },
     {
       "path": "pipeline.py",
-      "sha256": "sha256:5485d49c80ab0b9436be30c5724570d5f2b7a1a6463a0d022fd10188fbd90d88"
+      "sha256": "sha256:d6d18e866f1a188b7e8b1a2c8125e4bfbcc3f52c20ee296bd33f4a104a090b59"
     }
   ],
   "outputs": [
@@ -82,12 +82,16 @@
       "sha256": "sha256:d0ce8552da6a6bd861e4c5bdc9333312c268e896cc49ad53a8c986154ea22a25"
     },
     {
+      "path": "data/derived/zone-metrics.geojson",
+      "sha256": "sha256:2cfe51a9600f6b63921b231f604c212b30359eba7ca452251126f71786a051f6"
+    },
+    {
       "path": "data/derived/zone-metrics.parquet",
       "sha256": "sha256:a1099bb32fb36a1bc15d12d63131aaf8a727b6b5736aa210b7cc7f6752e6ad40"
     },
     {
       "path": "project.qgz",
-      "sha256": "sha256:f872bf545cd45647e5e3b2a10b0408bc43a8dad8a050cba08a818eb3e1b7ef01"
+      "sha256": "sha256:234f1b62ebb640a55d4b1856fac8744a4b7ecf587272853ae22746662a0434ed"
     }
   ]
 }
