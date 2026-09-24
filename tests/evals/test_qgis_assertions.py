@@ -78,6 +78,38 @@ class StaticValidTests(unittest.TestCase):
         self.assertEqual(result.status, "passed")
 
 
+class DatasourcesPortableTests(unittest.TestCase):
+    """A live 001 trial pointed QGIS at GeoParquet; a stock Ubuntu QGIS 3.40
+    (GDAL 3.12, no Parquet driver) opened the layer invalid and drew nothing."""
+
+    def test_common_vector_formats_and_remote_tiles_pass(self) -> None:
+        workspace = make_workspace()
+        _write_qgz(workspace / "project.qgz", [
+            "./data/derived/a.gpkg|layername=a", "./data/derived/b.geojson", "./data/derived/c.fgb",
+            "type=xyz&amp;url=https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        ])
+        result = qgis_assertions.datasources_portable(workspace)
+        self.assertEqual(result.status, "passed", result.detail)
+
+    def test_parquet_and_arrow_layers_warn_with_the_missing_driver(self) -> None:
+        workspace = make_workspace()
+        _write_qgz(workspace / "project.qgz", [
+            "./data/derived/candidates.parquet", "./data/derived/zones.arrow|layername=zones",
+        ])
+        result = qgis_assertions.datasources_portable(workspace)
+        self.assertEqual(result.status, "warning", result.detail)
+        self.assertEqual(result.data["code"], "datasource_needs_optional_driver")
+        self.assertEqual(
+            result.data["datasources"],
+            {"./data/derived/candidates.parquet": "Parquet", "./data/derived/zones.arrow|layername=zones": "Arrow"},
+        )
+
+    def test_missing_project_fails(self) -> None:
+        result = qgis_assertions.datasources_portable(make_workspace())
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(result.data["code"], "file_missing")
+
+
 class RuntimeLoadUnavailableTests(unittest.TestCase):
     def test_missing_pyqgis_is_not_testable(self) -> None:
         workspace = make_workspace()

@@ -15,7 +15,7 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-from . import AssertionResult, failed, get_in, load_project_yaml, not_testable, passed, project_root
+from . import AssertionResult, failed, get_in, load_project_yaml, not_testable, passed, project_root, warning
 
 
 def _extract_qgs_xml(qgz_path: Path) -> str | None:
@@ -66,6 +66,43 @@ def static_valid(workspace: Path, path: str = "project.qgz", project_dir: str = 
     if errors:
         return failed("; ".join(errors), errors=errors, code="broken_datasource")
     return passed(f"{path} static-valid: {len(datasources)} datasource(s), all files resolve")
+
+
+#: GDAL drivers that are optional build components: Debian/Ubuntu QGIS
+#: packages ship without them (checked on QGIS 3.40.15, GDAL 3.12.2).
+OPTIONAL_DRIVER_SUFFIXES = {".parquet": "Parquet", ".geoparquet": "Parquet", ".arrow": "Arrow", ".feather": "Arrow", ".arrows": "Arrow"}
+
+
+def datasources_portable(workspace: Path, path: str = "project.qgz", project_dir: str = ".") -> AssertionResult:
+    """Every file datasource uses a format that every QGIS build can open.
+
+    GDAL's Parquet and Arrow drivers are optional. A layer pointing at
+    GeoParquet opens as invalid in a standard Ubuntu QGIS, and the map draws
+    nothing while every static check passes. Keep Parquet for analysis and
+    give QGIS a GeoPackage, GeoJSON or FlatGeobuf copy. A warning, not a
+    failure: builds that include the driver do open it.
+    """
+    xml, _qgz_path, error = _qgs_xml(workspace, path, project_dir)
+    if error == "file_missing":
+        return failed(f"{path} does not exist", code="file_missing")
+    if error == "not_a_zip":
+        return failed(f"{path} is not a valid zip archive", code="not_a_zip")
+    if xml is None:
+        return failed(f"{path} does not contain a .qgs document", code="no_qgs_document")
+    optional: dict[str, str] = {}
+    for datasource in re.findall(r"<datasource>(.*?)</datasource>", xml, re.DOTALL):
+        suffix = Path(datasource.strip().split("|", 1)[0]).suffix.lower()
+        if suffix in OPTIONAL_DRIVER_SUFFIXES:
+            optional[datasource.strip()] = OPTIONAL_DRIVER_SUFFIXES[suffix]
+    if optional:
+        return warning(
+            "layers need GDAL drivers many QGIS builds lack, so they open invalid there: "
+            + ", ".join(f"{source} ({driver})" for source, driver in optional.items())
+            + "; point QGIS at a GeoPackage, GeoJSON or FlatGeobuf copy",
+            code="datasource_needs_optional_driver",
+            datasources=optional,
+        )
+    return passed(f"{path}: every file datasource uses a format every QGIS build reads")
 
 
 _QGIS_APPLICATION: Any = None

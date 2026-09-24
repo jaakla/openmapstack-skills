@@ -318,6 +318,7 @@ def verify_project(
     if (root / "project.qgz").is_file():
         for name, fn in (
             ("static_valid", qgis_checks.static_valid),
+            ("datasources_portable", qgis_checks.datasources_portable),
             ("styles_declared", qgis_checks.styles_declared),
             ("groups_match_manifest", qgis_checks.groups_match_manifest),
             ("every_layer_declares_crs", qgis_checks.every_layer_declares_crs),

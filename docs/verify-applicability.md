@@ -55,6 +55,7 @@ checker where applicable.
 | `presentation.controls_match_pipeline` | always | canonical controls agree with processing expressions and overrides | controls without an addressable matching step are currently outside the predicate | 001, 003, 006 |
 | `presentation.edit_targets_reference_real_sources` | always | editing targets resolve to declared sources | none; no targets is valid | 001, 003, 006 |
 | `qgis.static_valid` | `project.qgz` exists | archive, document, and local datasource structure are valid | none | 001, 910, 913 |
+| `qgis.datasources_portable` | `project.qgz` exists | file datasources use formats every QGIS build reads | Parquet/Arrow layers warn (`datasource_needs_optional_driver`); malformed QGIS document fails | 001 |
 | `qgis.styles_declared` | `project.qgz` exists | vector layers declare renderers/styles | malformed QGIS document fails | 001, 006, 912 |
 | `qgis.groups_match_manifest` | `project.qgz` exists | QGIS layer groups match manifest groups | malformed QGIS document fails | 001, 006 |
 | `qgis.every_layer_declares_crs` | `project.qgz` exists | every QGIS layer declares CRS | malformed QGIS document fails | 001, 006 |

@@ -639,6 +639,7 @@ class _Validator:
             else:
                 self.add("qgis.project", "passed", "project.qgz exists", path="project.qgz")
                 self._qgis_layer_crs()
+                self._qgis_datasource_formats()
 
     def _runtime_parameters(self) -> None:
         """Delegates to ``verify``'s ``project.parameters_match_steps``.
@@ -650,6 +651,17 @@ class _Validator:
         result = project_checks.parameters_match_steps(self.root)
         if result.status != "not_testable":
             self.add("runtime.parameters", result.status, result.detail, path="runtime.implementation.parameters", **result.data)
+
+    def _qgis_datasource_formats(self) -> None:
+        """Delegates to ``verify``'s ``qgis.datasources_portable``.
+
+        A live trial delivered a map whose candidate layer was GeoParquet;
+        every check passed, and a standard Ubuntu QGIS drew nothing. An
+        unreadable archive is already reported by ``qgis.layer_crs``.
+        """
+        result = qgis_checks.datasources_portable(self.root)
+        if result.status in {"passed", "warning"}:
+            self.add("qgis.datasource_formats", result.status, result.detail, path="project.qgz", **result.data)
 
     def _qgis_layer_crs(self) -> None:
         """Every map layer must declare a complete CRS, with reprojection on.
