@@ -188,6 +188,28 @@ pipeline never writes. The agent never ran a clean rerun; the guidance said to, 
 Follow-up: both project skills now name that command and say every derived file must come from the
 canonical pipeline.
 
+## Material 001 at `70d110a` (2026-09-24)
+
+Candidate `70d110a` (collection `sha256:4f55897533424d005de4fb7828c5c763cdfcebbd0ddb34eba11a0b4dc25f206c`).
+Material 001 **passed its eval**: every hard assertion, including `qgis.datasources_portable` and
+the four `rerun.*` assertions from the sandboxed clean rerun. 57 turns, **$3.048889** (record
+`341de3ae`). The agent ran `validate` and `verify`, not `verify --rerun`.
+
+Independent checks found two more issues. Sandboxed `verify --rerun` failed
+`rerun.outputs_semantically_equal` on the GeoPackage output; its features were identical and only
+`gpkg_contents.last_change` differed. That was a comparator defect, since GeoPackage was compared
+by bytes. The real-QGIS render check failed: roads and POI GeoJSON were WGS84 but declared
+EPSG:3301, so QGIS drew them near the grid's origin.
+
+Follow-ups:
+- GeoPackage outputs are compared semantically.
+- New `qgis.layer_crs_matches_data` (in `validate` as `qgis.layer_crs_data`) fails a declared CRS
+  that contradicts the data. Live 001 asserts it, and the QGIS guidance states the rule.
+- The review also found absolute datasource paths in the committed NYC project (#54).
+  `qgis.static_valid` now fails absolute paths, and the example writes relative ones.
+
+Round spend so far: $6.705816 of the $10 authorization.
+
 ## Running the remaining trials
 
 Freeze a clean candidate at or after `250c99c` and confirm a new spend authorization first.
