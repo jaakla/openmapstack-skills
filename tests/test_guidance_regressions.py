@@ -136,6 +136,18 @@ class AcceptanceGuidanceTests(GuidanceCase):
                 self.assertIn("do not deliver while", text)
                 self.assertNotIn("path when the CLI\nis available", text)
 
+    def test_qgis_layers_use_formats_every_build_reads(self) -> None:
+        # A live 001 map on GeoParquet drew nothing in Ubuntu QGIS 3.40 / GDAL
+        # 3.12, which the retracted "your GDAL is old" advice would not explain.
+        for name in ("qgis.md", "project-spec.md"):
+            for path, text in _shipped_copies(name).items():
+                with self.subTest(path=path):
+                    self.assertShips(text, "**Use formats every QGIS build reads:**", path)
+                    self.assertShips(text, "Keep GeoParquet for analysis and export a QGIS-facing copy", path)
+        for path, text in _shipped_copies("qgis.md").items():
+            with self.subTest(path=path):
+                self.assertRetracted(text, "your GDAL is old", path)
+
     def test_current_source_verification_is_not_inherited_from_reference_notes(self) -> None:
         text = (SKILLS_ROOT / "geospatial-data-discovery/SKILL.md").read_text()
         self.assertIn("pages during this task", text)
