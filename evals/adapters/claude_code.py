@@ -22,7 +22,7 @@ from .routing import credentials
 # Granted explicitly: the sandbox hides the host's Claude settings, and in
 # print mode any tool without an allow rule is refused. The sandbox, not a
 # per-command prompt, is what confines these tools.
-ALLOWED_TOOLS = "Read,Write,Edit,Glob,Grep,Bash,Skill,WebSearch,WebFetch"
+ALLOWED_TOOLS = ("Read", "Write", "Edit", "Glob", "Grep", "Bash", "Skill", "WebSearch", "WebFetch")
 
 # Non-secret provider routing the operator may set (e.g. a workspace header
 # that scopes spend); forwarded by name, recorded by name only.
@@ -91,6 +91,23 @@ class ClaudeCodeAdapter(AgentAdapter):
             metadata={"executable": executable, "requested_seed": seed},
         )
 
+    def _preflight(self, executable_path: str | None) -> tuple[str | None, str, dict[str, str]]:
+        """A refusal reason, or ``None`` with the credential name and host environment."""
+        if executable_path is None:
+            return "`claude` CLI not found on PATH", "", {}
+        if self.max_budget_usd is None or self.max_budget_usd <= 0:
+            return "a positive --max-budget-usd is required for a paid live trial", "", {}
+        reason = unavailable_reason()
+        if reason:
+            return f"refusing an unisolated live run: {reason}", "", {}
+        try:
+            credential, host_environment = credentials("claude_code", self.credential_file)
+        except ValueError as exc:
+            return str(exc), "", {}
+        if not host_environment.get(credential):
+            return "no Claude credential: set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN, or pass --credential-file", "", {}
+        return None, credential, host_environment
+
     def run(
         self,
         prompt: str,
@@ -101,25 +118,10 @@ class ClaudeCodeAdapter(AgentAdapter):
         seed: int | None = None,
     ) -> AgentRunResult:
         executable_path = shutil.which(self.executable)
-        if executable_path is None:
-            return self._refusal("`claude` CLI not found on PATH", workspace, self.executable, seed)
-        if self.max_budget_usd is None or self.max_budget_usd <= 0:
-            return self._refusal("a positive --max-budget-usd is required for a paid live trial", workspace, executable_path, seed)
-        reason = unavailable_reason()
-        if reason:
-            return self._refusal(f"refusing an unisolated live run: {reason}", workspace, executable_path, seed)
-        try:
-            credential, host_environment = credentials("claude_code", self.credential_file)
-        except ValueError as exc:
-            return self._refusal(str(exc), workspace, executable_path, seed)
-        secret = host_environment.get(credential)
-        if not secret:
-            return self._refusal(
-                "no Claude credential: set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN, or pass --credential-file",
-                workspace,
-                executable_path,
-                seed,
-            )
+        reason, credential, host_environment = self._preflight(executable_path)
+        if reason or executable_path is None:
+            return self._refusal(reason or "", workspace, executable_path or self.executable, seed)
+        secret = host_environment[credential]
 
         if fixture is not None and fixture.exists():
             shutil.copytree(fixture, workspace, dirs_exist_ok=True)
@@ -136,7 +138,7 @@ class ClaudeCodeAdapter(AgentAdapter):
             "--permission-mode",
             "acceptEdits",
             "--allowedTools",
-            ALLOWED_TOOLS,
+            ",".join(ALLOWED_TOOLS),
             "--no-session-persistence",
             "--no-chrome",
             "--max-budget-usd",
@@ -217,7 +219,7 @@ class ClaudeCodeAdapter(AgentAdapter):
                 "session_persistence": False,
                 "chrome": False,
                 "customizations": False,
-                "allowed_tools": ALLOWED_TOOLS.split(","),
+                "allowed_tools": list(ALLOWED_TOOLS),
                 "max_budget_usd": self.max_budget_usd,
                 "credential": credential,
                 "provider_settings": sorted(forwarded),

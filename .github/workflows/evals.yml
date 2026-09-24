@@ -37,15 +37,9 @@ jobs:
 
       - name: Enable the live-agent sandbox for its tests
         # tests/evals/test_isolation.py runs a real rootless Bubblewrap
-        # sandbox; Ubuntu 24.04 blocks unprivileged user namespaces through
-        # AppArmor by default. OPENMAPSTACK_REQUIRE_SANDBOX turns a skip into
-        # a failure so the isolation guarantee cannot silently go untested.
-        run: |
-          sudo apt-get install -y bubblewrap
-          if sudo sysctl -n kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
-            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-          fi
-          bwrap --unshare-user --ro-bind / / true
+        # sandbox. OPENMAPSTACK_REQUIRE_SANDBOX turns a skip into a failure
+        # so the isolation guarantee cannot silently go untested.
+        run: bash scripts/ci/enable-bwrap.sh
 
       - name: Run unit tests with assertion coverage gate
         env:

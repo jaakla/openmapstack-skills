@@ -102,14 +102,8 @@ jobs:
             claude_code)
               npm install --global @anthropic-ai/claude-code
               claude --version
-              # The adapter runs Claude Code in a rootless Bubblewrap sandbox and
-              # refuses to run without one. Ubuntu 24.04 restricts unprivileged
-              # user namespaces through AppArmor by default.
-              sudo apt-get install -y bubblewrap
-              if sudo sysctl -n kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
-                sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-              fi
-              bwrap --unshare-user --ro-bind / / true
+              # The adapter refuses to run Claude Code without its sandbox.
+              bash scripts/ci/enable-bwrap.sh
               ;;
             codex)
               npm install --global @openai/codex

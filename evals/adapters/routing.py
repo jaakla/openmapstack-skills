@@ -102,11 +102,9 @@ def claude_events(events, inventory):
                 # that known decoration, then verify against source bytes.
                 output = re.sub(r"(?m)^[ \t]*\d+(?:\t|→)", "", output)
                 observation = _observation(arguments["file_path"], inventory, index, "read", output)
-            elif name not in {"Glob", "Write", "Edit", "TodoWrite", "ToolSearch", "WebFetch", "WebSearch"}:
+            elif name not in NON_READ_TOOLS:
                 # Bash, Grep, nested agents and future tools can load text
-                # through paths this decoder cannot attest. ToolSearch returns
-                # tool schemas and the web tools fetch only URLs, so none of
-                # them can read a staged skill file.
+                # through paths this decoder cannot attest.
                 gaps.append("unobserved_read_surface:" + str(name))
             if observation:
                 observations.append(observation)
@@ -143,6 +141,10 @@ def codex_events(events, inventory):
             observations.append(observation)
     return observations, gaps
 
+
+# Tools that cannot read a staged skill file: ToolSearch returns tool schemas
+# and the web tools fetch only URLs. Every other tool leaves a telemetry gap.
+NON_READ_TOOLS = frozenset({"Glob", "Write", "Edit", "TodoWrite", "ToolSearch", "WebFetch", "WebSearch"})
 
 # Web tools are granted so a trial can make the provider lookup the discovery
 # guidance requires; without an allow rule, print mode refuses them. Bash stays

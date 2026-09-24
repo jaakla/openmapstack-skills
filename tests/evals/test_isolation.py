@@ -22,7 +22,6 @@ sys.path.insert(0, str(REPO_ROOT / "evals"))
 
 from adapters.isolation import PACKAGE_DIR, Sandbox, sandboxed_clean_rerun, symlink_chain, unavailable_reason  # noqa: E402
 
-UNAVAILABLE = unavailable_reason()
 REQUIRED = os.environ.get("OPENMAPSTACK_REQUIRE_SANDBOX") == "1"
 
 PROBE = """
@@ -70,11 +69,17 @@ class SandboxDeclarationTests(unittest.TestCase):
         self.assertNotIn("HOST_ONLY_SECRET", environment)
 
 
-@unittest.skipIf(UNAVAILABLE and not REQUIRED, f"sandbox unavailable: {UNAVAILABLE}")
 class SandboxTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        # Probed here rather than at import so unrelated test runs skip it.
+        cls.unavailable = unavailable_reason()
+        if cls.unavailable and not REQUIRED:
+            raise unittest.SkipTest(f"sandbox unavailable: {cls.unavailable}")
+
     def setUp(self) -> None:
-        if UNAVAILABLE:
-            self.fail(f"OPENMAPSTACK_REQUIRE_SANDBOX=1 but the sandbox is unavailable: {UNAVAILABLE}")
+        if self.unavailable:
+            self.fail(f"OPENMAPSTACK_REQUIRE_SANDBOX=1 but the sandbox is unavailable: {self.unavailable}")
 
     def test_agent_sees_its_workspace_and_package_but_not_the_repository(self) -> None:
         with tempfile.TemporaryDirectory(prefix="openmapstack-isolation-test-") as temporary:

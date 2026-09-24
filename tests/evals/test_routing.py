@@ -14,7 +14,7 @@ from unittest.mock import patch
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "evals"))
 
-from adapters.routing import SURFACES, claude_events, codex_events, credentials
+from adapters.routing import NON_READ_TOOLS, SURFACES, claude_events, codex_events, credentials
 from routing import container_command, grade_evidence, load_cases, main, run_trial, stage_skill, stage_collection
 
 
@@ -101,6 +101,9 @@ class RoutingEvidenceTests(unittest.TestCase):
         command = SURFACES["claude_code"]["command"]
         granted = command[command.index("--allowedTools") + 1].split(",")
         self.assertEqual(sorted(granted), ["WebFetch", "WebSearch"])
+        # A granted tool the decoder does not know would mark every trial
+        # that uses it not_testable.
+        self.assertLessEqual(set(granted), NON_READ_TOOLS)
 
     def test_byte_metric_counts_unique_verified_sources(self):
         observations, gaps = claude_events(claude_trace(), self.inventory)
