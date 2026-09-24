@@ -142,6 +142,15 @@ class AcceptanceGuidanceTests(GuidanceCase):
                 self.assertIn("whichever form works for every", text)
                 self.assertNotIn("path when the CLI\nis available", text)
 
+    def test_qgis_layer_crs_must_match_its_data(self) -> None:
+        # A live 001 map declared EPSG:3301 on WGS84 GeoJSON and drew nothing
+        # where the analysis was.
+        for name in ("qgis.md", "project-spec.md"):
+            for path, text in _shipped_copies(name).items():
+                with self.subTest(path=path):
+                    self.assertShips(text, "**The declared CRS must also be the data's.**", path)
+                    self.assertShips(text, "GeoJSON without a `crs` member is WGS84 (EPSG:4326, RFC 7946)", path)
+
     def test_qgis_layers_use_formats_every_build_reads(self) -> None:
         # A live 001 map on GeoParquet drew nothing in Ubuntu QGIS 3.40 / GDAL
         # 3.12, which the retracted "your GDAL is old" advice would not explain.

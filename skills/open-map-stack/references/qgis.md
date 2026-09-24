@@ -412,6 +412,8 @@ project.yaml
    ```
    *Common Trap:* If you omit `|layername=...`, QGIS cannot resolve the geometry column and loads the table as a non-spatial attribute list ("no-geographical table").
 
+   **The declared CRS must also be the data's.** QGIS trusts the `<srs>` you write. GeoJSON without a `crs` member is WGS84 (EPSG:4326, RFC 7946), so a WGS84 export declared as EPSG:3301 draws a few metres from the grid's origin, far from the analysis. Declare EPSG:4326 for such files, or export them in the project CRS. `openmapstack validate` fails it as `qgis.layer_crs_data`.
+
    **Use formats every QGIS build reads:** GeoPackage, GeoJSON or FlatGeobuf. GDAL's Parquet and Arrow drivers are optional build components that Debian/Ubuntu QGIS packages omit, so a layer on GeoParquet opens invalid there and the map draws nothing while every static check passes. Keep GeoParquet for analysis and export a QGIS-facing copy. `openmapstack validate` warns as `qgis.datasource_formats`.
 
 2. **Include an Official Regional Tiled Basemap:**

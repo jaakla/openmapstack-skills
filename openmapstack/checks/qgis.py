@@ -9,7 +9,9 @@ validation isn't available.
 from __future__ import annotations
 
 import html
+import json
 import re
+import sqlite3
 import tempfile
 import zipfile
 from pathlib import Path
@@ -31,9 +33,13 @@ def _extract_qgs_xml(qgz_path: Path) -> str | None:
 
 
 def static_valid(workspace: Path, path: str = "project.qgz", project_dir: str = ".") -> AssertionResult:
-    """The .qgz opens as a zip containing a .qgs, every <datasource> referencing
-    a relative file path resolves on disk, and GeoPackage datasources declare
-    a layername= (otherwise GDAL silently loads a non-spatial attribute table)."""
+    """The .qgz opens as a zip containing a .qgs, every local <datasource> is a
+    relative path that resolves on disk, and GeoPackage datasources declare
+    a layername= (otherwise GDAL silently loads a non-spatial attribute table).
+
+    An absolute path fails even when it exists: a QGIS-authored project once
+    shipped the author's own paths and passed because they resolved locally.
+    """
     qgz_path = project_root(workspace, project_dir) / path
     if not qgz_path.exists():
         return failed(f"{path} does not exist", code="file_missing")
@@ -57,6 +63,10 @@ def static_valid(workspace: Path, path: str = "project.qgz", project_dir: str = 
         if ds.startswith(("http", "type=xyz", "contextualWMSLegend", "crs=")) or "url=" in ds:
             continue
         raw_path = ds.split("|", 1)[0]
+        if Path(raw_path).is_absolute() or re.match(r"^[A-Za-z]:[\\/]", raw_path):
+            # Resolves on the machine that wrote it and nowhere else.
+            errors.append(f"datasource uses an absolute path: {raw_path}")
+            continue
         if raw_path.lower().endswith(".gpkg") and "layername=" not in ds:
             errors.append(f"GeoPackage datasource missing layername=: {ds}")
         resolved = (root / raw_path).resolve() if raw_path.startswith("./") or not raw_path.startswith("/") else Path(raw_path)
@@ -115,6 +125,94 @@ def datasources_portable(workspace: Path, path: str = "project.qgz", project_dir
             datasources=unportable,
         )
     return passed(f"{path}: every local file datasource uses a format every QGIS build reads")
+
+
+def _data_crs(root: Path, datasource: str) -> str | None:
+    """The CRS a GeoJSON or GeoPackage layer's data is actually in, or ``None``.
+
+    GeoJSON without a ``crs`` member is WGS84 by RFC 7946, which is how GDAL
+    reads it. GeoPackage records the SRS per geometry table.
+    """
+    location, *options = datasource.split("|")
+    path = root / location
+    if not path.is_file():
+        return None
+    suffix = path.suffix.lower()
+    if suffix in {".geojson", ".json"}:
+        try:
+            crs = json.loads(path.read_text(encoding="utf-8")).get("crs")
+        except (OSError, ValueError, AttributeError):
+            return None
+        if not crs:
+            return "EPSG:4326"
+        name = str((crs.get("properties") or {}).get("name", "")) if isinstance(crs, dict) else ""
+        if "CRS84" in name.upper():
+            return "EPSG:4326"
+        match = re.search(r"EPSG:+(\d+)", name, re.IGNORECASE)
+        return f"EPSG:{match.group(1)}" if match else None
+    if suffix == ".gpkg":
+        layer = next((option.split("=", 1)[1] for option in options if option.startswith("layername=")), None)
+        try:
+            connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+            try:
+                rows = connection.execute(
+                    "SELECT g.table_name, s.organization, s.organization_coordsys_id FROM gpkg_geometry_columns g"
+                    " JOIN gpkg_spatial_ref_sys s ON g.srs_id = s.srs_id"
+                ).fetchall()
+            finally:
+                connection.close()
+        except sqlite3.Error:
+            return None
+        matches = [row for row in rows if layer is None or row[0] == layer]
+        if len(matches) != 1 or str(matches[0][1]).upper() != "EPSG":
+            return None
+        return f"EPSG:{matches[0][2]}"
+    return None
+
+
+def layer_crs_matches_data(workspace: Path, path: str = "project.qgz", project_dir: str = ".") -> AssertionResult:
+    """Each GeoJSON or GeoPackage layer's declared CRS is the CRS of its data.
+
+    QGIS trusts a hand-written ``<srs>``. A live trial declared EPSG:3301 on
+    WGS84 GeoJSON, so QGIS placed the roads a few metres from the grid's
+    origin and the map drew nothing where the analysis was, while every
+    static check passed. Layers whose data CRS cannot be read here are
+    skipped; missing files are reported by ``qgis.static_valid``.
+    """
+    xml, _qgz_path, error = _qgs_xml(workspace, path, project_dir)
+    if error == "file_missing":
+        return failed(f"{path} does not exist", code="file_missing")
+    if error == "not_a_zip":
+        return failed(f"{path} is not a valid zip archive", code="not_a_zip")
+    if xml is None:
+        return failed(f"{path} does not contain a .qgs document", code="no_qgs_document")
+    root = project_root(workspace, project_dir)
+    compared: dict[str, dict[str, str]] = {}
+    mismatched: list[str] = []
+    for layer_xml in re.findall(r"<maplayer[ >].*?</maplayer>", xml, re.DOTALL):
+        datasource = html.unescape((re.search(r"<datasource>(.*?)</datasource>", layer_xml, re.DOTALL) or [None, ""])[1]).strip()
+        authid = re.search(r"<authid>(.*?)</authid>", layer_xml, re.DOTALL)
+        if not datasource or authid is None or _is_provider_datasource(datasource):
+            continue
+        actual = _data_crs(root, datasource)
+        if actual is None:
+            continue
+        name_match = re.search(r"<layername>(.*?)</layername>", layer_xml, re.DOTALL)
+        name = name_match.group(1).strip() if name_match else datasource
+        declared = authid.group(1).strip()
+        compared[name] = {"declared": declared, "data": actual}
+        if declared.upper() != actual.upper():
+            mismatched.append(name)
+    if mismatched:
+        return failed(
+            "layers declare a CRS their data is not in, so QGIS draws them in the wrong place: "
+            + ", ".join(f"{name} (declared {compared[name]['declared']}, data {compared[name]['data']})" for name in mismatched),
+            code="layer_crs_mismatch",
+            layers={name: compared[name] for name in mismatched},
+        )
+    if not compared:
+        return not_testable("no local GeoJSON or GeoPackage layer to compare", code="no_comparable_layers")
+    return passed(f"all {len(compared)} comparable layers declare the CRS their data is in", layers=compared)
 
 
 _QGIS_APPLICATION: Any = None

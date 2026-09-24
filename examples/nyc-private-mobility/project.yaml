@@ -6,7 +6,7 @@ project:
     fleet and hub coverage and account demand, and show ranked candidate zones on an interactive map while
     respecting all database access restrictions.
   created_at: '2026-09-17T00:00:00Z'
-  updated_at: '2026-09-23T10:38:33.009731+00:00'
+  updated_at: '2026-09-24T13:19:46.187630+00:00'
   status: validated
 interpretation:
   objective: Rank NYC taxi zones as operations/charging-hub candidates for tenant alpha by combining three
@@ -414,14 +414,14 @@ validation:
     expression: demand_accounts >= 40 AND hub_distance_m >= 1500 AND fleet_present <= 6
 runs:
   latest:
-    id: run-20260923-103833
-    started_at: '2026-09-23T10:38:31.767560+00:00'
-    completed_at: '2026-09-23T10:38:33.009731+00:00'
+    id: run-20260924-131946
+    started_at: '2026-09-24T13:19:45.507789+00:00'
+    completed_at: '2026-09-24T13:19:46.187630+00:00'
     status: passed
-    inputs_hash: sha256:5fc443c54cb4ad68f6f3033f7d6c8d8c20cb2532e9d588e8bd296a915ef9ae09
-    outputs_hash: sha256:f658deb4222c972f49b6a9c637d13e09688c64164c3948717e6d299426e68d43
+    inputs_hash: sha256:1cf94f739ac93ee4f3f7924fd01770f8774f57af391ac3ce289da8420cef7933
+    outputs_hash: sha256:650b1e04e0cdc5c16c79647e96eef675914f06930420fc1401c99f397d56f0e6
     record:
-      path: runs/run-20260923-103833.json
+      path: runs/run-20260924-131946.json
     validation_report:
       path: validation/latest-report.json
 runtime:

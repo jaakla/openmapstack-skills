@@ -322,6 +322,7 @@ def verify_project(
             ("styles_declared", qgis_checks.styles_declared),
             ("groups_match_manifest", qgis_checks.groups_match_manifest),
             ("every_layer_declares_crs", qgis_checks.every_layer_declares_crs),
+            ("layer_crs_matches_data", qgis_checks.layer_crs_matches_data),
             ("runtime_load", qgis_checks.runtime_load),
             ("layers_match_manifest", qgis_checks.layers_match_manifest),
             ("every_declared_layer_renders", qgis_checks.every_declared_layer_renders),

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shlex
+import sqlite3
 from pathlib import Path
 from typing import Any
 
@@ -171,12 +172,68 @@ def _parquet_snapshot(path: Path, ignored_fields: set[str]) -> dict[str, Any]:
     return {"schema": schema, "rows": sorted(normalized_rows, key=_stable_json)}
 
 
+def _geopackage_snapshot(path: Path, ignored_fields: set[str]) -> Any:
+    """Schema, core metadata and rows of a GeoPackage, without its write time.
+
+    ``gpkg_contents.last_change`` records when the file was written, so a
+    byte hash reports every rebuild as changed even when no feature differs.
+    Everything a consumer interprets is kept: column definitions, geometry
+    columns and the SRS definitions they reference. Geometry blobs are
+    compared as stored: one writer encodes one geometry identically.
+    """
+    connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+
+    def metadata(query: str) -> list[list[Any]]:
+        try:
+            return [list(row) for row in connection.execute(query).fetchall()]
+        except sqlite3.OperationalError:  # optional table absent
+            return []
+
+    try:
+        contents = connection.execute(
+            "SELECT table_name, data_type, srs_id, min_x, min_y, max_x, max_y FROM gpkg_contents ORDER BY table_name"
+        ).fetchall()
+        geometry_columns = metadata("SELECT * FROM gpkg_geometry_columns ORDER BY table_name")
+        spatial_reference_systems = metadata(
+            "SELECT srs_name, srs_id, organization, organization_coordsys_id, definition"
+            " FROM gpkg_spatial_ref_sys ORDER BY srs_id"
+        )
+        schemas = {}
+        tables = {}
+        for table_name, *_ in contents:
+            schemas[table_name] = [
+                list(column[1:]) for column in connection.execute(f"PRAGMA table_info({_sql_identifier(table_name)})")
+            ]
+            cursor = connection.execute(f"SELECT * FROM {_sql_identifier(table_name)}")
+            names = [column[0] for column in cursor.description]
+            rows = [
+                {
+                    name: value.hex() if isinstance(value, bytes) else _normalize_json(value, ignored_fields)
+                    for name, value in zip(names, row, strict=True)
+                    if name not in ignored_fields
+                }
+                for row in cursor.fetchall()
+            ]
+            tables[table_name] = sorted(rows, key=_stable_json)
+    finally:
+        connection.close()
+    return {
+        "contents": [list(row) for row in contents],
+        "geometry_columns": geometry_columns,
+        "spatial_reference_systems": spatial_reference_systems,
+        "schemas": schemas,
+        "tables": tables,
+    }
+
+
 def _semantic_snapshot(path: Path, ignored_fields: set[str]) -> Any:
     suffix = path.suffix.lower()
     if suffix in {".json", ".geojson"}:
         return _normalize_json(json.loads(path.read_text(encoding="utf-8")), ignored_fields)
     if suffix in {".parquet", ".geoparquet"}:
         return _parquet_snapshot(path, ignored_fields)
+    if suffix == ".gpkg":
+        return _geopackage_snapshot(path, ignored_fields)
     return {"sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
 

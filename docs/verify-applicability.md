@@ -54,16 +54,17 @@ checker where applicable.
 | `presentation.layers_use_semantic_roles` | always | declared map layers carry semantic roles | no layers produces a warning | 001, 006 |
 | `presentation.controls_match_pipeline` | always | canonical controls agree with processing expressions and overrides | controls without an addressable matching step are currently outside the predicate | 001, 003, 006 |
 | `presentation.edit_targets_reference_real_sources` | always | editing targets resolve to declared sources | none; no targets is valid | 001, 003, 006 |
-| `qgis.static_valid` | `project.qgz` exists | archive, document, and local datasource structure are valid | none | 001, 910, 913 |
+| `qgis.static_valid` | `project.qgz` exists | archive, document, and local datasource structure are valid; local datasources are relative paths | none | 001, 910, 913 |
 | `qgis.datasources_portable` | `project.qgz` exists | local file datasources use an allowlisted format every QGIS build reads (GeoPackage, GeoJSON, FlatGeobuf, Shapefile, GeoTIFF) | other formats warn (`datasource_format_not_portable`); remote/provider datasources are out of scope; malformed QGIS document fails | 001 |
 | `qgis.styles_declared` | `project.qgz` exists | vector layers declare renderers/styles | malformed QGIS document fails | 001, 006, 912 |
 | `qgis.groups_match_manifest` | `project.qgz` exists | QGIS layer groups match manifest groups | malformed QGIS document fails | 001, 006 |
 | `qgis.every_layer_declares_crs` | `project.qgz` exists | every QGIS layer declares CRS | malformed QGIS document fails | 001, 006 |
+| `qgis.layer_crs_matches_data` | `project.qgz` exists | each local GeoJSON/GeoPackage layer declares the CRS its data is in (GeoJSON without `crs` is EPSG:4326) | no comparable layer is `not_testable`; malformed QGIS document fails | 001 |
 | `qgis.runtime_load` | `project.qgz` exists | QGIS opens the project and reports valid layers | system PyQGIS; missing PyQGIS is `not_testable` | 001, 006 |
 | `qgis.layers_match_manifest` | `project.qgz` exists | QGIS layers correspond to declared presentation sources | malformed QGIS document fails | 001, 006 |
 | `rerun.no_chat_dependency` | always | declared implementation files do not depend on chat/transcript state | missing canonical dependencies are `not_testable` | 005 |
 | `rerun.clean_execution_succeeded` | `--rerun` | canonical pipeline succeeds and post-run validation passes in an empty workspace | unstartable or failed execution fails; absent runner evidence is `not_testable` | 005 |
-| `rerun.outputs_semantically_equal` | `--rerun` and at least one readable geodata output | normalized outputs are equivalent across runs | DuckDB Spatial for Parquet; normalization failures are `not_testable` | 005 |
+| `rerun.outputs_semantically_equal` | `--rerun` and at least one readable geodata output | normalized outputs are equivalent across runs (GeoJSON/JSON, Parquet, GeoPackage without its write timestamp; other formats by bytes) | DuckDB Spatial for Parquet; normalization failures are `not_testable` | 005 |
 | `rerun.validation_report_reproducible` | `--rerun` | validation evidence reproduces after nondeterministic fields are removed | missing report in either run is `not_testable` | 005 |
 | `overrides.source_files_byte_identical` | `--rerun` and immutable source/override files exist | clean rerun did not mutate declared inputs | missing files/workspace are `not_testable` | 001, 002, 005, 911 |
 

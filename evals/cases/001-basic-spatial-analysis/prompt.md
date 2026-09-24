@@ -17,7 +17,8 @@ missing attributes or change the stated selection rules to obtain a nonempty res
 The numeric evidence fields below belong directly on the corresponding report checks and
 refer to the candidate dataset. Document the parcel-selection predicate on the named source.
 QGIS must use portable relative datasources in formats every QGIS build reads (GeoPackage,
-GeoJSON or FlatGeobuf, not Parquet), valid styles, complete layer CRS definitions,
+GeoJSON or FlatGeobuf, not Parquet), valid styles, complete layer CRS definitions that
+match each layer's data,
 enabled reprojection and groups matching the manifest. The dashboard must reflect the same
 layers, parameters and warnings. Include the declared analysis/user_overrides groups even
 when there are no user edits. The delivered project must survive a clean rerun after relocation.

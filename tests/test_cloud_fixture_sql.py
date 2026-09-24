@@ -566,6 +566,9 @@ class QgisProjectBuilderTests(unittest.TestCase):
                 self.assertEqual(qgis_layer["name"], builder_layer["name"])
                 self.assertEqual(qgis_layer["provider"], builder_layer["provider"])
                 self.assertEqual(qgis_layer["crs"], builder_layer["crs"])
+                # The committed project once carried this machine's absolute
+                # paths; both writers must emit the portable relative form.
+                self.assertEqual(qgis_layer["datasource"], builder_layer["datasource"])
                 self.assertEqual(qgis_layer["renderer"], builder_layer["renderer"])
                 self.assertEqual(qgis_layer["renderer_attr"], builder_layer["renderer_attr"])
                 self.assertEqual(

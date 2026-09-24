@@ -90,6 +90,9 @@ assertions:
   # never reprojected — which put the Web Mercator basemap 1500 km from
   # the Estonian data while every other check passed.
   - assert: qgis.every_layer_declares_crs
+  # A declared CRS must also be the data's: WGS84 GeoJSON declared as
+  # EPSG:3301 drew the roads far from Tartu in a real QGIS.
+  - assert: qgis.layer_crs_matches_data
   - assert: qgis.groups_match_manifest
   # A non-QGIS unit-test interpreter records this explicitly as not_testable;
   # the scheduled QGIS integration environment is expected to make it pass.

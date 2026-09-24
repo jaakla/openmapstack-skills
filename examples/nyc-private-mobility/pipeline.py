@@ -898,6 +898,9 @@ def _build_qgis_xml_with_qgis(manifest: dict) -> str:
             xml = archive.read(name).decode("utf-8")
     for generated, stable in identifiers.items():
         xml = xml.replace(generated, stable)
+    # QGIS wrote into a temporary directory, so it could not express layer
+    # paths relative to the project and stored this machine's absolute ones.
+    xml = xml.replace(f"{ROOT.as_posix()}/", "./")
     return _stabilise_symbol_ids(xml)
 
 
