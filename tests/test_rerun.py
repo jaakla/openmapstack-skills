@@ -255,7 +255,9 @@ class RerunNormalizationTests(unittest.TestCase):
         )
         self.assertEqual(result.status, "passed", result.detail)
 
-    def write_geopackage(self, root: Path, *, last_change: str, name: str = "P1") -> None:
+    def write_geopackage(
+        self, root: Path, *, last_change: str, name: str = "P1", geometry_type: str = "POLYGON"
+    ) -> None:
         import sqlite3
 
         path = root / "candidates.gpkg"
@@ -266,6 +268,13 @@ class RerunNormalizationTests(unittest.TestCase):
             )
             connection.execute(
                 "INSERT INTO gpkg_contents VALUES ('candidates', 'features', 3301, 0, 0, 1, 1, ?)", (last_change,)
+            )
+            connection.execute(
+                "CREATE TABLE gpkg_geometry_columns (table_name TEXT, column_name TEXT,"
+                " geometry_type_name TEXT, srs_id INTEGER, z INTEGER, m INTEGER)"
+            )
+            connection.execute(
+                "INSERT INTO gpkg_geometry_columns VALUES ('candidates', 'geom', ?, 3301, 0, 0)", (geometry_type,)
             )
             connection.execute("CREATE TABLE candidates (fid INTEGER PRIMARY KEY, id TEXT, geom BLOB)")
             connection.execute("INSERT INTO candidates VALUES (1, ?, ?)", (name, b"GP\x00\x01"))
@@ -285,6 +294,13 @@ class RerunNormalizationTests(unittest.TestCase):
         result = rerun_assertions.outputs_semantically_equal(self.original, str(self.rerun), ["candidates.gpkg"])
         self.assertEqual(result.status, "failed", result.detail)
         self.assertEqual(result.data["code"], "output_semantically_changed")
+
+    def test_geopackage_metadata_change_fails_with_identical_rows(self) -> None:
+        # Review feedback: rows alone miss a geometry type, column or CRS change.
+        self.write_geopackage(self.original, last_change="t1")
+        self.write_geopackage(self.rerun, last_change="t2", geometry_type="MULTIPOLYGON")
+        result = rerun_assertions.outputs_semantically_equal(self.original, str(self.rerun), ["candidates.gpkg"])
+        self.assertEqual(result.status, "failed", result.detail)
 
     def test_semantically_changed_output_fails(self) -> None:
         self.write_json_pair("result.json", {"count": 3}, {"count": 4})

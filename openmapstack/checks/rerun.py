@@ -173,20 +173,37 @@ def _parquet_snapshot(path: Path, ignored_fields: set[str]) -> dict[str, Any]:
 
 
 def _geopackage_snapshot(path: Path, ignored_fields: set[str]) -> Any:
-    """Tables, extents and rows of a GeoPackage, without its write timestamp.
+    """Schema, core metadata and rows of a GeoPackage, without its write time.
 
     ``gpkg_contents.last_change`` records when the file was written, so a
     byte hash reports every rebuild as changed even when no feature differs.
-    Geometry blobs are compared as stored: one writer encodes one geometry
-    identically.
+    Everything a consumer interprets is kept: column definitions, geometry
+    columns and the SRS definitions they reference. Geometry blobs are
+    compared as stored: one writer encodes one geometry identically.
     """
     connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+
+    def metadata(query: str) -> list[list[Any]]:
+        try:
+            return [list(row) for row in connection.execute(query).fetchall()]
+        except sqlite3.OperationalError:  # optional table absent
+            return []
+
     try:
         contents = connection.execute(
             "SELECT table_name, data_type, srs_id, min_x, min_y, max_x, max_y FROM gpkg_contents ORDER BY table_name"
         ).fetchall()
+        geometry_columns = metadata("SELECT * FROM gpkg_geometry_columns ORDER BY table_name")
+        spatial_reference_systems = metadata(
+            "SELECT srs_name, srs_id, organization, organization_coordsys_id, definition"
+            " FROM gpkg_spatial_ref_sys ORDER BY srs_id"
+        )
+        schemas = {}
         tables = {}
         for table_name, *_ in contents:
+            schemas[table_name] = [
+                list(column[1:]) for column in connection.execute(f"PRAGMA table_info({_sql_identifier(table_name)})")
+            ]
             cursor = connection.execute(f"SELECT * FROM {_sql_identifier(table_name)}")
             names = [column[0] for column in cursor.description]
             rows = [
@@ -200,7 +217,13 @@ def _geopackage_snapshot(path: Path, ignored_fields: set[str]) -> Any:
             tables[table_name] = sorted(rows, key=_stable_json)
     finally:
         connection.close()
-    return {"contents": [list(row) for row in contents], "tables": tables}
+    return {
+        "contents": [list(row) for row in contents],
+        "geometry_columns": geometry_columns,
+        "spatial_reference_systems": spatial_reference_systems,
+        "schemas": schemas,
+        "tables": tables,
+    }
 
 
 def _semantic_snapshot(path: Path, ignored_fields: set[str]) -> Any:
