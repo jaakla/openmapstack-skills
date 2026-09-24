@@ -15,7 +15,7 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-from . import AssertionResult, failed, get_in, load_project_yaml, not_testable, passed, project_root
+from . import AssertionResult, failed, get_in, load_project_yaml, not_testable, passed, project_root, warning
 
 
 def _extract_qgs_xml(qgz_path: Path) -> str | None:
@@ -66,6 +66,55 @@ def static_valid(workspace: Path, path: str = "project.qgz", project_dir: str = 
     if errors:
         return failed("; ".join(errors), errors=errors, code="broken_datasource")
     return passed(f"{path} static-valid: {len(datasources)} datasource(s), all files resolve")
+
+
+#: File formats whose GDAL drivers are built into every QGIS build. Anything
+#: else may need an optional driver: Debian/Ubuntu QGIS packages ship without
+#: Parquet and Arrow (checked on QGIS 3.40.15, GDAL 3.12.2), and formats such
+#: as Personal Geodatabase depend on extra libraries.
+PORTABLE_SUFFIXES = frozenset({".gpkg", ".geojson", ".json", ".fgb", ".shp", ".tif", ".tiff"})
+OPTIONAL_DRIVERS = {".parquet": "Parquet", ".geoparquet": "Parquet", ".arrow": "Arrow", ".feather": "Arrow", ".arrows": "Arrow"}
+
+
+def _is_provider_datasource(datasource: str) -> bool:
+    """Remote services and provider connection strings are not local files."""
+    location = datasource.split("|", 1)[0]
+    return datasource.startswith(("http", "type=xyz", "contextualWMSLegend", "crs=")) or "=" in location
+
+
+def datasources_portable(workspace: Path, path: str = "project.qgz", project_dir: str = ".") -> AssertionResult:
+    """Every local file datasource uses a format every QGIS build reads.
+
+    Portable formats are an allowlist: GeoPackage, GeoJSON, FlatGeobuf,
+    Shapefile and GeoTIFF. A live trial pointed QGIS at GeoParquet; a stock
+    Ubuntu QGIS opened the layer invalid and drew nothing while every static
+    check passed. Remote and provider datasources are out of scope. A warning,
+    not a failure: builds with the extra driver do open other formats.
+    """
+    xml, _qgz_path, error = _qgs_xml(workspace, path, project_dir)
+    if error == "file_missing":
+        return failed(f"{path} does not exist", code="file_missing")
+    if error == "not_a_zip":
+        return failed(f"{path} is not a valid zip archive", code="not_a_zip")
+    if xml is None:
+        return failed(f"{path} does not contain a .qgs document", code="no_qgs_document")
+    unportable: dict[str, str] = {}
+    for datasource in re.findall(r"<datasource>(.*?)</datasource>", xml, re.DOTALL):
+        datasource = datasource.strip()
+        if not datasource or _is_provider_datasource(datasource):
+            continue
+        suffix = Path(datasource.split("|", 1)[0]).suffix.lower()
+        if suffix not in PORTABLE_SUFFIXES:
+            unportable[datasource] = OPTIONAL_DRIVERS.get(suffix, f"{suffix or 'no extension'} is outside the portable set")
+    if unportable:
+        return warning(
+            "layers use formats many QGIS builds cannot open, so they load invalid there: "
+            + ", ".join(f"{source} ({reason})" for source, reason in unportable.items())
+            + "; point QGIS at a GeoPackage, GeoJSON or FlatGeobuf copy",
+            code="datasource_format_not_portable",
+            datasources=unportable,
+        )
+    return passed(f"{path}: every local file datasource uses a format every QGIS build reads")
 
 
 _QGIS_APPLICATION: Any = None

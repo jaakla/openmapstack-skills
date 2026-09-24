@@ -947,6 +947,7 @@ project.yaml
    <datasource>./data/derived/education_catchments.json</datasource>
    <provider encoding="UTF-8">ogr</provider>
    ```
+   **Use formats every QGIS build reads:** GeoPackage, GeoJSON or FlatGeobuf. GDAL's Parquet and Arrow drivers are optional build components that Debian/Ubuntu QGIS packages omit, so a layer on GeoParquet opens invalid there and the map draws nothing while every static check passes. Keep GeoParquet for analysis and export a QGIS-facing copy. `openmapstack validate` warns as `qgis.datasource_formats`.
 3. **Tiled Raster Basemaps:** Always include an official tiled basemap matching the project region, and prefer one that answers unauthenticated requests. CARTO's raster XYZ tiles (`basemaps.cartocdn.com/rastertiles/…`) now return an *API KEY REQUIRED* watermark, so a project that ships them draws that watermark across every view; CARTO's MapLibre **vector** styles are still open, which is why a dashboard and its QGIS companion may legitimately carry different backgrounds. Every basemap layer must declare its own **complete** `<srs>` — see rule 4.
    - **Maa- ja Ruumiamet Baaskaart (WMS, EPSG:3301):**
      ```xml

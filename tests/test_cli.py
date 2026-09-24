@@ -137,6 +137,17 @@ class OpenMapStackCliTests(unittest.TestCase):
         self.assertEqual(check.status, "failed", check.to_dict())
         self.assertEqual(check.details["code"], "project_reprojection_disabled")
 
+    def test_qgis_parquet_datasource_warns(self) -> None:
+        path = self._map_project_with_qgz(
+            "<maplayer><layername>candidates</layername>"
+            "<datasource>./data/derived/candidates.parquet</datasource>"
+            '<srs><spatialrefsys><wkt>PROJCRS["test",ID["EPSG",3301]]</wkt>'
+            "<authid>EPSG:3301</authid></spatialrefsys></srs></maplayer>",
+        )
+        check = self._check(validate_project(path), "qgis.datasource_formats")
+        self.assertEqual(check.status, "warning", check.to_dict())
+        self.assertEqual(check.details["code"], "datasource_format_not_portable")
+
     def test_qgis_project_without_layers_warns(self) -> None:
         path = self._map_project_with_qgz()
         result = validate_project(path)

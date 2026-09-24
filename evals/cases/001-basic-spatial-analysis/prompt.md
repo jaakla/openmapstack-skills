@@ -16,7 +16,8 @@ check declared in project.yaml; unavailable capability must remain explicit. Do 
 missing attributes or change the stated selection rules to obtain a nonempty result.
 The numeric evidence fields below belong directly on the corresponding report checks and
 refer to the candidate dataset. Document the parcel-selection predicate on the named source.
-QGIS must use portable relative datasources, valid styles, complete layer CRS definitions,
+QGIS must use portable relative datasources in formats every QGIS build reads (GeoPackage,
+GeoJSON or FlatGeobuf, not Parquet), valid styles, complete layer CRS definitions,
 enabled reprojection and groups matching the manifest. The dashboard must reflect the same
 layers, parameters and warnings. Include the declared analysis/user_overrides groups even
 when there are no user edits. The delivered project must survive a clean rerun after relocation.

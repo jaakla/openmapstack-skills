@@ -149,6 +149,29 @@ Replaying this delivered project through the updated runner fails only
 passed the full gate.** Round spend: $2.705749 of $4.50; the $1.794251 left does not cover another
 material trial. The next one runs against a candidate frozen at or after `4456691`.
 
+## Material 001 at `45063ca` (2026-09-24)
+
+Candidate `45063ca` (`main` after #53 and #54; collection
+`sha256:4dd248d87e3f54659077b4fcd8d97a0d3c3876751cae948a4beec9670b622937`). Material 001
+**passed** all 35 hard assertions and the four `rerun.*` assertions. The clean rerun ran in the
+sandbox, produced semantically equal outputs and reproduced the validation report.
+`qgis.runtime_load` stayed soft and `not_testable`. The agent checked for the CLI, ran `validate`
+and repaired what it reported: 44 turns, **$2.987357** at a $4.00 cap (record `25199bd4`).
+
+Independent sandboxed `verify --rerun` found no failures; the earlier parameter defect did not
+recur. Seven checks were `not_testable`: three need PyQGIS, and four outputs declare no EPSG code in
+their format strings. The project reports `warning`, consistent with its own `not_testable`
+QGIS runtime check.
+
+The three PyQGIS checks were then run in the sandbox against the host's QGIS 3.40.15 (GDAL 3.12.2).
+**All three failed.** The candidate layer points at GeoParquet, the Ubuntu GDAL build has no
+Parquet or Arrow driver, and the map draws nothing. Shipped `qgis.md` blamed "an old GDAL"
+instead. The follow-up adds `qgis.datasources_portable`, which warns on local layers outside an
+allowlist of formats every GDAL build reads, and which `validate` reports as
+`qgis.datasource_formats`. The QGIS guidance now requires
+GeoPackage/GeoJSON/FlatGeobuf layers, and live 001 requires the check. One further material trial
+must show agents follow it.
+
 ## Running the remaining trials
 
 Freeze a clean candidate at or after `250c99c` and confirm a new spend authorization first.

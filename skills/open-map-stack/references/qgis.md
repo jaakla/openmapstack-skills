@@ -412,6 +412,8 @@ project.yaml
    ```
    *Common Trap:* If you omit `|layername=...`, QGIS cannot resolve the geometry column and loads the table as a non-spatial attribute list ("no-geographical table").
 
+   **Use formats every QGIS build reads:** GeoPackage, GeoJSON or FlatGeobuf. GDAL's Parquet and Arrow drivers are optional build components that Debian/Ubuntu QGIS packages omit, so a layer on GeoParquet opens invalid there and the map draws nothing while every static check passes. Keep GeoParquet for analysis and export a QGIS-facing copy. `openmapstack validate` warns as `qgis.datasource_formats`.
+
 2. **Include an Official Regional Tiled Basemap:**
    Every QGIS project should include a standard basemap in the `Basemaps` group, and it should be one that answers unauthenticated requests. CARTO's raster XYZ tiles (`basemaps.cartocdn.com/rastertiles/…`) now return an *API KEY REQUIRED* watermark; their MapLibre vector styles remain open, so a web dashboard on CARTO Positron and a QGIS companion on the national basemap are a legitimate pair, not drift.
    - **Estonia Maa- ja Ruumiamet Baaskaart (WMS basemap in EPSG:3301):**
@@ -486,7 +488,7 @@ project.yaml
 
 ## Troubleshooting common QGIS pain points
 
-* **"GeoParquet shows up but won't load"** — your GDAL is old. QGIS 3.34+ with GDAL 3.8+ has stable GeoParquet support; older versions are flaky.
+* **"GeoParquet shows up but won't load"** — this QGIS's GDAL was built without the Parquet driver. Recent versions do not guarantee it: Debian/Ubuntu QGIS 3.40 with GDAL 3.12 still lacks it. Check with `ogrinfo --formats | grep -i parquet`. For a project others will open, point the layer at a GeoPackage, GeoJSON or FlatGeobuf copy instead.
 * **"CRS warning on every layer load"** — set the project CRS first, then load layers with matching CRS or with explicit reprojection.
 * **"Processing algorithm not found"** — the relevant provider (GRASS / SAGA / WhiteboxTools / OTB) isn't enabled. `Settings → Options → Processing → Providers`.
 * **"WhiteboxTools provider missing"** — install the WhiteboxTools binary separately, then point the plugin to it.
