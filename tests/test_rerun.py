@@ -106,6 +106,26 @@ class CleanRerunTests(unittest.TestCase):
         ):
             self.assertFalse((self.rerun / excluded).exists(), excluded)
 
+    def test_readme_is_carried_as_documentation_not_as_an_immutable_input(self) -> None:
+        # A validated live project failed its clean rerun only because the
+        # rerun copy had no README and artifact validation warned about it.
+        self.write_manifest()
+        (self.project / "README.md").write_text("# Project\n", encoding="utf-8")
+        (self.project / "pipeline.py").write_text(
+            "from pathlib import Path\n"
+            "root = Path(__file__).resolve().parent\n"
+            "assert (root / 'README.md').read_text() == '# Project\\n'\n"
+            "(root / 'README.md').write_text('# Regenerated\\n')\n",
+            encoding="utf-8",
+        )
+
+        with patch.object(openmapstack_rerun, "validate_project", return_value=FakeValidation()):
+            evidence = eval_runner.perform_clean_rerun(self.project, self.rerun, 10)
+
+        self.assertEqual(evidence["status"], "passed", evidence)
+        self.assertNotIn("README.md", evidence["preserved_paths"])
+        self.assertEqual((self.rerun / "README.md").read_text(encoding="utf-8"), "# Regenerated\n")
+
     def test_missing_canonical_entrypoint_is_a_graded_rerun_failure(self) -> None:
         self.write_manifest(pipeline="missing.py")
         evidence = eval_runner.perform_clean_rerun(self.project, self.rerun, 10)

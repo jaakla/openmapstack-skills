@@ -1031,8 +1031,8 @@ Rerun contract: `openmapstack run project.yaml` executes the canonical pipeline 
 then validates the resulting artifact. A fresh environment with the documented
 sources reproduces the project even without the original LLM conversation.
 
-For an independent clean-room check, copy only the manifest, immutable source
-data, override data, the declared pipeline/command files, and project-relative
+For an independent clean-room check, copy only the manifest, `README.md`, immutable
+source data, override data, the declared pipeline/command files, and project-relative
 `runtime.implementation.dependencies`. Do not carry derived outputs, validation
 reports, run records, caches, rendered presentation artifacts, prompts, or chat
 state into the second workspace. Execute the declared canonical entrypoint,
