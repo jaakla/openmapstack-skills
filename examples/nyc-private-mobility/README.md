@@ -170,8 +170,6 @@ backend enforces and which are only conventions. In summary:
   they report `not_testable`. Nothing fails; the checks simply cannot run,
   and saying so is the point. The `eval-visual` workflow runs them where QGIS
   exists.
-- `openmapstack verify --rerun` still fails at post-rerun artifact
-  validation: the clean-rerun workspace does not copy `README.md`, so the
-  `project.readme` check warns and `project.status_consistency` fails on that
-  warning. The rerun itself executes cleanly and reproduces every output.
-  That is a harness question, not an artefact of this analysis.
+- `openmapstack verify --rerun` rebuilds the project in a clean workspace
+  and reproduces every output with no failures; the rerun carries
+  `README.md` as documentation.
