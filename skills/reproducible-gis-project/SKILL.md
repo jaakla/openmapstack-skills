@@ -35,8 +35,9 @@ CLI setup and the worked example's runtime requirements.
    avoid independent presentation logic that silently changes the analysis.
 4. Execute relevant checks, retain machine-readable results and run evidence,
    and perform a clean rerun. Check whether the `openmapstack` CLI is installed
-   (`openmapstack --version` or `python3 -m openmapstack --version`); if it is,
-   run `openmapstack validate`, then `openmapstack verify project.yaml --rerun`
+   (`openmapstack --version` or `python3 -m openmapstack --version`, then use
+   whichever form works for every command); if it is, run
+   `openmapstack validate`, then `openmapstack verify project.yaml --rerun`
    for the clean rerun, and do not deliver while either reports a failure.
    Every file under `data/derived` must come from the canonical pipeline,
    never from a one-off script.

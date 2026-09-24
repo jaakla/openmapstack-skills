@@ -138,6 +138,8 @@ class AcceptanceGuidanceTests(GuidanceCase):
                 # declared them as outputs, and failed its clean rerun.
                 self.assertIn("openmapstack verify project.yaml --rerun", text)
                 self.assertIn("never from a one-off script", text)
+                # A source checkout may expose only the module form.
+                self.assertIn("whichever form works for every", text)
                 self.assertNotIn("path when the CLI\nis available", text)
 
     def test_qgis_layers_use_formats_every_build_reads(self) -> None:

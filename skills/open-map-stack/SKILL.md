@@ -47,7 +47,8 @@ verified, and preserve unknown semantic attributes as unknown. The project must
 have explicit CRS, deterministic ordered steps, machine-readable validation and
 run evidence, provenance, and a documented clean rerun without chat dependencies.
 Check whether the CLI is installed (`openmapstack --version` or
-`python3 -m openmapstack --version`); if it is, run `openmapstack validate` and the
+`python3 -m openmapstack --version`, then use whichever form works for every
+command below); if it is, run `openmapstack validate` and the
 canonical `openmapstack run` path, then `openmapstack verify project.yaml --rerun`,
 which rebuilds the project from its declared inputs in an empty workspace;
 do not deliver while either reports a failure. Every file under `data/derived`
