@@ -127,6 +127,28 @@ the prompt does not say which runtime exists (DuckDB Spatial and the CLI, no geo
 so the agent spent turns probing it. Disclose the runtime in the 001 prompt, as OpenMapBench does,
 before the next paid material trial, and allow a larger cap for the repair loop.
 
+## Material 001 at `f142d95` (2026-09-24)
+
+A further $4.50 was authorized. With the runtime stated in the prompt, material 001 **passed its eval**
+at `f142d95` (skill payload identical to `cb4c009`): all 35 hard assertions, with `qgis.runtime_load`
+soft and `not_testable`. The agent checked for the CLI, ran `validate`, fixed the two failures it
+reported and delivered on a 30/30 `validate`. It used 49 turns and **$2.705749** (record `2ea24b65`).
+
+Independent `openmapstack verify --rerun`, run inside the sandbox, still fails it. A runtime parameter
+is bound to a field its step does not declare (`project.parameters_match_steps`). Neither `validate`
+nor the 001 eval checked that. The clean rerun rebuilt equal outputs and a reproducible report, but
+failed post-rerun validation, in part because the rerun copy had no README. Fixes:
+
+- `9d2630c`: `validate` applies `verify`'s runtime-parameter rules, so the repair loop can see it.
+- `60bbe14`: the clean-room rerun carries `README.md` as documentation.
+- `4456691`: live clean reruns run in the sandbox rather than on the host, and live 001 now
+  declares a clean rerun with the `rerun.*` assertions.
+
+Replaying this delivered project through the updated runner fails only
+`rerun.clean_execution_succeeded`, on the parameter defect. **Material 001 has therefore not
+passed the full gate.** Round spend: $2.705749 of $4.50; the $1.794251 left does not cover another
+material trial. The next one runs against a candidate frozen at or after `4456691`.
+
 ## Running the remaining trials
 
 Freeze a clean candidate at or after `250c99c` and confirm a new spend authorization first.
