@@ -9,7 +9,9 @@ unavailable-dependency coverage here.
 
 from __future__ import annotations
 
+import atexit
 import json
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -25,7 +27,11 @@ for path in (str(REPO_ROOT), str(EVALS_DIR)):
 
 
 def make_workspace() -> Path:
-    return Path(tempfile.mkdtemp(prefix="openmapstack-assertion-test-"))
+    # Removed at interpreter exit: callers never clean up, and some copy the
+    # worked example, so leaked workspaces used to exhaust a quota'd /tmp.
+    path = Path(tempfile.mkdtemp(prefix="openmapstack-assertion-test-"))
+    atexit.register(shutil.rmtree, path, ignore_errors=True)
+    return path
 
 
 def write_project(workspace: Path, project: dict[str, Any], project_dir: str = ".") -> Path:
