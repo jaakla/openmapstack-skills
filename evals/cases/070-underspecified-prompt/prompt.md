@@ -9,3 +9,7 @@ parameters: whatever you choose must be declared in `project.yaml`
 `presentation.controls` so the reader can change it. Deliver the standard
 project artifact with the candidate set at
 `data/derived/candidates.parquet` (column `parcel_id`).
+
+Python 3, DuckDB Spatial and the openmapstack package are installed; use
+`openmapstack` or `python3 -m openmapstack` for the CLI. Do not assume other
+geospatial Python packages, and do not install packages.
