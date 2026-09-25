@@ -246,13 +246,21 @@ chose geography because "the data extent is unspecified" when installed alone ($
 then limited the default to distance tests, since PostGIS buffers `geography` in a planar
 projection; both reruns predate that wording and exercise only a distance query.
 
-Round spend: **$5.981862 of $20.00**. Cases 070–073 were not run: their prompts state neither the
+At the maintainer's direction, `24546c1` (#61) reduced `data-sources.md` to entry points and a
+live-verification order, dropping formats, schemas, code values and licenses. Rerun there,
+`bounded-discovery` passed selection ($0.335706, record `864ca91f`). It made eight live lookups,
+took formats and attribution from the fetched ETAK page (GPKG and GDB, which the maintainer
+confirms are offered), and dropped the uncited lineage claim. It still stated an Azure bucket
+path, a `numberOfFeatures` catalog field and Tallinn attribute richness without a source; the
+last is labelled unverified. Reviewer's read: passed with notes.
+
+Round spend: **$6.317568 of $20.00**. Cases 070–073 were not run: their prompts state neither the
 runtime nor, for 071–073, the full project they are graded on.
 
 ## Running the remaining trials
 
 Freeze a clean candidate at or after `8e289e7`. The $20 authorization of 2026-09-24 remains open
-with **$14.018138** left; spending beyond it needs a new authorization.
+with **$13.682432** left; spending beyond it needs a new authorization.
 Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
 
 ```bash
