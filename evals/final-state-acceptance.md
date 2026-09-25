@@ -361,7 +361,7 @@ provider's organization monthly limit blocks further paid calls until it is rais
 
 ## Running the remaining trials
 
-Freeze a clean candidate at or after the #64 review follow-up. The $20, €5 and $10 authorizations of 2026-09-24
+Freeze a clean candidate at or after `737666a`. The $20, €5 and $10 authorizations of 2026-09-24
 and 2026-09-25 leave **$7.374802**, subject to the provider's organization spend limit;
 spending beyond that needs a new authorization.
 Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
