@@ -207,8 +207,8 @@ For privacy-sensitive workloads (customer lists, patients, employees), geocode l
 
 ## Place search and POI
 
-* **Overture Places** — the default POI dataset for analysis: global, GERS IDs, category taxonomy, confidence scores, CDLA-Permissive-2.0 (more permissive than ODbL). Read it bbox-filtered from S3 via DuckDB (see `data-sources.md`).
-* **Foursquare OS Places** — ~100M POIs released under Apache 2.0 in 2024; complements Overture, especially for commercial venues.
+* **Overture Places** — the default POI dataset for analysis: global, stable GERS IDs, a category taxonomy and confidence scores. Read it bbox-filtered via DuckDB (see `data-sources.md`), and take its license from the Overture attribution page for the release you pin.
+* **Foursquare OS Places** — an open POI dataset that complements Overture, especially for commercial venues. Check its current license and release on the provider's page.
 * **OSM** — best for public amenities and infrastructure (schools, parks, transit stops), weakest for commercial churn.
 * **GeoNames / Wikidata / Who's On First** — gazetteers and place hierarchies, not POIs.
 

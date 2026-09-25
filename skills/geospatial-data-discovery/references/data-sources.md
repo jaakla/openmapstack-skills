@@ -1,6 +1,8 @@
 # Data Sources
 
-Strategies and concrete commands for discovering and acquiring open geospatial data. Discovery comes before download; STAC is the modern catalog protocol for raster, and Overture's STAC + GeoParquet pattern increasingly applies to vector basemaps too.
+Where to look for open geospatial data, and how to verify what you find. Discovery comes before download; STAC is the modern catalog protocol for raster, and Overture's STAC + GeoParquet pattern increasingly applies to vector basemaps too.
+
+This file lists entry points and methods, not dataset internals. File formats, layer and field names, code lists, record counts, download packaging, server limits and licenses change without notice, so this guide deliberately does not record them. Read them from the provider's current pages, catalog metadata and service capabilities when you use a source, record what you saw and when, and look for further datasets in the same catalogs.
 
 ## Discovery hierarchy — try in this order
 
@@ -8,24 +10,41 @@ Strategies and concrete commands for discovering and acquiring open geospatial d
 2. **A Portolan catalog**, when the user names one or points at a catalog root — a static STAC catalog whose datasets are already cloud-native and self-documenting
 3. **Overture Maps** — for global building, place, transportation, address basemap
 4. **OpenStreetMap (via Overpass or extracts)** — for detailed local features Overture doesn't cover
-5. **National / regional portals** — for authoritative or jurisdiction-specific data
-6. **Specialist datasets** — building footprints (Microsoft, Google), elevation (Copernicus DEM), point clouds (OpenTopography), weather/climate (ECMWF, NOAA)
+5. **National / regional portals and SDI catalogs** — for authoritative or jurisdiction-specific data
+6. **Specialist datasets** — building footprints, elevation, point clouds, weather/climate, population, land cover
 
 Only fall back to ad-hoc downloads when the above don't cover the need.
 
+## Verify a source before relying on it
+
+For each candidate, read these at the time of use, in roughly this order:
+
+1. **The catalog record** — an SDI/INSPIRE metadata record (CSW, GeoNetwork), a STAC collection, a Portolan `collection.json`, or a portal dataset page. It names the owner, update cycle, coverage, access points and license.
+2. **The access point itself** — the download page for current packaging and formats; for services, `GetCapabilities`, `DescribeFeatureType`, or an OGC API landing page with `/collections` and `/queryables`. Take layer names, fields and CRSs from here, never from memory or an old example.
+3. **The provider's license or attribution page** — licenses differ per dataset, per theme and sometimes per region. Link the exact page you read.
+4. **The data** — after retrieval, inspect the actual schema, code lists, extent and feature count before filtering or joining.
+
+Rules that follow from this:
+
+* Type codes and registry-link fields are not filters for "real" features. A subtype code is not a universal “real building” predicate, and a registry linkage is not proof that a feature exists. Read the current code list and field definitions, apply the population the user asked for, and disclose any exclusion.
+* Do not claim lineage between datasets, for example that one is derived from another, unless a source you read documents it.
+* If current metadata cannot be retrieved, say so; do not present remembered details as verified.
+
 ## STAC — SpatioTemporal Asset Catalog
 
-The default protocol for raster discovery. Every major satellite imagery provider now exposes a STAC API.
+The default protocol for raster discovery. Every major satellite imagery provider now exposes a STAC API. [STAC Index](https://stacindex.org/) lists public catalogs beyond these.
 
 ### Primary STAC endpoints
 
 | Catalog | URL | Coverage |
 |---|---|---|
 | Microsoft Planetary Computer | `https://planetarycomputer.microsoft.com/api/stac/v1` | Sentinel, Landsat, MODIS, NAIP, climate, DEMs — broadest |
-| Element 84 Earth Search | `https://earth-search.aws.element84.com/v1` | Sentinel-2 L2A on AWS COG |
+| Element 84 Earth Search | `https://earth-search.aws.element84.com/v1` | Sentinel-2 on AWS |
 | Copernicus Data Space | `https://catalogue.dataspace.copernicus.eu/stac` | Official Sentinel access |
 | USGS LandsatLook | `https://landsatlook.usgs.gov/stac-server` | Landsat archive |
-| Overture Maps | `https://labs.overturemaps.org/stac/catalog.json` | Vector basemap themes (addresses, buildings, places, transportation, divisions) |
+| Overture Maps | `https://labs.overturemaps.org/stac/catalog.json` | Vector basemap themes |
+
+Read a collection's current bands, assets and item properties from the catalog rather than assuming them.
 
 ### Search pattern (Python)
 
@@ -63,7 +82,7 @@ ds = odc.stac.load(
 
 ### Cost-aware planning
 
-Use `estimate_data_size` (available via STAC MCP) or compute the bbox-clipped pixel count yourself before pulling. Sentinel-2 L2A at 10m resolution over a 1° bbox is roughly 10GB per scene — plan accordingly.
+Estimate the volume before pulling: use `estimate_data_size` (available via STAC MCP), or compute it from the item metadata (bands, resolution, bbox, item count).
 
 ## Portolan catalogs
 
@@ -114,58 +133,27 @@ Two traps specific to this mapping:
 
 ## Overture Maps — modern open vector basemap
 
-Conflated open data (OSM + Meta + Esri + Microsoft + Google) under permissive licensing. Released monthly. Distributed as GeoParquet + PMTiles via STAC catalog.
+Conflated open data from several sources, released regularly as GeoParquet via a STAC catalog. Entry points: [documentation](https://docs.overturemaps.org/), [release calendar](https://docs.overturemaps.org/release-calendar/), [attribution and licenses](https://docs.overturemaps.org/attribution/). Themes cover addresses, base layers, buildings, administrative divisions, places and transportation; take the current types and columns from the schema reference.
 
-Before writing a direct S3/Azure path, check the release calendar and use a release still present in the public buckets. Overture keeps only recent public releases for GDPR/right-to-be-forgotten reasons. For long-lived pipelines, pin the release and mirror the raw inputs or build an internal archive.
+Before writing a direct object-storage path, check the release calendar and use a release still present in the public buckets. Overture keeps only recent public releases. For long-lived pipelines, pin the release and mirror the raw inputs or build an internal archive. Take the current bucket path and partition layout from the documentation.
 
-Themes:
-
-* **addresses** — global address points
-* **base** — water, land cover, infrastructure
-* **buildings** — global building footprints with heights. Note that `theme=buildings` contains both `type=building` and `type=building_part` (useful for 3D mapping).
-* **divisions** — administrative boundaries
-* **places** — POIs (categories in transition; use `basic_category` going forward)
-* **transportation** — roads, segments, connectors
-
-### Download (CLI)
-
-```bash
-# Install once
-pip install overturemaps
-
-# Bbox download for one theme
-overturemaps download \
-  --bbox=24.5,59.3,25.0,59.5 \
-  --type=building \
-  -f geoparquet \
-  -o tallinn_buildings.parquet
-```
-
-### Query directly on S3 (preferred for ad-hoc analysis)
-
-DuckDB reads Overture's GeoParquet over HTTP without downloading:
+Query in place rather than downloading (the `overturemaps` CLI also downloads a bbox):
 
 ```sql
 INSTALL httpfs; LOAD httpfs;
 INSTALL spatial; LOAD spatial;
 
--- Replace OVERTURE_RELEASE with a currently retained release from:
--- https://docs.overturemaps.org/release-calendar/
+-- OVERTURE_PATH: the current release path and type from the Overture docs.
 -- Pin the chosen release in your manifest; do not commit "latest".
-SELECT id, names.primary AS name, height, geometry
-FROM read_parquet(
-  's3://overturemaps-us-west-2/release/OVERTURE_RELEASE/theme=buildings/type=building/*.parquet',
-  filename = true, hive_partitioning = 1
-)
+SELECT *
+FROM read_parquet('OVERTURE_PATH/*.parquet', filename = true, hive_partitioning = 1)
 WHERE bbox.xmax >= 24.5 AND bbox.xmin <= 25.0
   AND bbox.ymax >= 59.3 AND bbox.ymin <= 59.5;
 ```
 
-The `bbox` column is a struct (`xmin`, `ymin`, `xmax`, `ymax`) that Overture emits specifically to enable predicate pushdown. Use bbox **overlap** as the scan gate so features crossing the area edge are included. For named-area queries, resolve the real boundary first and add an exact spatial predicate such as `ST_Intersects`; bbox alone is rectangular and will overshoot.
+Use bbox **overlap** as the scan gate so features crossing the area edge are included. For named-area queries, resolve the real boundary first and add an exact spatial predicate such as `ST_Intersects`; a bbox alone is rectangular and will overshoot.
 
-### License note
-
-License is per theme. Base, buildings, divisions and transportation are ODbL (share-alike + attribution); places are CDLA-Permissive 2.0 or Apache 2.0 by source; addresses carry their regional sources' terms. Check the release's attribution page rather than assuming one license for Overture. The `sources` array on each feature records provenance — preserve it.
+License is per theme and can change between releases: read the attribution page for the release you pin rather than assuming one license for Overture. Preserve the per-feature source provenance Overture publishes.
 
 ## OpenStreetMap
 
@@ -175,9 +163,9 @@ Use when Overture doesn't have the feature class needed (footpaths, fine-grained
 
 | Need | Tool |
 |---|---|
-| Small bbox, ad-hoc query, < 25k features | Overpass API |
-| Country / region extract | Geofabrik, BBBike, NextGIS |
-| Whole planet | planet.osm.pbf (~80GB compressed) |
+| Small bbox, ad-hoc query | Overpass API |
+| Country / region extract | [Geofabrik](https://download.geofabrik.de/), BBBike, NextGIS |
+| Whole planet | planet.osm.pbf |
 | Iterative refinement, custom filters | `osmium` on a local extract |
 | Routable graph for one shot | `osmnx` |
 
@@ -195,12 +183,12 @@ out body;
 ```
 
 > [!WARNING]
-> Public Overpass API instances (`overpass-api.de`, etc.) are heavily rate-limited. For large areas (e.g., country-wide), always download a Geofabrik extract instead of slamming the public API.
+> Public Overpass API instances are rate-limited. For large areas (e.g., country-wide), download an extract instead of slamming the public API.
 
 ### Local extract + osmium (for anything serious)
 
 ```bash
-# Pull Estonia from Geofabrik, all other countries are available in same way
+# Pull a country extract from Geofabrik
 wget https://download.geofabrik.de/europe/estonia-latest.osm.pbf
 
 # Filter to POIs
@@ -222,41 +210,49 @@ osm2pgsql -d gisdb --slim -G --hstore -C 4000 \
 
 `--slim` keeps update-able tables; `-G` produces multipolygons; `-C 4000` is RAM cache in MB.
 
+### Administrative boundaries in OSM
+
+`admin_level` meanings differ by country; a generic "city = level 8" query can return nothing. Read the country table on the [OSM wiki](https://wiki.openstreetmap.org/wiki/Tag:boundary%3Dadministrative) before filtering, then query the boundary by its relation ID once you have checked it. Administrative reforms change what a name covers, so check a polygon's area and vintage before treating it as "the city".
+
 ## Specialist data sources
+
+Each entry says what the source is and where to start. Check the provider page for current coverage, formats, vintage and license.
 
 ### Building footprints
 
-* **Microsoft Global Building Footprints** — global, CDLA-Permissive 2.0. Released as country-wise GeoJSON or GeoPackage on GitHub.
-* **Google Open Buildings** — Africa, South Asia, SE Asia, LATAM. CSV + Parquet.
-* **Overture Buildings** — conflates the above with OSM and is usually the simplest entry point now. The theme is ODbL.
+* **Microsoft Global ML Building Footprints** — global, machine-learned footprints: https://github.com/microsoft/GlobalMLBuildingFootprints
+* **Google Open Buildings** — footprints for parts of Africa, Asia and Latin America: https://sites.research.google/gr/open-buildings/
+* **Overture Buildings** — conflates these with OSM and is usually the simplest entry point.
+* **National topographic or cadastral databases** — often the authoritative source within one country (see the regional section).
 
 ### Elevation
 
-* **Copernicus DEM (GLO-30)** — 30m global, the modern default. Available via STAC on Microsoft Planetary Computer.
-* **SRTM** — older but proven, 30m or 90m resolution grids in global level
-* **National LiDAR-derived DTMs** — for any country with open LiDAR (Estonia: Maa- ja Ruumiamet ~1m DTM; verify the product-specific agency license)
+* **Copernicus DEM** — global DEM; available via STAC (Planetary Computer, [Copernicus Data Space](https://dataspace.copernicus.eu/)).
+* **SRTM** — older global DEM.
+* **National LiDAR-derived DTMs** — many countries publish them; find them through the national SDI catalog.
 
 ### Point clouds
 
-* **USGS 3DEP** — US LiDAR
-* **OpenTopography** — research repository, global
-* **National open LiDAR** — many EU countries, including Estonia (Maa- ja Ruumiamet)
-* Distributed as LAZ format; cloud-native form is COPC
+* **USGS 3DEP** — US LiDAR: https://www.usgs.gov/3d-elevation-program
+* **OpenTopography** — research repository, global: https://opentopography.org/
+* **National open LiDAR** — many EU countries, found through national SDI catalogs.
+* Cloud-native point clouds are published as COPC; check what a provider actually offers.
 
 ### Weather and Climate
 
-* **Copernicus Climate Data Store (CDS)** — ERA5 reanalysis, seasonal forecasts. Usually distributed as NetCDF/GRIB.
-* **ECMWF Open Data** — forecast models, real-time data.
-* **NOAA AWS Registry** — GFS, HRRR, NEXRAD radar (often available as Zarr or NetCDF).
+* **Copernicus Climate Data Store** — reanalysis (ERA5) and seasonal forecasts: https://cds.climate.copernicus.eu/
+* **ECMWF Open Data** — forecast model output: https://www.ecmwf.int/en/forecasts/datasets/open-data
+* **Registry of Open Data on AWS** — NOAA models, radar and many other collections: https://registry.opendata.aws/
 
 ### Administrative, population, land cover, and mobility
 
-* **Natural Earth** — small-scale countries, admin boundaries, populated places; public domain and useful for global overview maps.
-* **geoBoundaries** — research-grade administrative boundaries with explicit licensing; useful when national portals are inconsistent.
+* **Natural Earth** — small-scale countries, admin boundaries, populated places for overview maps: https://www.naturalearthdata.com/
+* **geoBoundaries** — research-grade administrative boundaries: https://www.geoboundaries.org/
 * **Overture divisions / OSM boundaries** — practical defaults for admin joins when official boundaries are not required.
-* **GHSL / WorldPop** — population grids for exposure and accessibility analysis; record vintage, resolution, and license.
-* **ESA WorldCover / Copernicus Land Monitoring** — open land-cover layers; note class schema and year.
-* **GTFS feeds** — transit (bus, train etc) schedules for accessibility and routing; license varies by operator, so record feed URL, download date, and terms.
+* **GHSL / WorldPop** — population grids for exposure and accessibility analysis: https://human-settlement.emergency.copernicus.eu/, https://www.worldpop.org/. Record vintage and resolution.
+* **ESA WorldCover / Copernicus Land Monitoring Service** — land cover: https://esa-worldcover.org/, https://land.copernicus.eu/. Record the class schema and year.
+* **GTFS feeds** — transit schedules for accessibility and routing; find feeds through the [Mobility Database](https://mobilitydatabase.org/). Terms vary by operator, so record feed URL, download date and terms.
+* **Pan-European catalogs** — the [INSPIRE Geoportal](https://inspire-geoportal.ec.europa.eu/) and [data.europa.eu](https://data.europa.eu/) index national datasets and services across the EU.
 
 ### Place identifiers and global addressing
 
@@ -275,106 +271,34 @@ Prefer stable identifiers over name-only joins. Store the namespace with the ID 
 
 For WMS/WFS/WMTS/OGC API endpoints, start with `GetCapabilities` or the landing page before guessing layer names. Record service URL, layer ID, CRS, time dimension, paging limit, and terms of use in the manifest.
 
-Use CLI tools like GDAL to process and convert data to geoparquet (or other suitable file format), instead of expensive direct usage of WMS/WFS/WMTS/OGC API http endpoints.
+Use CLI tools like GDAL to process and convert data to GeoParquet (or other suitable file format), instead of expensive direct usage of WMS/WFS/WMTS/OGC API http endpoints. Where a provider offers a bulk download, prefer it over paging a service for whole-region pulls: the files are deterministic and easier to pin.
+
+Paging a WFS to completeness: add a stable `sortBy` on a unique field, loop with `startIndex`, and stop when the accumulated count equals the `numberMatched` reported in the returned pages. A short page alone is not proof. Do not use `resultType=hits` as the completeness total: some servers cap it at the page size.
 
 Common traps:
 
 * WMS 1.3.0 with `EPSG:4326` may use latitude/longitude bbox order; `CRS:84` uses longitude/latitude.
 * WFS often needs `count`/`startIndex` paging and an explicit `outputFormat` such as GeoJSON or GML.
+* A WMS may not offer EPSG:3857 even when a web map requests it; read the CRS list in `GetCapabilities` and use the provider's WMTS/XYZ tiles for web maps when it does not.
 * WMTS tile matrix sets may not be Web Mercator; read the matrix set before constructing tile URLs.
 
 ## Estonia-specific sources (regional context)
+
+Start from the catalogs, then the dataset pages; take formats, layers, fields and packaging from there.
 
 * **Ruumiandmete kataloog (Estonian spatial data catalog / INSPIRE metadata)** — the authoritative discovery point for Estonian geodata metadata, with a search UI and an API for machine retrieval:
   * Catalog: https://metadata.geoportaal.ee/geonetwork/srv/est/catalog.search#/home
   * API reference: https://metadata.geoportaal.ee/geonetwork/doc/api/index.html
   Use it to find the current, official records and OGC endpoints for any Estonian dataset (cadastre, roads, buildings, elevations) instead of guessing brochure URLs.
-* **Maa- ja Ruumiamet spatial data downloads (general)** — the Geoportal "Spatial Data" section lists ready-to-download national datasets (topographic, cadastral, addresses, orthophotos, elevations) with links to per-dataset pages:
-  * Index: https://geoportaal.maaruum.ee/eng/spatial-data-p58.html
-  * Many datasets offer **bulk downloads by county (maakond) and municipality** in GPKG / SHP / GeoJSON / DXF — a preferred path over WFS paging for whole-region pulls (no server-side paging, deterministic files, well-suited to reproducing a project).
-* **Maa- ja Ruumiamet (Estonian Land and Spatial Development Board, formerly Maa-amet)** — geoportaal.maaruum.ee. WMS / WFS / WMTS endpoints for base and thematic maps. Topographic data, orthophotos, LiDAR DTMs, cadastre. Check the license linked by the particular dataset; do not label all agency products CC-BY. The ETAK download page links the agency’s own open-data license (checked 2026-09-23).
-* **Maa- ja Ruumiamet cadastral data** — the Geoportal's Cadastral Data page provides the authoritative cadastral unit (maaüksus) geometry/attributes as **bulk downloads by county and municipality** in GPKG / SHP / GeoJSON / DGN / DXF / TAB:
-  * Catalog page: https://geoportaal.maaruum.ee/eng/spatial-data/cadastral-data-p310.html
-  * Direct S3 download pattern: `https://s3.pilw.io/rp-kemit-kataster/ANDMED/{County}_maakond_KATASTER_{FORMAT}.zip` (e.g. `Tartu_maakond_KATASTER_GPKG.zip`) and `{Municipality}_KATASTER_{FORMAT}.zip` (e.g. `Tartu_linn_KATASTER_GPKG.zip`, `Tallinn_KATASTER_GPKG.zip`).
-  * Direct file inside archive: `{County}_maakond_KATASTER_{FORMAT}.gpkg` (contains table/layer `"{County} maakond"` with 79,000+ parcels in EPSG:3301, attributes: `tunnus` (cadastral id), `l_aadress` (address), `ov_nimi` (municipality), `siht1` (land use: `MAATULUNDUSMAA`, `ELAMUMAA`, `TOOTMISMAA`, `ARIMAA`), `pindala` (area in m²)).
-  * For a bounded, reproducible pull (e.g. `Tartu_maakond_KATASTER_GPKG.zip`), prefer the direct county GPKG download over WFS paging.
-* **ETAK (Estonian Topographic Database)** — vector base data, downloadable as Shapefile / GPKG and also served via WFS. Layers cover 39 themes (kõlvikud / teed / veekogud / ehitised / pinnavormid). Ready to use files in different vector formats: https://geoportaal.maaruum.ee/est/ruumiandmed/eesti-topograafia-andmekogu/laadi-etak-andmed-alla-p609.html (or more current address)
-* Some **municipalities** have own open data portals sharing also useful data GIS data and these are worth to be checked out. For example **Tartu** has https://geohub.tartulv.ee/, **Tallinn** has https://www.tallinn.ee/et/geoportaal/ruumiandmed and there can be others. These may give more up-to-date and richer datasets than global OpenStreetMap and Overture for similar themes.
+* **Maa- ja Ruumiamet (Estonian Land and Spatial Development Board, formerly Maa-amet) — Geoportal** — national datasets (topographic, cadastral, addresses, orthophotos, elevations, LiDAR) with per-dataset download pages and WMS / WFS / WMTS services:
+  * Spatial data index: https://geoportaal.maaruum.ee/eng/spatial-data-p58.html
+  * Many datasets offer bulk downloads by county (maakond) and municipality, a preferred path over WFS paging for whole-region pulls. Check each dataset page for the current packaging and formats.
+* **Cadastral data (katastriüksused)** — authoritative cadastral units: https://geoportaal.maaruum.ee/eng/spatial-data/cadastral-data-p310.html
+* **ETAK (Estonian Topographic Database)** — national vector base data (buildings, roads, water, land cover, relief and more), offered as downloads and through a WFS: https://geoportaal.maaruum.ee/est/ruumiandmed/eesti-topograafia-andmekogu/laadi-etak-andmed-alla-p609.html. Take the current service address and layer names from the catalog record or the service's `GetCapabilities`.
+* **Licenses** — check the license linked by the particular dataset; do not label all agency products CC-BY. The ETAK download page links the agency's own open-data license, https://geoportaal.maaruum.ee/avaandmete-litsents. Do not substitute CC-BY for these terms. Record the license link, provider/dataset and data age or extraction date; include the terms or link when redistributing.
+* **Pinning** — agency downloads are regenerated in place. Retain the actual bytes and SHA-256 (or a genuinely immutable provider version); a filename, URL or retrieval date alone is not an immutable pin.
+* **Municipal portals** — some municipalities publish their own GIS data, sometimes more current and richer than OSM or Overture for the same themes. For example **Tartu** has https://geohub.tartulv.ee/ and **Tallinn** has https://www.tallinn.ee/et/geoportaal/ruumiandmed; there can be others.
 * **Default CRS for Estonia: EPSG:3301 (L-EST97 / Estonian Coordinate System of 1997)**. Convert from WGS84 with `pyproj` or `gdalwarp -t_srs EPSG:3301`.
-
-### ETAK WFS — programmatic access
-
-The legacy `https://teenus.maaamet.ee/ows/wfs_etak` endpoint that older docs reference is dead. The live WFS lives on the Environment Agency's GeoServer at:
-
-```
-https://gsavalik.envir.ee/geoserver/etak/wfs
-```
-
-Layer naming is `etak:e_<code>_<name>_<geom>`, where `<geom>` is `j` (joon / line), `p` (punkt / point), `a` (ala / area / polygon), or `ka` (kinnine ala / closed-polygon area). The most useful layers:
-
-| Layer | Theme |
-|---|---|
-| `etak:e_401_hoone_ka` | Buildings (hoone) — polygons |
-| `etak:e_404_maaalune_hoone_ka` | Underground buildings |
-| `etak:e_402_korgrajatis_p` | Tall structures (towers, masts) |
-| `etak:e_501_tee_j` / `_a` | Roads — line / area |
-| `etak:e_502_roobastee_j` | Railway lines |
-| `etak:e_201_meri_a` / `e_202_seisuveekogu_a` / `e_203_vooluveekogu_a` | Sea / lakes / rivers |
-| `etak:e_303_haritav_maa_a` / `e_305_puittaimestik_a` | Cropland / forest |
-
-**Building semantics:** inspect the current layer schema and `tyyp` code list before filtering. A request for building footprints is not a request for residential/public buildings only. `tyyp = 10` is a residential/public subset, not a universal “real building” predicate. `ehr_gid` is a building-registry linkage, not proof of physical existence: do not require `ehr_gid IS NOT NULL` unless registry linkage is part of the user's requested population. Distinguish building, outbuilding/industrial, foundation, ruin and construction categories using verified type definitions; disclose any exclusions. Use `ads_lahiaadress` where an address is needed.
-
-**Verify access, terms and identity** against the [ETAK download page](https://geoportaal.maaruum.ee/est/ruumiandmed/eesti-topograafia-andmekogu/laadi-etak-andmed-alla-p609.html) and its [agency open-data license](https://geoportaal.maaruum.ee/avaandmete-litsents) (checked 2026-09-23). The page offers national, thematic and map-sheet downloads; verify any finer packaging rather than promising county/municipality files. It says downloads update weekly. Retain the actual bytes and SHA-256 (or a genuinely immutable provider version); a filename, URL or retrieval date alone is not an immutable pin. Record the license link, provider/dataset and data age or extraction date; include the terms or link when redistributing. Do not substitute CC-BY for these terms. If current metadata cannot be retrieved, report that limitation instead of asserting it was verified.
-
-Bbox request example for Tartu in EPSG:3301 (this first page alone is not a complete extract):
-
-```bash
-curl "https://gsavalik.envir.ee/geoserver/etak/wfs?service=WFS&version=2.0.0&request=GetFeature\
-&typeNames=etak:e_401_hoone_ka\
-&srsName=EPSG:4326\
-&outputFormat=application/json\
-&bbox=657000,6471000,670000,6480000,EPSG:3301\
-&count=5000"
-```
-
-GeoServer pages 5000 features at a time by default. Add a stable `sortBy` (e.g. `etak_id`), loop with `startIndex`, and stop when the accumulated count equals the `numberMatched` reported in the GeoJSON pages. A short page alone is not proof. Do not use `resultType=hits` as the completeness total on this server: it was capped at `numberMatched="5000"` for a Tartu bbox whose paged GeoJSON reported 22308 (checked 2026-09-16).
-
-### Estonian OSM admin levels
-
-Estonia uses different `admin_level` values from the OSM defaults most generic docs assume. If you copy a query that says `admin_level=8` for a city, you'll get nothing for any Estonian municipality.
-
-| `admin_level` | Estonia meaning |
-|---|---|
-| 4 | Country (Eesti) |
-| 6 | Maakond (county) |
-| 7 | Linn / vald (municipality) — the right level for "city of Tartu", "city of Tallinn" |
-| 8 | Asustusüksus (settlement unit, optional) |
-| 9 | Sub-area, neighbourhood (rare) |
-
-Concrete relation IDs: Tartu linn = `351439` (al=7), Tartu maakond = `351246` (al=6), Tallinn = `2618383` (al=7). Stable OSM relation IDs are far easier to query than name + `admin_level` filters. Overpass example:
-
-```
-[out:json][timeout:60];
-relation(351439);                 -- Tartu linn (admin_level=7)
-out geom;
-```
-
-> [!NOTE]
-> **Post-2017 administrative reform:** the 2017 reform consolidated 213 municipalities to 79; many city polygons absorbed surrounding rural land. Modern *Tartu linn* as official municipality is ~154 km², not the historic ~38 km² urban core. Always check the polygon area before assuming "the city" matches the historic centre — building counts and POI density estimates that assume the small polygon will be wildly off.
-
-* **Maa- ja Ruumiamet WMS example:**
-
-  ```
-  https://kaart.maaamet.ee/wms/alus?
-    SERVICE=WMS&VERSION=1.3.0&REQUEST=GetCapabilities
-  ```
-Note that kaart.maaamet.ee/wms/alus only supports EPSG:3301 (Estonian national grid) and EPSG:4326 (WGS84). Leaflet's standard slippy map requests WMS tiles in EPSG:3857 (Web Mercator), which the server rejects with HTTP 500.
-
-Fix is to use Maa-amet's WMTS REST tile service at tiles.maaamet.ee, which serves a @GMC (Google Mercator = EPSG:3857) tileset. The {-y} template variable handles TMS-to-XYZ Y-axis inversion automatically in Leaflet.
-
-Note that kaart.maaamet.ee/wms/alus only supports EPSG:3301 (Estonian national grid) and EPSG:4326 (WGS84). Leaflet's standard slippy map requests WMS tiles in EPSG:3857 (Web Mercator), which the server rejects with HTTP 500.
-
-Fix is to use Maa-amet's WMTS REST tile service at tiles.maaamet.ee, which serves a @GMC (Google Mercator = EPSG:3857) tileset. The {-y} template variable handles TMS-to-XYZ Y-axis inversion automatically in Leaflet.
 
 ## MCP servers for catalog-driven discovery
 
@@ -402,7 +326,7 @@ When the bbox and time window are already known and the task is purely batch ing
 
 * Overture: pin release version, not `latest`; public buckets retain only recent releases, so mirror anything needed long term.
 * STAC: pin item IDs in the manifest you save with the pipeline, not just (collection, bbox, time).
-* OSM extracts: record the Geofabrik file timestamp.
-* National data: record download date + portal version.
+* OSM extracts: record the extract file timestamp.
+* National data: record download date, the dataset page or catalog record, and the SHA-256 of the bytes.
 
 A `data-manifest.json` next to outputs is enough; full DVC / lakeFS is overkill for most pipelines but useful for production.
