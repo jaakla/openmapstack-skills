@@ -242,14 +242,17 @@ data, geography on the spheroid is correct at any extent; a local projected CRS 
 small area. `8e289e7` makes that the `spatial-sql` default. Rerun at `8e289e7`, the same case
 chose geography because "the data extent is unspecified" when installed alone ($0.140620, record
 `e0613e96`), and offered a projected CRS only for a confirmed extent in the collection
-($0.118739, `86e788d3`). Both passed selection and the reviewed criterion.
+($0.118739, `86e788d3`). Both passed selection and the reviewed criterion. Review of that change
+then limited the default to distance tests, since PostGIS buffers `geography` in a planar
+projection; both reruns predate that wording and exercise only a distance query.
 
 Round spend: **$5.981862 of $20.00**. Cases 070–073 were not run: their prompts state neither the
 runtime nor, for 071–073, the full project they are graded on.
 
 ## Running the remaining trials
 
-Freeze a clean candidate at or after `250c99c` and confirm a new spend authorization first.
+Freeze a clean candidate at or after `8e289e7`. The $20 authorization of 2026-09-24 remains open
+with **$14.018138** left; spending beyond it needs a new authorization.
 Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
 
 ```bash
@@ -276,8 +279,6 @@ the routing cases; review outcomes and actual execution separately as below.
 - Repair and version the material artifact contract/checker coverage before another paid material
   comparison. Fix discovery guidance/source verification and substantiate task quality. Any changed
   producer payload requires a newly frozen candidate, not reuse of this candidate's evidence.
-- Provider access is restored. Further paid trials need a new authorization; carry the recorded
-  $8.760220 forward if they continue the existing one.
 - Done at `b65a2b4`: `chosen-engine-sql`, `bounded-discovery` and material 001, which passed its
   required checks and clean rerun. `8e289e7` changes only `spatial-sql` guidance, so the release
   candidate must still be refrozen and this evidence carried forward or rerun.

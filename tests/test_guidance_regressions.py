@@ -92,8 +92,13 @@ class GeographyIndexGuidanceTests(GuidanceCase):
                 self.assertShips(text, "compute on the spheroid by default", path)
                 self.assertShips(text, "Do not pick a UTM zone or national grid for an unknown or multi-zone extent.", path)
                 self.assertRetracted(text, "use a suitable projected CRS or `geography`", path)
-        skill = (SKILLS_ROOT / "spatial-sql/SKILL.md").read_text(encoding="utf-8")
-        self.assertShips(skill, "do not guess a UTM zone or\n   national grid", "skills/spatial-sql/SKILL.md")
+                # The default must not reach buffers: PostGIS buffers geography in a planar projection.
+                self.assertShips(text, "`ST_Buffer` on `geography` is not geodesic.", path)
+        skill = " ".join((SKILLS_ROOT / "spatial-sql/SKILL.md").read_text(encoding="utf-8").split())
+        self.assertShips(skill, "For distance and within-distance tests on an unknown or wide extent", "skills/spatial-sql/SKILL.md")
+        self.assertShips(skill, "do not guess a UTM zone or national grid", "skills/spatial-sql/SKILL.md")
+        self.assertShips(skill, "A geography type does not make every operation geodesic", "skills/spatial-sql/SKILL.md")
+        self.assertRetracted(skill, "For an unknown or wide extent, prefer the geodesic operation", "skills/spatial-sql/SKILL.md")
 
 
 class AcceptanceGuidanceTests(GuidanceCase):
