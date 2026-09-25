@@ -673,4 +673,7 @@ case author omitted it and requires the baseline to cover the complete
 `validation.report_evidence_recomputes` independently derives supported row,
 geometry-validity, duplicate-ID, and null-ID counters from actual geodata.
 `geodata.dataset_crs_is` reads real dataset CRS metadata rather than trusting
-the manifest.
+the manifest. `geodata.dataset_crs_matches_storage_crs` compares that metadata
+with the project's declared `processing.storage_crs`, for tasks that leave the
+output CRS to the agent; it treats EPSG:4326 and GeoParquet's default
+OGC:CRS84 as the same.

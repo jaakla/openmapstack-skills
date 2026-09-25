@@ -301,5 +301,56 @@ class DatasetCrsTests(unittest.TestCase):
         self.assertEqual(result.status, "not_testable")
 
 
+def _project_with_storage_crs(workspace, storage_crs):
+    project = minimal_project()
+    if storage_crs is None:
+        project["processing"].pop("storage_crs", None)
+    else:
+        project["processing"]["storage_crs"] = storage_crs
+    write_project(workspace, project)
+
+
+def _write_plain_geoparquet(path):
+    """GeoParquet with no `crs` key, as DuckDB writes it; readers take OGC:CRS84."""
+    con = geodata._connect()
+    con.execute(
+        f"COPY (SELECT 1 AS id, ST_Point(26.7, 58.3) AS geometry) TO '{path.as_posix()}' (FORMAT parquet)"
+    )
+
+
+class DatasetCrsMatchesStorageCrsTests(unittest.TestCase):
+    """Live case 070 declared `storage_crs: EPSG:4326` and wrote CRS84 GeoParquet."""
+
+    def test_data_in_the_declared_projected_crs_passes(self) -> None:
+        workspace = make_workspace()
+        _project_with_storage_crs(workspace, "EPSG:3301")
+        _write_geojson(workspace / "data.geojson", [_point_feature({"id": 1}, coords=(660000, 6470000))], crs="EPSG:3301")
+        result = geodata.dataset_crs_matches_storage_crs(workspace, path="data.geojson")
+        self.assertEqual(result.status, "passed", result.detail)
+
+    def test_declared_epsg_4326_accepts_geoparquet_crs84(self) -> None:
+        workspace = make_workspace()
+        _project_with_storage_crs(workspace, "EPSG:4326")
+        _write_plain_geoparquet(workspace / "candidates.parquet")
+        result = geodata.dataset_crs_matches_storage_crs(workspace, path="candidates.parquet")
+        self.assertEqual(result.status, "passed", result.detail)
+
+    def test_data_that_contradicts_the_declaration_fails(self) -> None:
+        workspace = make_workspace()
+        _project_with_storage_crs(workspace, "EPSG:3301")
+        _write_plain_geoparquet(workspace / "candidates.parquet")
+        result = geodata.dataset_crs_matches_storage_crs(workspace, path="candidates.parquet")
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(result.data.get("code"), "dataset_crs_mismatch")
+
+    def test_an_undeclared_storage_crs_fails(self) -> None:
+        workspace = make_workspace()
+        _project_with_storage_crs(workspace, None)
+        _write_plain_geoparquet(workspace / "candidates.parquet")
+        result = geodata.dataset_crs_matches_storage_crs(workspace, path="candidates.parquet")
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(result.data.get("code"), "storage_crs_missing")
+
+
 if __name__ == "__main__":
     unittest.main()
