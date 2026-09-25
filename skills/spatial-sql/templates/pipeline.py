@@ -14,6 +14,8 @@ import datetime
 import hashlib
 import json
 import logging
+import platform
+import shlex
 from pathlib import Path
 
 import duckdb
@@ -87,6 +89,28 @@ def _inventory(paths: list[Path]) -> list[dict]:
     ]
 
 
+def _declared_inputs(project: dict) -> list[Path]:
+    """Every input the validator requires in the run record (project-spec.md
+    s.2.8): sources, overrides, the pipeline, project-local command files and
+    declared runtime dependencies."""
+    paths = {path for folder in (SOURCE, OVERRIDES) if folder.is_dir() for path in folder.rglob("*") if path.is_file()}
+    paths.add(ROOT / "pipeline.py")
+    implementation = (project.get("runtime") or {}).get("implementation") or {}
+    command = implementation.get("command") or []
+    tokens = shlex.split(command) if isinstance(command, str) else list(command)
+    for entry in [implementation.get("pipeline"), *tokens, *(implementation.get("dependencies") or [])]:
+        if not isinstance(entry, str) or entry.startswith("-"):
+            continue
+        target = (ROOT / entry).resolve()
+        if not target.is_relative_to(ROOT):
+            continue
+        if target.is_file():
+            paths.add(target)
+        elif target.is_dir():
+            paths.update(path for path in target.rglob("*") if path.is_file())
+    return sorted(paths)
+
+
 def finalize_run(report: dict, started_at: str) -> None:
     """STEP 7 — Write the report and run record, then point project.yaml at them.
 
@@ -97,8 +121,7 @@ def finalize_run(report: dict, started_at: str) -> None:
     """
     project = yaml.safe_load((ROOT / "project.yaml").read_text())
     completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    inputs = [path for folder in (SOURCE, OVERRIDES) for path in folder.rglob("*") if path.is_file()]
-    inputs.append(ROOT / "pipeline.py")
+    inputs = _declared_inputs(project)
     outputs = [ROOT / output["path"] for output in (project.get("outputs") or {}).values()]
     report["inputs_hash"] = _file_set_hash(inputs)
     report["outputs_hash"] = _file_set_hash(outputs)
@@ -112,6 +135,8 @@ def finalize_run(report: dict, started_at: str) -> None:
         "inputs_hash": report["inputs_hash"],
         "outputs_hash": report["outputs_hash"],
         "validation_report": "validation/latest-report.json",
+        # Record the versions that actually ran; add every tool the pipeline uses.
+        "environment": {"python": platform.python_version(), "duckdb": duckdb.__version__},
         "inputs": _inventory(inputs),
         "outputs": _inventory(outputs),
     }, indent=2))

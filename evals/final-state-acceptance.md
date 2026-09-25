@@ -349,12 +349,19 @@ wording did not change behaviour: no 001 agent in four trials this round ran `ve
 before delivery, and the latest ran neither `validate` nor `verify`. One pass after the fix is
 not yet evidence of reliability; the second trial could not complete.
 
+Review of #64 then found that the template's run record lacked the `environment` mapping `validate`
+requires, and inventoried only sources, overrides and `pipeline.py`, missing declared runtime
+dependencies and command files. The follow-up adds both and tests the record against the
+validator's run-record check. The live trial above used the earlier template; its agent's own
+pipeline wrote a valid record, but the follow-up changes the shipped payload, so the next material
+trial must run at or after it.
+
 Spend under the combined authorizations: **$27.625198 of $35.00**; $7.374802 remains. The
 provider's organization monthly limit blocks further paid calls until it is raised or resets.
 
 ## Running the remaining trials
 
-Freeze a clean candidate at or after `66741f1`. The $20, €5 and $10 authorizations of 2026-09-24
+Freeze a clean candidate at or after the #64 review follow-up. The $20, €5 and $10 authorizations of 2026-09-24
 and 2026-09-25 leave **$7.374802**, subject to the provider's organization spend limit;
 spending beyond that needs a new authorization.
 Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
