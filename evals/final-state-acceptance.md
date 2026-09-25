@@ -225,7 +225,7 @@ The maintainer reviewed task outcomes; verdicts below are theirs.
 | `chosen-engine-sql` (`spatial-sql` alone) | `spatial-sql` | Correct core. Proposed an arbitrary UTM zone for data of unknown extent, and wrongly said a plain index serves an `ST_Transform` predicate | needs review | 0.113567 |
 | `bounded-discovery` (collection) | `geospatial-data-discovery` | Five live lookups; unreadable license PDF labelled unverified. GPKG listed though the live page offers SHP/TAB/DGN/DWG (from shipped `data-sources.md`). OSM/Overture "derive from" ETAK has no cited source | passed with notes | 0.301924 |
 | `compile-existing-analysis` (collection) | `reproducible-gis-project`; `not_testable` (Bash read surface) | Algorithm kept; missing source details listed, not invented; honest that nothing ran. Unexecuted scaffold; extra outputs; pins unpublished `openmapstack==0.4.0` | needs review | 1.422498 |
-| `billion-row-architecture` (collection) | `open-map-stack` | Sound overall architecture. Partitions on a `country_iso` column Overture buildings lack; H3 resolution 3 stated as ~1,000 cells (it has 41,162); pins a 2025 release while warning that only recent ones are retained | pending | 0.395723 |
+| `billion-row-architecture` (collection) | `open-map-stack` | Sound overall architecture. Partitions on a `country_iso` column Overture buildings lack; H3 resolution 3 stated as ~1,000 cells (it has 41,162); pins a 2025 release while warning that only recent ones are retained | passed for now; errors stand | 0.395723 |
 
 Record hashes (SHA-256 prefix): material `9e5faa71` (agent), `9589b565` (grading); routing
 `2ace0d7d`, `4a07d100`, `0e1009c3`, `e8ecf94b`, `17f4523e`, in table order.
@@ -282,9 +282,9 @@ the routing cases; review outcomes and actual execution separately as below.
 - Done at `b65a2b4`: `chosen-engine-sql`, `bounded-discovery` and material 001, which passed its
   required checks and clean rerun. `8e289e7` changes only `spatial-sql` guidance, so the release
   candidate must still be refrozen and this evidence carried forward or rerun.
-- Run 070–073 after their prompts state the runtime and the project they are graded on. Standalone
-  SQL and compilation were attempted at `b65a2b4` and need review; `billion-row-architecture` awaits
-  a verdict. Plain/skill material comparison evidence remains incomplete.
+- 070–073 remain untested. Run them after their prompts state the runtime and the project they are
+  graded on. Standalone SQL and compilation were attempted at `b65a2b4` and need review.
+  Plain/skill material comparison evidence remains incomplete.
 - Review selection, useful task outcome and actual execution separately. Text tasks remain
   `needs_review`; self-reported activation or an unexecuted scaffold is not acceptance evidence.
 - Review installed/absent companion, unavailable discovery and conflicting product-advice contexts
