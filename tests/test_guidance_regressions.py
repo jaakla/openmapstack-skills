@@ -84,6 +84,17 @@ class GeographyIndexGuidanceTests(GuidanceCase):
             with self.subTest(path=path):
                 self.assertRetracted(text, retracted, path)
 
+    def test_geography_is_the_default_and_a_projected_crs_needs_a_known_extent(self) -> None:
+        """The b65a2b4 standalone trial proposed an arbitrary UTM zone for data of unknown extent."""
+        for path, text in self.copies.items():
+            with self.subTest(path=path):
+                self.assertShips(text, "For meter distances on lon/lat data in PostGIS, default to `geography`.", path)
+                self.assertShips(text, "compute on the spheroid by default", path)
+                self.assertShips(text, "Do not pick a UTM zone or national grid for an unknown or multi-zone extent.", path)
+                self.assertRetracted(text, "use a suitable projected CRS or `geography`", path)
+        skill = (SKILLS_ROOT / "spatial-sql/SKILL.md").read_text(encoding="utf-8")
+        self.assertShips(skill, "do not guess a UTM zone or\n   national grid", "skills/spatial-sql/SKILL.md")
+
 
 class AcceptanceGuidanceTests(GuidanceCase):
     """Content regressions only; native task-quality review remains a live gate."""

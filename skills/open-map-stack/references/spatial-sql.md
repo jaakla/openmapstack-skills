@@ -75,7 +75,7 @@ WHERE s.geom && a.geom
   AND ST_Intersects(s.geom, a.geom);
 ```
 
-For meter distances on lon/lat data, use a suitable projected CRS or `geography`. Create GIST indexes on the exact expression the predicate uses, not merely on the stored geometry column (see below), and verify with `EXPLAIN ANALYZE`.
+For meter distances on lon/lat data in PostGIS, default to `geography`. `ST_DWithin` and `ST_Distance` on `geography` compute on the spheroid by default, so they are correct at any location and extent. Use a projected CRS instead only when the data's extent is known and lies within that CRS's area of use, for example EPSG:3301 for data confined to Estonia. Do not pick a UTM zone or national grid for an unknown or multi-zone extent. Create GIST indexes on the exact expression the predicate uses, not merely on the stored geometry column (see below), and verify with `EXPLAIN ANALYZE`.
 
 An index serves only the expression it was built on. A GIST index on `geom` is **not** used by `ST_DWithin(p.geom::geography, s.geom::geography, 500)`: the cast is a different expression. Without a matching index the planner may scan many rows; inspect the actual plan. Choose one consistent option:
 
@@ -86,7 +86,8 @@ SELECT DISTINCT p.id
 FROM stops s
 JOIN parcels p ON ST_DWithin(p.geom::geography, s.geom::geography, 500);
 
--- Option 2: a metric projected CRS (e.g. EPSG:3301 for Estonia), indexed on the same expression.
+-- Option 2: a metric projected CRS, indexed on the same expression. Only when the data's extent is
+-- known and lies within the CRS's area of use (e.g. EPSG:3301 for Estonia-only data).
 -- Requires a known source CRS and a supported transform.
 CREATE INDEX parcels_3301_gix ON parcels USING GIST (ST_Transform(geom, 3301));
 SELECT DISTINCT p.id

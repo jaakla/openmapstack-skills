@@ -23,8 +23,11 @@ Solve the query in the engine the user has chosen. Read
    a single membership result.
 3. Make distance, area and buffers use the intended units and method. A
    geographic geometry in EPSG:4326 does not acquire metre units from a numeric
-   threshold. Use an appropriate projected CRS or the engine's explicitly
-   supported geodesic/geography operation. Assigning an SRID is not coordinate
+   threshold. Use the engine's explicitly supported geodesic/geography
+   operation, or a projected CRS whose area of use contains the data's known
+   extent. For an unknown or wide extent, prefer the geodesic operation where
+   the engine supports the geometry types involved; do not guess a UTM zone or
+   national grid. Assigning an SRID is not coordinate
    transformation; Web Mercator is not a general metric-analysis CRS.
 4. Preserve analytical correctness while improving execution. Consider spatial
    indexes or candidate filters, predicate pushdown, partition pruning and
