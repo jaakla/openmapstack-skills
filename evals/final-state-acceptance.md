@@ -359,10 +359,29 @@ trial must run at or after it.
 Spend under the combined authorizations: **$27.625198 of $35.00**; $7.374802 remains. The
 provider's organization monthly limit blocks further paid calls until it is raised or resets.
 
+## Material 001 at `480b5ad` (2026-09-25)
+
+After the provider raised the organization limit, material 001 ran at `480b5ad` (`main` after #64,
+including the `737666a` template follow-up), $4.50 cap. The agent read the templates, probed the
+runtime and created the project folders in 12 turns, then announced it would write `pipeline.py`
+and streamed that single file for about 25 minutes, with a `rate_limit_event` just before, until the
+harness killed it at the 1800 s timeout. **Setup failure** (`agent_execution`: timed out); not a
+skill result, and it gives no evidence about the final template. Record hashes (agent / grading):
+`894299fa`/`8adf2ef9`.
+
+The provider reported no cost for the killed session. Completed turns come to about $0.35 at list
+prices; the cap bounds it at $4.50. Counting the cap, at least $2.874802 of the $35.00 remains,
+below one material trial. The next trial should use a longer timeout, since throughput limits can
+stretch a single large write.
+
+Cases 070–073 are **parked** here: their remaining work moved to OpenMapBench, their canonical home,
+as jaakla/OpenMapBench#7 (runtime disclosure, 072's false premise, the 070 CRS contract, v1's
+hidden deliverable and CRS). They no longer block this repository's gate; see #39.
+
 ## Running the remaining trials
 
 Freeze a clean candidate at or after `737666a`. The $20, €5 and $10 authorizations of 2026-09-24
-and 2026-09-25 leave **$7.374802**, subject to the provider's organization spend limit;
+and 2026-09-25 leave at least **$2.874802** (counting the unreported `480b5ad` trial at its cap);
 spending beyond that needs a new authorization.
 Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
 
@@ -392,11 +411,13 @@ the routing cases; review outcomes and actual execution separately as below.
   producer payload requires a newly frozen candidate, not reuse of this candidate's evidence.
 - At the refrozen candidate `861b58b`: `chosen-engine-sql` passed (alone and in the collection),
   `bounded-discovery` carries forward from `24546c1`, and material 001 **failed** its clean rerun.
-  Material 001 then passed at `66741f1` with an independent real-QGIS verify; a second trial was
-  cut off by the provider spend limit. Repeat it to show the fix is reliable, and find a way to
-  make agents run `verify --rerun`, which prose alone has not achieved.
-- 070–073 are postponed to OpenMapBench. For the record: 071 and 073 passed at `f57e8c2`, 072 at
-  `08df564`; 070 has no graded pass. Compilation was attempted at `b65a2b4` and needs review.
+  Material 001 then passed at `66741f1` with an independent real-QGIS verify. Trials at `66741f1`
+  and `480b5ad` ended as setup failures (provider spend limit; timeout during a long write). Run
+  material 001 at or after `737666a` with a longer timeout to show the fix is reliable, and find a
+  way to make agents run `verify --rerun`, which prose alone has not achieved.
+- 070–073 are parked; jaakla/OpenMapBench#7 owns them. For the record: 071 and 073 passed at
+  `f57e8c2`, 072 at `08df564`; 070 has no graded pass. Compilation was attempted at `b65a2b4` and
+  needs review.
   Plain/skill material comparison evidence remains incomplete.
 - Review selection, useful task outcome and actual execution separately. Text tasks remain
   `needs_review`; self-reported activation or an unexecuted scaffold is not acceptance evidence.
