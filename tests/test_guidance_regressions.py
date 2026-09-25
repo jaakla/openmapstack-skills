@@ -102,21 +102,33 @@ class AcceptanceGuidanceTests(GuidanceCase):
                 self.assertShips(text, "https://geoportaal.maaruum.ee/avaandmete-litsents", path)
                 self.assertShips(text, "Do not substitute CC-BY for these terms", path)
                 self.assertShips(text, "not a universal “real building” predicate", path)
-                self.assertShips(text, "do not require `ehr_gid IS NOT NULL`", path)
+                self.assertShips(text, "a registry linkage is not proof that a feature exists", path)
                 self.assertShips(text, "actual bytes and SHA-256", path)
                 self.assertRetracted(text, "Most data is open under CC-BY 4.0", path)
                 self.assertRetracted(text, "require `ehr_gid IS NOT NULL` to drop", path)
 
-    def test_building_footprint_licenses_match_the_providers(self) -> None:
-        # Checked 2026-09-23 against docs.overturemaps.org/attribution and the
-        # microsoft/GlobalMLBuildingFootprints README. A live discovery trial
-        # repeated both retracted claims from this file.
+    def test_licenses_are_read_from_the_provider_not_recorded_here(self) -> None:
+        # A live discovery trial repeated two wrong footprint licenses from this
+        # file. Licenses change per dataset, theme and release, so the guidance
+        # now sends the agent to the provider's page instead of stating them.
         for path, text in _shipped_copies("data-sources.md").items():
             with self.subTest(path=path):
-                self.assertShips(text, "Base, buildings, divisions and transportation are ODbL", path)
-                self.assertShips(text, "Microsoft Global Building Footprints** — global, CDLA-Permissive 2.0", path)
+                self.assertShips(text, "read the attribution page for the release you pin", path)
+                self.assertShips(text, "Check the provider page for current coverage, formats, vintage and license.", path)
                 self.assertRetracted(text, "Overture data is mostly CDLA-Permissive 2.0", path)
                 self.assertRetracted(text, "Building Footprints** — global, public domain", path)
+
+    def test_data_sources_records_entry_points_not_dataset_internals(self) -> None:
+        # Formats, layer and field names, code values, counts and download
+        # patterns change without notice and this file is not reviewed daily.
+        # The maintainer's rule: point to catalogs and pages, verify live.
+        for path, text in _shipped_copies("data-sources.md").items():
+            with self.subTest(path=path):
+                self.assertShips(text, "This file lists entry points and methods, not dataset internals.", path)
+                self.assertShips(text, "## Verify a source before relying on it", path)
+                self.assertShips(text, "Do not claim lineage between datasets", path)
+                for volatile in ("s3.pilw.io", "e_401_hoone_ka", "tyyp = 10", "`siht1`", "79,000", "351439"):
+                    self.assertRetracted(text, volatile, path)
 
     def test_coded_selection_attributes_are_recorded_as_semantic_predicates(self) -> None:
         # A live material trial documented the zoning filter only as free-text
@@ -194,7 +206,7 @@ class PaginationCompletenessGuidanceTests(GuidanceCase):
                 self.assertShips(text, "A separate hits/count request is not proof on its own", path)
                 self.assertRetracted(text, "pagination or a hits/count request proves completeness", path)
 
-    def test_etak_paging_recipe_pages_to_the_reported_total(self) -> None:
+    def test_wfs_paging_recipe_pages_to_the_reported_total(self) -> None:
         for path, text in _shipped_copies("data-sources.md").items():
             with self.subTest(path=path):
                 for needle in ("sortBy", "startIndex", "numberMatched"):

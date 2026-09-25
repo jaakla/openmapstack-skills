@@ -87,6 +87,7 @@ When changing `SKILL.md` or `references/`:
 - Treat the text as shipped executable guidance whose consumers may be many different agents.
 - Keep `SKILL.md` focused on high-value behavior and routing. Put detailed domain material in `references/` rather than growing the always-loaded entry point unnecessarily.
 - Prefer behavioral requirements and observable outcomes over vendor-specific prompting tricks.
+- Keep volatile provider details out of shipped guidance: file formats, layer and field names, code values, counts, download URL patterns, server limits and licenses. Point to catalogs, dataset pages and service capabilities, and require live verification; providers change faster than the skill text is reviewed.
 - A material behavior change should have eval coverage. If current evals cannot measure it, improve the eval rather than relying on prose confidence.
 - Do not weaken reproducibility, provenance, validation, or correctness rules merely to make a benchmark easier to pass.
 - Distinguish a skill regression from an adapter/model limitation in eval results and fixes.
