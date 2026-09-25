@@ -293,10 +293,42 @@ failed as graded. 070 has no graded pass under its current assertions.
 
 Round spend: **$17.171674 of $20.00**.
 
+## Refreeze at `861b58b` (2026-09-25)
+
+A further **€5** was authorized, counted as $5.00 against USD-reported cost. Cases 070–073 are
+postponed to OpenMapBench, their canonical home, which needs further work on them. Candidate
+`861b58b` (`main` after #59–#62; collection
+`sha256:b1e08e3235e45bb1fd7380d65888a9531ea797361f111ff83731e277214bff9b`), `claude-sonnet-4-6`,
+Claude Code 2.1.282.
+
+| Trial | Outcome | Status | Reported USD |
+|---|---|---|---:|
+| `chosen-engine-sql` (`spatial-sql` alone) | Geography "regardless of location"; projected CRS only for a known zone; `EXISTS` variant; matching index | passed | 0.149748 |
+| `chosen-engine-sql` (collection) | Geography by default; labelled a reasoned review, `not_testable` without PostGIS | passed | 0.118384 |
+| material 001 (live) | All hard assertions except the clean rerun. 88 turns | failed `rerun.clean_execution_succeeded`, `rerun.validation_report_reproducible` | 4.336621 |
+
+`bounded-discovery` carries forward from `24546c1`: the discovery skill is unchanged since. Record
+hashes: SQL `9394d756` (alone), `fe80ec90` (collection); material `b3f01fdb` (agent), `6545c917`
+(grading).
+
+Material 001 failed because the pipeline does not maintain the manifest's run pointer. The agent
+patched `runs.latest.id`, output hashes and `project.status` into `project.yaml` with `sed` after
+each pipeline run. A clean rerun writes a new timestamped run record, so the rebuilt project points
+at `runs/run-20260925-192358.json`, which no longer exists. `project.qgz` was also not rebuilt by
+the pipeline. The agent ran `validate` repeatedly but never `verify --rerun`, which would have
+shown the failure. It read only `SKILL.md`, `project-spec.md` and the manifest template, none
+changed since the `b65a2b4` pass, so this is not a regression from this round's guidance
+changes: the same effective guidance passed once and failed once. No 001 agent this round ran
+`verify --rerun`. The guidance's "every file under `data/derived` must come from the canonical
+pipeline" does not cover the manifest's run pointer and status, or presentation artifacts.
+
+Spend under the combined authorization: **$21.776427 of $25.00**; $3.223573 remains, below one
+material trial.
+
 ## Running the remaining trials
 
-Freeze a clean candidate at or after `8e289e7`. The $20 authorization of 2026-09-24 remains open
-with **$2.828326** left, below one 070 trial; spending beyond it needs a new authorization.
+Freeze a clean candidate at or after `861b58b`. The $20 authorization of 2026-09-24 and the €5
+authorization of 2026-09-25 leave **$3.223573**; spending beyond that needs a new authorization.
 Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
 
 ```bash
@@ -323,11 +355,12 @@ the routing cases; review outcomes and actual execution separately as below.
 - Repair and version the material artifact contract/checker coverage before another paid material
   comparison. Fix discovery guidance/source verification and substantiate task quality. Any changed
   producer payload requires a newly frozen candidate, not reuse of this candidate's evidence.
-- Done at `b65a2b4`: `chosen-engine-sql`, `bounded-discovery` and material 001, which passed its
-  required checks and clean rerun. `8e289e7` changes only `spatial-sql` guidance, so the release
-  candidate must still be refrozen and this evidence carried forward or rerun.
-- 071 and 073 passed at `f57e8c2`, 072 at `08df564`. 070 needs a graded pass under its storage-CRS
-  assertion, with a larger cap. Standalone SQL and compilation were attempted at `b65a2b4` and need review.
+- At the refrozen candidate `861b58b`: `chosen-engine-sql` passed (alone and in the collection),
+  `bounded-discovery` carries forward from `24546c1`, and material 001 **failed** its clean rerun.
+  Material 001 must pass at the final candidate; its pass at `b65a2b4` shows the guidance can
+  succeed, not that it does so reliably.
+- 070–073 are postponed to OpenMapBench. For the record: 071 and 073 passed at `f57e8c2`, 072 at
+  `08df564`; 070 has no graded pass. Compilation was attempted at `b65a2b4` and needs review.
   Plain/skill material comparison evidence remains incomplete.
 - Review selection, useful task outcome and actual execution separately. Text tasks remain
   `needs_review`; self-reported activation or an unexecuted scaffold is not acceptance evidence.
