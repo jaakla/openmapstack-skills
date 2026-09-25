@@ -388,8 +388,11 @@ Executed projects (guidance injected; the agent runs sandboxed; the cap is per t
 ```bash
 python3 evals/run.py --mode live --agent claude_code --model claude-sonnet-4-6 \
   --collection --arms oms --case 001-basic-spatial-analysis \
-  --max-budget-usd 2 --credential-file ~/.claude/.credentials.json --timeout 1200
+  --max-budget-usd 4.5 --credential-file ~/.claude/.credentials.json --timeout 3600
 ```
+
+Recent material 001 trials cost $3.40–4.34, and one was killed at 1800 s during a single long
+write; keep the cap and timeout above those.
 
 Native selection (Docker, digest-pinned image; the cap is split across the selected cases; see
 [routing smoke tests](routing.md)):
