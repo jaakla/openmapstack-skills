@@ -210,6 +210,43 @@ Follow-ups:
 
 Round spend so far: $6.705816 of the $10 authorization.
 
+## Round at `b65a2b4` (2026-09-24)
+
+A new **$20** authorization. Candidate `b65a2b4` (`main` after #59; collection
+`sha256:6f9dad1290f3fd6656711c6e3f31e4ee0ec6a3797953058fdb2a7e5982ee1dcd`), `claude-sonnet-4-6`,
+Claude Code 2.1.281. Routing used local image `sha256:01cd8a23c12db638fbf58873c36a603228ccd17fdf1ade6f020cd5839ddfcdbb`,
+rebuilt from `evals/containers/routing.Dockerfile` on the same pinned Node base with Codex 0.156.1.
+The maintainer reviewed task outcomes; verdicts below are theirs.
+
+| Trial | Selection | Reviewed outcome | Verdict | Reported USD |
+|---|---|---|---|---:|
+| material 001 (live) | injected | All hard and `rerun.*` assertions; delivered P1, P2, P5. Ran `validate` and repaired, not `verify --rerun`. 54 turns | passed | 3.375187 |
+| `chosen-engine-sql` (collection) | `spatial-sql` | Units, `ST_DWithin`, matching expression index, `DISTINCT`, plan check. Unexecuted | passed | 0.113604 |
+| `chosen-engine-sql` (`spatial-sql` alone) | `spatial-sql` | Correct core. Proposed an arbitrary UTM zone for data of unknown extent, and wrongly said a plain index serves an `ST_Transform` predicate | needs review | 0.113567 |
+| `bounded-discovery` (collection) | `geospatial-data-discovery` | Five live lookups; unreadable license PDF labelled unverified. GPKG listed though the live page offers SHP/TAB/DGN/DWG (from shipped `data-sources.md`). OSM/Overture "derive from" ETAK has no cited source | passed with notes | 0.301924 |
+| `compile-existing-analysis` (collection) | `reproducible-gis-project`; `not_testable` (Bash read surface) | Algorithm kept; missing source details listed, not invented; honest that nothing ran. Unexecuted scaffold; extra outputs; pins unpublished `openmapstack==0.4.0` | needs review | 1.422498 |
+| `billion-row-architecture` (collection) | `open-map-stack` | Sound overall architecture. Partitions on a `country_iso` column Overture buildings lack; H3 resolution 3 stated as ~1,000 cells (it has 41,162); pins a 2025 release while warning that only recent ones are retained | pending | 0.395723 |
+
+Record hashes (SHA-256 prefix): material `9e5faa71` (agent), `9589b565` (grading); routing
+`2ace0d7d`, `4a07d100`, `0e1009c3`, `e8ecf94b`, `17f4523e`, in table order.
+
+Independent sandboxed `verify --rerun` of the delivered 001 project, with the host's QGIS 3.40.15:
+47 passed, 0 failed. All four PyQGIS checks passed, including `qgis.layer_crs_matches_data` and
+`qgis.every_declared_layer_renders`. The one `not_testable` check is a candidate format string with
+no EPSG code. The sandbox must also expose `/etc/alternatives`, or PyQGIS fails to load `libblas`
+and those checks report `not_testable`.
+
+Maintainer notes: Maa-amet data underlies both ETAK and, through community imports, parts of
+Estonian OSM, but no public lineage record documents it, so the claim stays uncited. For lon/lat
+data, geography on the spheroid is correct at any extent; a local projected CRS fits only a known
+small area. `8e289e7` makes that the `spatial-sql` default. Rerun at `8e289e7`, the same case
+chose geography because "the data extent is unspecified" when installed alone ($0.140620, record
+`e0613e96`), and offered a projected CRS only for a confirmed extent in the collection
+($0.118739, `86e788d3`). Both passed selection and the reviewed criterion.
+
+Round spend: **$5.981862 of $20.00**. Cases 070–073 were not run: their prompts state neither the
+runtime nor, for 071–073, the full project they are graded on.
+
 ## Running the remaining trials
 
 Freeze a clean candidate at or after `250c99c` and confirm a new spend authorization first.
@@ -241,11 +278,12 @@ the routing cases; review outcomes and actual execution separately as below.
   producer payload requires a newly frozen candidate, not reuse of this candidate's evidence.
 - Provider access is restored. Further paid trials need a new authorization; carry the recorded
   $8.760220 forward if they continue the existing one.
-- Rerun `chosen-engine-sql`, `bounded-discovery` and material 001 against a candidate frozen at or
-  after `250c99c`. Material 001 must pass its required checks and clean rerun.
-- Complete the eight unattempted planned trials: standalone discovery, ambiguous/future-scale
-  architecture, generalist-only planning and 070–073. Standalone SQL needs a real attempt;
-  compilation and material clean-rerun/comparison evidence remain incomplete.
+- Done at `b65a2b4`: `chosen-engine-sql`, `bounded-discovery` and material 001, which passed its
+  required checks and clean rerun. `8e289e7` changes only `spatial-sql` guidance, so the release
+  candidate must still be refrozen and this evidence carried forward or rerun.
+- Run 070–073 after their prompts state the runtime and the project they are graded on. Standalone
+  SQL and compilation were attempted at `b65a2b4` and need review; `billion-row-architecture` awaits
+  a verdict. Plain/skill material comparison evidence remains incomplete.
 - Review selection, useful task outcome and actual execution separately. Text tasks remain
   `needs_review`; self-reported activation or an unexecuted scaffold is not acceptance evidence.
 - Review installed/absent companion, unavailable discovery and conflicting product-advice contexts
