@@ -325,10 +325,38 @@ pipeline" does not cover the manifest's run pointer and status, or presentation 
 Spend under the combined authorization: **$21.776427 of $25.00**; $3.223573 remains, below one
 material trial.
 
+## Material 001 at `66741f1` (2026-09-25)
+
+A further **$10.00** was authorized. `66741f1` makes the template pipeline write the run record
+and update `runs.latest` and `project.status` itself, as the worked example does, and makes the
+last `verify --rerun` the delivery gate in both project skills (collection
+`sha256:fb276c3ea313218ab5a2b8242f106ff496e1fa606f2d05df4a02e1c0becb2988`, Claude Code 2.1.282).
+
+| Trial | Outcome | Status | Reported USD |
+|---|---|---|---:|
+| material 001, first | All hard and `rerun.*` assertions; P1, P2, P5. Adopted the template's `finalize_run`; no hand edits. Ran `inspect`, never `validate` or `verify`. 69 turns | passed | 3.663860 |
+| material 001, second | Stopped after 38 turns when the provider rejected further calls at the organization's monthly spend limit. Not a skill result | setup failure | 2.184911 |
+
+Record hashes (agent / grading): first `87643bc5`/`e049088f`, second `eafeb325`/`4df2f6c5`.
+
+Independent sandboxed `verify --rerun` of the first trial's project with the host's QGIS 3.40.15:
+46 passed, 0 failed, clean rerun passed, all nine `qgis.*` checks passed. Two `not_testable`
+checks are outputs whose format strings name no EPSG code.
+
+The template change fixed the failure mode seen at `861b58b`: the agent read the template
+pipeline and its pipeline, not a hand edit, maintained the run pointer. The stronger delivery-gate
+wording did not change behaviour: no 001 agent in four trials this round ran `verify --rerun`
+before delivery, and the latest ran neither `validate` nor `verify`. One pass after the fix is
+not yet evidence of reliability; the second trial could not complete.
+
+Spend under the combined authorizations: **$27.625198 of $35.00**; $7.374802 remains. The
+provider's organization monthly limit blocks further paid calls until it is raised or resets.
+
 ## Running the remaining trials
 
-Freeze a clean candidate at or after `861b58b`. The $20 authorization of 2026-09-24 and the €5
-authorization of 2026-09-25 leave **$3.223573**; spending beyond that needs a new authorization.
+Freeze a clean candidate at or after `66741f1`. The $20, €5 and $10 authorizations of 2026-09-24
+and 2026-09-25 leave **$7.374802**, subject to the provider's organization spend limit;
+spending beyond that needs a new authorization.
 Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
 
 ```bash
@@ -357,8 +385,9 @@ the routing cases; review outcomes and actual execution separately as below.
   producer payload requires a newly frozen candidate, not reuse of this candidate's evidence.
 - At the refrozen candidate `861b58b`: `chosen-engine-sql` passed (alone and in the collection),
   `bounded-discovery` carries forward from `24546c1`, and material 001 **failed** its clean rerun.
-  Material 001 must pass at the final candidate; its pass at `b65a2b4` shows the guidance can
-  succeed, not that it does so reliably.
+  Material 001 then passed at `66741f1` with an independent real-QGIS verify; a second trial was
+  cut off by the provider spend limit. Repeat it to show the fix is reliable, and find a way to
+  make agents run `verify --rerun`, which prose alone has not achieved.
 - 070–073 are postponed to OpenMapBench. For the record: 071 and 073 passed at `f57e8c2`, 072 at
   `08df564`; 070 has no graded pass. Compilation was attempted at `b65a2b4` and needs review.
   Plain/skill material comparison evidence remains incomplete.
