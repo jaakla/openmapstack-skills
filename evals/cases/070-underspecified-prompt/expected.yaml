@@ -28,8 +28,8 @@ assertions:
 - assert: validation.required_all_present
 - assert: validation.no_implicit_pass
 - assert: validation.run_record_matches
-- assert: geodata.dataset_crs_is
+# The prompt fixes no output CRS; the project must write what it declares.
+- assert: geodata.dataset_crs_matches_storage_crs
   args:
     path: data/derived/candidates.parquet
-    expected: EPSG:3301
 - assert: geodata.crs_not_used_for_metrics

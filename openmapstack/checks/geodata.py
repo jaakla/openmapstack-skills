@@ -349,3 +349,36 @@ def dataset_crs_is(
             expected=expected.upper(),
         )
     return passed(f"{path} actual CRS metadata is {expected.upper()}", actual=actual)
+
+
+# GeoParquet always stores longitude/latitude and defaults WGS 84 to
+# OGC:CRS84, so a declared EPSG:4326 is written as either identifier.
+_EQUIVALENT_CRS = ({"EPSG:4326", "OGC:CRS84"},)
+
+
+def dataset_crs_matches_storage_crs(
+    workspace: Path,
+    path: str,
+    geometry_field: str | None = None,
+    project_dir: str = ".",
+) -> AssertionResult:
+    """Require a dataset's real CRS metadata to match `processing.storage_crs`.
+
+    Checks that the project writes what it declares, without prescribing
+    which storage CRS it should choose.
+    """
+    from . import get_in, load_project_yaml
+
+    proj = load_project_yaml(workspace, project_dir)
+    if proj is None:
+        return failed("project.yaml missing", code="manifest_missing")
+    declared = get_in(proj, "processing.storage_crs")
+    if not isinstance(declared, str) or not declared.strip():
+        return failed("processing.storage_crs is not declared", code="storage_crs_missing")
+    declared = declared.strip().upper()
+    for group in _EQUIVALENT_CRS:
+        if declared in group:
+            results = [dataset_crs_is(workspace, path, crs, geometry_field, project_dir) for crs in sorted(group)]
+            match = next((result for result in results if result.status == "passed"), None)
+            return match or results[0]
+    return dataset_crs_is(workspace, path, declared, geometry_field, project_dir)
