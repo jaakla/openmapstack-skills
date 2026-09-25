@@ -779,6 +779,11 @@ the real file. Inputs MUST include every file under `data/source/` and
 every declared runtime dependency. Outputs MUST include every declared
 `outputs.*.path`; presentation artifacts may also participate.
 
+The canonical pipeline writes the run record and updates `runs.latest` and
+`project.status` in `project.yaml` itself, as `templates/pipeline.py` does.
+Never patch them by hand: a clean rerun writes a new timestamped record, so a
+hand-edited pointer names a record that does not exist.
+
 `inputs_hash` and `outputs_hash` are canonical file-set hashes, not hashes of
 manifest prose. Sort the unique inventory paths lexicographically. For each
 path, feed SHA-256 an unsigned eight-byte big-endian length of its UTF-8 path,

@@ -38,9 +38,12 @@ CLI setup and the worked example's runtime requirements.
    (`openmapstack --version` or `python3 -m openmapstack --version`, then use
    whichever form works for every command); if it is, run
    `openmapstack validate`, then `openmapstack verify project.yaml --rerun`
-   for the clean rerun, and do not deliver while either reports a failure.
-   Every file under `data/derived` must come from the canonical pipeline,
-   never from a one-off script.
+   for the clean rerun. Make that `verify --rerun` your last step and do not
+   deliver until it passes; a passing `validate` alone is not enough. The
+   canonical pipeline must produce every file under `data/derived`,
+   `project.qgz`, the run record, and the manifest's `runs.latest` and
+   `project.status`, never a one-off script or a hand edit: a rerun writes a
+   new run record, so a hand-patched pointer breaks it.
    Missing tools or unknown data semantics remain visible limitations. A stated
    intention to validate is not validation.
 5. Deliver the project, source/override policy, runtime instructions and
