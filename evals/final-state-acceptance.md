@@ -254,13 +254,35 @@ confirms are offered), and dropped the uncited lineage claim. It still stated an
 path, a `numberOfFeatures` catalog field and Tallinn attribute richness without a source; the
 last is labelled unverified. Reviewer's read: passed with notes.
 
-Round spend: **$6.317568 of $20.00**. Cases 070–073 were not run: their prompts state neither the
-runtime nor, for 071–073, the full project they are graded on.
+### Cases 070–073 at `f57e8c2` (2026-09-25)
+
+`f57e8c2` states the runtime in all four prompts and asks 071–073 for the project they are graded
+on (073 in Estonian). Collection `sha256:b1e08e3235e45bb1fd7380d65888a9531ea797361f111ff83731e277214bff9b`,
+the same guidance as `1934129`. Injected guidance, sandboxed agent, $3 cap per trial.
+
+| Case | Outcome | Status | Reported USD |
+|---|---|---|---:|
+| 070 vague request | Declared every choice as an assumption with rationale. Analysed in EPSG:3301, wrote candidates in lon/lat (valid GeoParquet, CRS84 by default) as the shipped `storage_crs: EPSG:4326` template does. 44 turns | failed `geodata.dataset_crs_is` (expects EPSG:3301) | 2.211000 |
+| 071 impossible request | Empty result; project and report `failed`; high warning explains the contradiction. 35 turns | passed | 1.339321 |
+| 072 missing attribute | Empty result, status `warning`. Listed the real code values, named `ELAMUMAA` as a possible meaning and asked for explicit authorisation instead of substituting. 36 turns | passed | 1.209080 |
+| 073 Estonian prompt | Exactly P1, P2, P5 in EPSG:3301; warns the distance is straight-line. 46 turns | passed | 2.069766 |
+
+Record hashes (agent / grading, SHA-256 prefix): 070 `3e32182a`/`dcbc38e6`, 071 `c6c331e4`/`cc8410bd`,
+072 `cdb512ae`/`2980edc8`, 073 `d9ccad36`/`19a74a6d`.
+
+The 070 failure is an eval defect, not a skill regression: the case requires EPSG:3301 output that
+neither its prompt nor the shipped guidance asks for, and the templates default storage to
+EPSG:4326. It is not regraded. Fixing it means either stating the output CRS in the prompt or
+asserting that the output matches the project's declared `storage_crs`. 072's premise is also
+wrong: the fixture has a `land_use` field, so the case tests a value absent from the code list,
+not a missing attribute.
+
+Round spend: **$13.146735 of $20.00**.
 
 ## Running the remaining trials
 
 Freeze a clean candidate at or after `8e289e7`. The $20 authorization of 2026-09-24 remains open
-with **$13.682432** left; spending beyond it needs a new authorization.
+with **$6.853265** left; spending beyond it needs a new authorization.
 Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
 
 ```bash
@@ -290,8 +312,8 @@ the routing cases; review outcomes and actual execution separately as below.
 - Done at `b65a2b4`: `chosen-engine-sql`, `bounded-discovery` and material 001, which passed its
   required checks and clean rerun. `8e289e7` changes only `spatial-sql` guidance, so the release
   candidate must still be refrozen and this evidence carried forward or rerun.
-- 070–073 remain untested. Run them after their prompts state the runtime and the project they are
-  graded on. Standalone SQL and compilation were attempted at `b65a2b4` and need review.
+- 071–073 passed at `f57e8c2`. 070 needs its CRS expectation fixed and a rerun; 072's prompt
+  misstates its fixture. Standalone SQL and compilation were attempted at `b65a2b4` and need review.
   Plain/skill material comparison evidence remains incomplete.
 - Review selection, useful task outcome and actual execution separately. Text tasks remain
   `needs_review`; self-reported activation or an unexecuted scaffold is not acceptance evidence.
