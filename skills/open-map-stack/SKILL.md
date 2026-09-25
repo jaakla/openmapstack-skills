@@ -50,9 +50,12 @@ Check whether the CLI is installed (`openmapstack --version` or
 `python3 -m openmapstack --version`, then use whichever form works for every
 command below); if it is, run `openmapstack validate` and the
 canonical `openmapstack run` path, then `openmapstack verify project.yaml --rerun`,
-which rebuilds the project from its declared inputs in an empty workspace;
-do not deliver while either reports a failure. Every file under `data/derived`
-must come from the canonical pipeline, never from a one-off script. Missing
+which rebuilds the project from its declared inputs in an empty workspace.
+Make that `verify --rerun` your last step and do not deliver until it passes;
+a passing `validate` alone is not enough. The canonical pipeline must produce
+every file under `data/derived`, `project.qgz`, the run record, and the
+manifest's `runs.latest` and `project.status`, never a one-off script or a
+hand edit: a rerun writes a new run record, so a hand-patched pointer breaks it. Missing
 validation capability is `not_testable`, never an implicit pass. Follow the
 referenced workflow's complete QGIS and presentation obligations.
 

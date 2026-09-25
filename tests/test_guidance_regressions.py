@@ -158,17 +158,28 @@ class AcceptanceGuidanceTests(GuidanceCase):
         # Live material trials delivered projects that `openmapstack validate`
         # fails; the agent never ran it under "when the CLI is available".
         for name in ("open-map-stack", "reproducible-gis-project"):
-            text = (SKILLS_ROOT / name / "SKILL.md").read_text(encoding="utf-8")
+            raw = (SKILLS_ROOT / name / "SKILL.md").read_text(encoding="utf-8")
+            text = " ".join(raw.split())
             with self.subTest(skill=name):
                 self.assertIn("python3 -m openmapstack --version", text)
-                self.assertIn("do not deliver while", text)
                 # A live 001 trial built dashboard layers with one-off scripts,
                 # declared them as outputs, and failed its clean rerun.
                 self.assertIn("openmapstack verify project.yaml --rerun", text)
-                self.assertIn("never from a one-off script", text)
+                # At 861b58b no 001 agent ran it, and one hand-patched the run
+                # pointer that the clean rerun then could not resolve.
+                self.assertIn("Make that `verify --rerun` your last step and do not deliver until it passes", text)
+                self.assertIn("a passing `validate` alone is not enough", text)
+                self.assertIn("`runs.latest` and `project.status`, never a one-off script or a hand edit", text)
                 # A source checkout may expose only the module form.
                 self.assertIn("whichever form works for every", text)
-                self.assertNotIn("path when the CLI\nis available", text)
+                self.assertNotIn("path when the CLI\nis available", raw)
+
+    def test_the_pipeline_owns_the_run_pointer(self) -> None:
+        for path, text in _shipped_copies("project-spec.md").items():
+            with self.subTest(path=path):
+                self.assertShips(" ".join(text.split()),
+                                 "updates `runs.latest` and `project.status` in `project.yaml` itself", path)
+                self.assertShips(" ".join(text.split()), "Never patch them by hand", path)
 
     def test_qgis_layer_crs_must_match_its_data(self) -> None:
         # A live 001 map declared EPSG:3301 on WGS84 GeoJSON and drew nothing

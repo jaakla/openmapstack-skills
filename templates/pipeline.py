@@ -10,15 +10,22 @@
 # as you go (see project-spec.md section 4).
 # =============================================================================
 
+import datetime
+import hashlib
+import json
 import logging
+import platform
+import shlex
 from pathlib import Path
 
 import duckdb
+import yaml
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "data" / "derived"
 RUNS = ROOT / "runs"
 VALIDATION = ROOT / "validation"
+SOURCE = ROOT / "data" / "source"
 OVERRIDES = ROOT / "data" / "overrides"
 
 # A local projected CRS for all metric work. NEVER use EPSG:4326 for
@@ -63,16 +70,98 @@ def apply_overrides(con: duckdb.DuckDBPyConnection, table: str) -> None:
         """)
 
 
-def write_report(report: dict, path: Path) -> None:
-    """Write the machine-readable validation run report (see project-spec.md 6)."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    (path).write_text(__import__("json").dumps(report, indent=2, default=str))
+def _file_set_hash(paths: list[Path]) -> str:
+    """Canonical file-set hash (project-spec.md s.2.8): sorted paths, each
+    length-prefixed, followed by the file bytes."""
+    digest = hashlib.sha256()
+    for relative in sorted({path.relative_to(ROOT).as_posix() for path in paths}):
+        encoded = relative.encode("utf-8")
+        digest.update(len(encoded).to_bytes(8, "big"))
+        digest.update(encoded)
+        digest.update((ROOT / relative).read_bytes())
+    return "sha256:" + digest.hexdigest()
+
+
+def _inventory(paths: list[Path]) -> list[dict]:
+    return [
+        {"path": relative, "sha256": "sha256:" + hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()}
+        for relative in sorted({path.relative_to(ROOT).as_posix() for path in paths})
+    ]
+
+
+def _declared_inputs(project: dict) -> list[Path]:
+    """Every input the validator requires in the run record (project-spec.md
+    s.2.8): sources, overrides, the pipeline, project-local command files and
+    declared runtime dependencies."""
+    paths = {path for folder in (SOURCE, OVERRIDES) if folder.is_dir() for path in folder.rglob("*") if path.is_file()}
+    paths.add(ROOT / "pipeline.py")
+    implementation = (project.get("runtime") or {}).get("implementation") or {}
+    command = implementation.get("command") or []
+    tokens = shlex.split(command) if isinstance(command, str) else list(command)
+    for entry in [implementation.get("pipeline"), *tokens, *(implementation.get("dependencies") or [])]:
+        if not isinstance(entry, str) or entry.startswith("-"):
+            continue
+        target = (ROOT / entry).resolve()
+        if not target.is_relative_to(ROOT):
+            continue
+        if target.is_file():
+            paths.add(target)
+        elif target.is_dir():
+            paths.update(path for path in target.rglob("*") if path.is_file())
+    return sorted(paths)
+
+
+def finalize_run(report: dict, started_at: str) -> None:
+    """STEP 7 — Write the report and run record, then point project.yaml at them.
+
+    The pipeline owns `runs.latest` and `project.status`; never patch them by
+    hand. A clean rerun (`openmapstack verify project.yaml --rerun`) writes a
+    new timestamped record, so a hand-edited pointer names a record the rerun
+    never wrote and fails.
+    """
+    project = yaml.safe_load((ROOT / "project.yaml").read_text())
+    completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    inputs = _declared_inputs(project)
+    outputs = [ROOT / output["path"] for output in (project.get("outputs") or {}).values()]
+    report["inputs_hash"] = _file_set_hash(inputs)
+    report["outputs_hash"] = _file_set_hash(outputs)
+
+    run_file = RUNS / f"{report['run_id']}.json"
+    run_file.write_text(json.dumps({
+        "run_id": report["run_id"],
+        "started_at": started_at,
+        "completed_at": completed_at,
+        "status": report["status"],
+        "inputs_hash": report["inputs_hash"],
+        "outputs_hash": report["outputs_hash"],
+        "validation_report": "validation/latest-report.json",
+        # Record the versions that actually ran; add every tool the pipeline uses.
+        "environment": {"python": platform.python_version(), "duckdb": duckdb.__version__},
+        "inputs": _inventory(inputs),
+        "outputs": _inventory(outputs),
+    }, indent=2))
+    (VALIDATION / "latest-report.json").write_text(json.dumps(report, indent=2, default=str))
+
+    # Only an all-passed report may set `validated` (project-spec.md s.6).
+    project.setdefault("project", {})["status"] = "validated" if report["status"] == "passed" else report["status"]
+    project.setdefault("runs", {})["latest"] = {
+        "id": report["run_id"],
+        "started_at": started_at,
+        "completed_at": completed_at,
+        "status": report["status"],
+        "inputs_hash": report["inputs_hash"],
+        "outputs_hash": report["outputs_hash"],
+        "record": {"path": run_file.relative_to(ROOT).as_posix()},
+        "validation_report": {"path": "validation/latest-report.json"},
+    }
+    (ROOT / "project.yaml").write_text(yaml.safe_dump(project, sort_keys=False, allow_unicode=True, width=100))
 
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     RUNS.mkdir(parents=True, exist_ok=True)
     VALIDATION.mkdir(parents=True, exist_ok=True)
+    started = datetime.datetime.now(datetime.timezone.utc)
 
     con = duckdb.connect()
     con.install_extension("spatial")
@@ -95,7 +184,8 @@ def main() -> None:
     # Every id below must match a name in project.yaml validation.required
     # or domain_checks verbatim (flat identifiers, no mappings).
     report = {
-        "run_id": "run-template",
+        # Run records are named run-<YYYYMMDD>-<HHMMSS> in UTC (project-spec.md s.1).
+        "run_id": started.strftime("run-%Y%m%d-%H%M%S"),
         # A single not_testable or warning check makes the whole run "warning".
         # Never let "not tested" collect as an implicit pass (project-spec.md s.6).
         "status": "warning",
@@ -117,10 +207,10 @@ def main() -> None:
              "reason": "PyQGIS is not installed in this environment"},
         ],
     }
-    main_report = VALIDATION / "latest-report.json"
-    write_report(report, main_report)
+    # STEP 7 — the pipeline, not a hand edit, records the run in project.yaml.
+    finalize_run(report, started.isoformat())
 
-    log.info("pipeline complete -> %s", main_report)
+    log.info("pipeline complete -> %s", report["run_id"])
 
 
 if __name__ == "__main__":
