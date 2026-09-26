@@ -439,8 +439,9 @@ the routing cases; review outcomes and actual execution separately as below.
   `bounded-discovery` carries forward from `24546c1`, and material 001 **failed** its clean rerun.
   Material 001 then passed at `66741f1` with an independent real-QGIS verify. At `9ef5c45` it
   passed its eval and the agent ran `verify --rerun`, but independent QGIS verification failed
-  `qgis.layers_match_manifest` (map layers naming sources, not outputs). State that contract in
-  the guidance, check it without PyQGIS, and rerun material 001.
+  `qgis.layers_match_manifest` (map layers naming sources, not outputs). On 2026-09-26 the
+  maintainer closed the live-trial gates for this release on that evidence. The missing
+  map-layer rule is a known issue deferred to a future release: #67.
 - 070–073 are parked; jaakla/OpenMapBench#7 owns them. For the record: 071 and 073 passed at
   `f57e8c2`, 072 at `08df564`; 070 has no graded pass. Compilation was attempted at `b65a2b4` and
   needs review.
