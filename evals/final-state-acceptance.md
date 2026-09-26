@@ -1,12 +1,14 @@
 # 0.4.0 final-state acceptance
 
 Status: **live-trial gates closed by the maintainer on 2026-09-26; the map-layer source contract is
-deferred to #67; the other release gates below remain open**. This file records OpenMapStack's
+deferred to #67; packaging and hosted visual checks refreshed; live-dashboard gaps explicitly
+deferred to #69 and publication authorized**. See the [final preparation review](../docs/release-0.4.0-final.md)
+for current evidence. This file records OpenMapStack's
 release gate. Live trials used this repository's runner with the sandboxed Claude Code adapter ([ADR 0006](../docs/maintainers/decisions/0006-release-trials-in-repository-sandbox.md)).
 The OpenMapBench trials below remain supporting evidence; generic benchmarking continues there.
 Historical routing results remain in [the release record](../docs/release-0.4.0.md).
 
-## Candidate and benchmark
+## Historical candidate and benchmark (September 23)
 
 - OpenMapStack: `e78bae896eb647cd436004b121b8659f34092ca6`, version 0.4.0.
 - Exact wheel and full/subset snapshot hashes: [candidate evidence](../docs/acceptance-0.4.0-rc.json).
@@ -432,27 +434,32 @@ the routing cases; review outcomes and actual execution separately as below.
 
 ## Remaining release gates
 
-- Repair and version the material artifact contract/checker coverage before another paid material
-  comparison. Fix discovery guidance/source verification and substantiate task quality. Any changed
-  producer payload requires a newly frozen candidate, not reuse of this candidate's evidence.
-- At the refrozen candidate `861b58b`: `chosen-engine-sql` passed (alone and in the collection),
-  `bounded-discovery` carries forward from `24546c1`, and material 001 **failed** its clean rerun.
-  Material 001 then passed at `66741f1` with an independent real-QGIS verify. At `9ef5c45` it
-  passed its eval and the agent ran `verify --rerun`, but independent QGIS verification failed
-  `qgis.layers_match_manifest` (map layers naming sources, not outputs). On 2026-09-26 the
-  maintainer closed the live-trial gates for this release on that evidence. The missing
-  map-layer rule is a known issue deferred to a future release: #67.
-- 070–073 are parked; jaakla/OpenMapBench#7 owns them. For the record: 071 and 073 passed at
-  `f57e8c2`, 072 at `08df564`; 070 has no graded pass. Compilation was attempted at `b65a2b4` and
-  needs review.
-  Plain/skill material comparison evidence remains incomplete.
-- Review selection, useful task outcome and actual execution separately. Text tasks remain
-  `needs_review`; self-reported activation or an unexecuted scaffold is not acceptance evidence.
-- Review installed/absent companion, unavailable discovery and conflicting product-advice contexts
-  against one validated project and a reviewed, pinned external payload.
-- Run relevant QGIS/browser checks in capable runtimes. Resolve substantive failures against a
-  newly fixed candidate; do not weaken criteria or count unavailable checks as passing.
-- Recheck hosted CI/release installation for any changed payload and publish only after acceptance.
+- **Completed fixes:** 001 discloses the artifact interface and runtime; GeoPackage comparison,
+  portable QGIS datasources, layer/data CRS reconciliation and template-owned run pointers are
+  implemented. Discovery guidance requires live verification. The remaining map-layer source
+  contract defect is deferred under #67, not a 0.4.0 blocker.
+- **Closed live-trial gates:** the maintainer's September 26 decision stands. At `9ef5c45`, 001
+  passed its eval and clean rerun but failed independent QGIS layer reconciliation. Preserve that
+  failure. Cases 070–073 remain parked in jaakla/OpenMapBench#7. No additional paid release trials.
+- **Deferred comparison:** the maintainer explicitly moved the next plain-versus-skill comparison
+  after 0.4.0. Run such comparisons occasionally with a separately agreed model and budget, not
+  after small changes. Existing unscorable arms are not valid comparative evidence.
+- **Reviews completed with limits:** the [final review](../docs/release-0.4.0-final.md) assesses the
+  compilation scaffold against its actual prompt and the four companion contexts against a
+  validated control and pinned external text. Neither review claims executed compilation or
+  observed live companion behavior; those evidence gaps remain visible under live-gate closure.
+- **Hosted checks passed at `612e396`:** deterministic CI, plugin validation, real-source worked
+  example, and full QGIS/browser fixture integration. Wheel/sdist, five snapshots and isolated
+  hosted project/global/plugin installation checks passed. The shipped payload is byte-identical
+  to `9ef5c45`; the intervening change is acceptance documentation only.
+- **Explicit visual exception (#69):** direct browser review of the retained `9ef5c45` dashboard found
+  missing declared UI and a 70-pixel mobile map. The automated checker also assumes controls
+  are visible without opening tabs. This is separate from #67. The maintainer explicitly deferred
+  it and authorized publication on September 26; never record these checks as passed.
+- **Publication authorized:** commit the reconciled evidence, confirm
+  CI on the final revision, publish through the release workflow, and verify the actual tag and
+  PyPI installation. [Final preparation](../docs/release-0.4.0-final.md) distinguishes prepublication
+  artifact hashes from the distributions the publishing workflow will build.
 
 OpenMapBench #2 remains open for generic live comparison, provider/telemetry parity and historical
 evidence migration. The release gate does not wait on it.

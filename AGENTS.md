@@ -133,6 +133,8 @@ python3 -m coverage report
 
 Useful targeted eval commands are documented in `evals/README.md`. Do not run live benchmarks merely as a routine local check: they require explicit models/credentials, are stochastic, and can incur provider cost. Run visual mode only when its QGIS/browser dependencies are available and the change needs that evidence.
 
+Plain-versus-skill model comparisons are occasional benchmarks, not a gate after each small skill change. Agree on the task, matched arms, explicit model, trial count and total spend cap before execution. Report one paired trial as a case study, not proof of general improvement. Preserve its payload identity and limitations; do not rerun it merely because release documentation changed.
+
 There is currently no repository-wide linter command configured in `pyproject.toml`; do not invent one as a completion gate.
 
 ## Change discipline

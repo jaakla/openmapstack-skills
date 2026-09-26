@@ -1,0 +1,316 @@
+{
+  "schema": "openmapstack-release-candidate-evidence/v1",
+  "status": "accepted_for_publication_with_explicit_exceptions",
+  "version": "0.4.0",
+  "source_revision": "612e3963019f7bf35e006daea179d9d799709899",
+  "artifact_kind": "prepublication build; publication workflow rebuilds distributions",
+  "artifacts": {
+    "openmapstack-0.4.0-py3-none-any.whl": {
+      "sha256": "90324c9150017b34feda96d92c0d0ad2dc75ce7bedf566c53d58b17e97e0912c",
+      "bytes": 159014
+    },
+    "openmapstack-0.4.0.tar.gz": {
+      "sha256": "236d2549d8265a49267e96f9855117cec00a06c813c4078f10c1f11a2067d2d9",
+      "bytes": 230967
+    }
+  },
+  "snapshots": {
+    "collection": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:2177d75e666914b4d4d87dba15c0741da1576d7e7509b8ebebcd5878b4d6e3a0",
+      "source_git": {
+        "commit": "612e3963019f7bf35e006daea179d9d799709899",
+        "dirty": false
+      },
+      "file_count": 85
+    },
+    "geospatial-data-discovery": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:2f2aa8ce0509ff0c27e68735f832505f8d7846061f376eb0bd364bf9fcdc0567",
+      "source_git": {
+        "commit": "612e3963019f7bf35e006daea179d9d799709899",
+        "dirty": false
+      },
+      "file_count": 19
+    },
+    "open-map-stack": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:bcfbea20526b4e5628953711a0219ca569a731b54b5048e318dd1f979773bc2e",
+      "source_git": {
+        "commit": "612e3963019f7bf35e006daea179d9d799709899",
+        "dirty": false
+      },
+      "file_count": 28
+    },
+    "reproducible-gis-project": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:1b0fb2bef1fae96cad5bcbf99267cbc759c5e200e88bd761afbf8d8074b86ef5",
+      "source_git": {
+        "commit": "612e3963019f7bf35e006daea179d9d799709899",
+        "dirty": false
+      },
+      "file_count": 23
+    },
+    "spatial-sql": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:3f42cbfee6644712af3e25c729bbb97176c62c49e2046a194891653e8c40d929",
+      "source_git": {
+        "commit": "612e3963019f7bf35e006daea179d9d799709899",
+        "dirty": false
+      },
+      "file_count": 18
+    }
+  },
+  "live_evidence_carry_forward": {
+    "source_revision": "9ef5c45b51ddc63ff20744a95607fbca567f4d3e",
+    "payload_identical": true,
+    "intervening_changes": [
+      "evals/final-state-acceptance.md"
+    ],
+    "known_qgis_failure": "qgis.layers_match_manifest",
+    "maintainer_deferral": "https://github.com/jaakla/openmapstack-skills/issues/67"
+  },
+  "checks": {
+    "hosted_unit_suite": {
+      "tests": 667,
+      "skips": 28,
+      "status": "passed",
+      "assertion_coverage_percent": 78,
+      "coverage_gate_percent": 70
+    },
+    "hosted_offline_unit_suite": {
+      "tests": 665,
+      "skips": 49,
+      "status": "passed"
+    },
+    "fixtures": {
+      "contract_passed": 16,
+      "contract_total": 16,
+      "mutations_detected": 26,
+      "mutations_total": 26,
+      "not_testable_assertions": 2,
+      "unmet_soft_gates": 2
+    },
+    "focused_local_tests": {
+      "tests": 65,
+      "status": "passed"
+    },
+    "skill_asset_sync": "passed",
+    "packaging": {
+      "wheel": "passed",
+      "sdist": "passed",
+      "twine": "passed",
+      "installed_wheel_version": "0.4.0"
+    },
+    "snapshots_intact": 5,
+    "installed_payloads": {
+      "project": "passed",
+      "global": "passed",
+      "skills_per_scope": 4,
+      "byte_match": true,
+      "example_preflight_per_skill": {
+        "passed": 26,
+        "warnings": 1,
+        "failed": 0
+      },
+      "pinned_update": "unchanged",
+      "removal": "passed"
+    },
+    "plugin": {
+      "cli_version": "2.1.283",
+      "strict_validation": "passed",
+      "inventory_skills": 4,
+      "hosted_https_main_install": "passed",
+      "installed_git_revision": "612e3963019f7bf35e006daea179d9d799709899",
+      "uninstall_and_marketplace_removal": "passed",
+      "limitations": [
+        "owner/repo syntax selected SSH in a credential-free environment",
+        "HTTPS marketplace #commit treated as branch and failed; #main succeeded and installed revision was verified"
+      ]
+    },
+    "visual_fixtures": {
+      "integration_passed": 2,
+      "integration_total": 2,
+      "mutations_detected": 2,
+      "mutations_total": 2,
+      "not_testable_assertions": 0,
+      "unmet_soft_gates": 0
+    },
+    "worked_example": "passed",
+    "retained_live_dashboard_automated": {
+      "status": "failed",
+      "code": "browser_check_error",
+      "cause": "canonical reset attempts to uncheck controls in inactive Map tab"
+    },
+    "retained_live_dashboard_review": {
+      "kind": "targeted browser review of retained live output",
+      "project": "/home/jaak/codeman-cases/open-gis/evals/results/20260926T062419Z/claude_code/001-basic-spatial-analysis/1/generated-project",
+      "errors": [],
+      "canonical_candidates": "3",
+      "tabs": [
+        "Analysis",
+        "Map",
+        "Provenance"
+      ],
+      "layer_toggles": {
+        "candidates": {
+          "off": "none",
+          "on": "visible"
+        },
+        "roads": {
+          "off": "none",
+          "on": "visible"
+        },
+        "pois": {
+          "off": "none",
+          "on": "visible"
+        }
+      },
+      "tightened_candidates": "0",
+      "off_canonical_label": true,
+      "reset": {
+        "area": "8000",
+        "distance": "2000",
+        "candidates": "3"
+      },
+      "provenance_visible": true,
+      "missing_declared_ui": [
+        "Edit tab and draft override tools",
+        "land_use multi-select",
+        "analysis/user_overrides group controls",
+        "semantic legend"
+      ],
+      "mobile_map_bounds": {
+        "x": 320,
+        "y": 55,
+        "width": 70,
+        "height": 789
+      }
+    },
+    "companion_control_validation": {
+      "passed": 36,
+      "warnings": 0,
+      "not_testable": 0,
+      "failed": 0
+    }
+  },
+  "ci_runs": {
+    "fixtures": "https://github.com/jaakla/openmapstack-skills/actions/runs/36256525056",
+    "plugin": "https://github.com/jaakla/openmapstack-skills/actions/runs/36256525080",
+    "visual": "https://github.com/jaakla/openmapstack-skills/actions/runs/36268093376",
+    "worked_example": "https://github.com/jaakla/openmapstack-skills/actions/runs/36268094610"
+  },
+  "companion_review": {
+    "kind": "agent-assisted static contract review, not a live trial",
+    "source_revision": "8974bdf57503d296c5bd015a406ae32a698cc605",
+    "url": "https://github.com/maplibre/maplibre-agent-skills/blob/8974bdf57503d296c5bd015a406ae32a698cc605/skills/maplibre-tile-sources/SKILL.md",
+    "sha256": "921b50ef93e2feb7801c30944e23cb9ff784f408f375fd95c48ea8fda01eb107",
+    "contexts": [
+      "installed",
+      "absent",
+      "discovery_unavailable",
+      "conflicting_area_advice"
+    ],
+    "live_behavior": "not_testable"
+  },
+  "comparison": {
+    "status": "deferred_until_after_0.4.0_by_maintainer",
+    "cadence": "occasional; not after small changes",
+    "paid_calls_this_round": 0
+  },
+  "artifact_location": "/home/jaak/codeman-cases/release-0.4.0-20260926",
+  "evidence_files": {
+    "evidence/companion-control-validation.json": {
+      "sha256": "c632429f852615b4f81c3fca5b156a2d6e9324a8ef97fb68e981ff56f2839ee9",
+      "bytes": 7262
+    },
+    "evidence/install-global-lock.json": {
+      "sha256": "fcd4cbd90fd0e9070f389bdfe70443cc128772847d38db9031c128f27ee14ddd",
+      "bytes": 1903
+    },
+    "evidence/install-global.log": {
+      "sha256": "7e616e98923cfe207a09a996eb6ddc5563a385aa0d2fdfd6b8db82ec921ae803",
+      "bytes": 6624
+    },
+    "evidence/install-project-lock.json": {
+      "sha256": "213681321447233b7025872790171beb59860ca3a97ee0852c54131b990c3632",
+      "bytes": 1297
+    },
+    "evidence/install-project.log": {
+      "sha256": "5e64842af88a812a1636282a6f29c629fdf34b354580e98900c1915c0ea6cf8a",
+      "bytes": 7082
+    },
+    "evidence/installed-payloads.json": {
+      "sha256": "b3c32f9b1451e7af3133c5819bbe8316f426e4ea6c89443812bb69372a4759db",
+      "bytes": 3441
+    },
+    "evidence/maplibre-tile-sources.md": {
+      "sha256": "921b50ef93e2feb7801c30944e23cb9ff784f408f375fd95c48ea8fda01eb107",
+      "bytes": 25682
+    },
+    "evidence/material-001-browser/desktop-full.png": {
+      "sha256": "19f097ba0c651ac5112ea7ebecfb4949a4c45b3399142f6ef5ed20928b892e13",
+      "bytes": 82798
+    },
+    "evidence/material-001-browser/mobile-full.png": {
+      "sha256": "acf61e79676a32cda7724b31e93ecf72bb476f35416fcde33a176ad4b144d1fe",
+      "bytes": 72017
+    },
+    "evidence/material-001-browser/project-desktop.png": {
+      "sha256": "d3e5dda75a38060545a994ccc7982feeead4576e93436f22c16cabb80d303c1f",
+      "bytes": 20475
+    },
+    "evidence/material-001-browser/provenance-full.png": {
+      "sha256": "c645a2a3ae3d5f2fcba045e290c75b4bb62d251a1fda2f7eb78709b42ec9cf7b",
+      "bytes": 104788
+    },
+    "evidence/material-001-browser-environment-failure.json": {
+      "sha256": "0831028527724113df380eca7120049982f583acfe458aada0a3479000c60e16",
+      "bytes": 5019
+    },
+    "evidence/material-001-browser-review.json": {
+      "sha256": "801afe61e8ae7106797b9c6a404974def1403f092206e9d22526476c58ee09cb",
+      "bytes": 974
+    },
+    "evidence/material-001-browser.json": {
+      "sha256": "40d62beed19f1b03620cf2ffa80b6e7b5799c79648866964be7622fbe09c3c4e",
+      "bytes": 1061
+    },
+    "evidence/plugin-hosted-https.json": {
+      "sha256": "7f92300ab894ef86f22667b18d2bf79153a1909912e826a8a3a09848442bc41c",
+      "bytes": 564
+    },
+    "evidence/plugin-hosted-main.json": {
+      "sha256": "1dd8cbe6c60501b0c9ed9380c70dd9b2f1d021417a6b028a4fa3eeed87590065",
+      "bytes": 3563
+    },
+    "evidence/plugin-hosted.json": {
+      "sha256": "06bbac5381b5afd6e1426deb84bdb2db62d7f73d27ec3c3071f244b9bc70b56c",
+      "bytes": 755
+    },
+    "evidence/plugin-local.json": {
+      "sha256": "3ea4c860279a7f742545349c5e7aae3ff07b9970d417b4b8a612c50d10976f6a",
+      "bytes": 1651
+    }
+  },
+  "pending": [
+    "commit release documentation and confirm final CI",
+    "publish tag/release and verify PyPI/tag-pinned installations"
+  ],
+  "limitations": [
+    "Closed live-trial gates do not imply all historical trials passed.",
+    "Static companion review is not live composition evidence.",
+    "Compilation review covers an unexecuted scaffold; no material execution claim.",
+    "Prepublication archive/wheel hashes do not identify a future CI rebuild."
+  ],
+  "maintainer_decision": {
+    "date": "2026-09-26",
+    "publication_authorized": true,
+    "deferred_issues": [
+      "https://github.com/jaakla/openmapstack-skills/issues/67",
+      "https://github.com/jaakla/openmapstack-skills/issues/69"
+    ],
+    "comparison": "deferred until after 0.4.0",
+    "failed_checks_reclassified_as_passes": false
+  }
+}
