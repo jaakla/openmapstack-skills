@@ -68,9 +68,8 @@ Some my local Estonia-specific guidance (Maa- ja Ruumiamet, ETAK, EPSG:3301 / L-
 
 ## Install
 
-The 0.4.0 collection is in development; the release tag and Python package
-must exist before using the release-pinned commands below. From a checkout,
-install the generalist independently:
+The 0.4.0 collection provides four independently installable skills and a
+separately installed, matching CLI. From a checkout, install the generalist:
 
 ```bash
 npx skills@1.5.26 add . --skill open-map-stack -a codex -y
@@ -85,7 +84,8 @@ No installed sibling is required. Generated example outputs and downloaded
 source data are omitted; its pipeline needs network access and its documented
 GIS environment.
 
-After publication, pin both parts of the coordinated release:
+Once the release tag and Python package are published, pin both parts of the
+coordinated release:
 
 ```bash
 npx skills@1.5.26 add https://github.com/jaakla/openmapstack-skills/tree/v0.4.0/skills/open-map-stack -a codex -y

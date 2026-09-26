@@ -29,7 +29,11 @@ repeat `--skill NAME` for a subset. Without that flag, the historical v1
 single-skill injection contract is retained. See the
 [consumer migration contract](../docs/openmapbench-interop.md).
 Live behavior is evaluated on the final collection before release; paired
-before/after runs are not a refactoring gate.
+before/after runs are not a refactoring gate. Plain-versus-skill comparisons
+are occasional benchmarks, not a requirement after every small skill change;
+see the paid-run policy in [AGENTS.md](../AGENTS.md). The maintainer deferred
+the next matched comparison until after 0.4.0. No new paid calls are authorized
+by this documentation.
 
 Native skill discovery is a separate integration smoke path:
 `python evals/run.py routing --list`. See [routing smoke tests](routing.md)

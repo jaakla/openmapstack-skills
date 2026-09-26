@@ -1,7 +1,11 @@
 # 0.4.0 release preparation
 
-Status: implementation under epic [#31](https://github.com/jaakla/openmapstack-skills/issues/31);
-**not released and not yet accepted by final live evaluation**.
+Status: **0.4.0 accepted for publication by the maintainer on 2026-09-26** under
+epic [#31](https://github.com/jaakla/openmapstack-skills/issues/31); live-trial gates are closed.
+The [final preparation review](release-0.4.0-final.md) records current artifact,
+installation and visual checks. The maintainer authorized publication with explicit exceptions
+for #67 and the newly reviewed dashboard gaps in #69. The records below retain their original revisions
+and outcomes; they are not the current release checklist.
 
 The collection retains `open-map-stack` and adds `reproducible-gis-project`,
 `geospatial-data-discovery` and `spatial-sql`. Each has a complete installed
@@ -128,7 +132,10 @@ initial run. Combined assertion coverage reached **77%**, passing the existing
 70% gate. PyQGIS, external PostGIS and optional live-catalog tests still need
 their separate capable environments.
 
-## Remaining release acceptance (#39)
+## Historical release acceptance checklist (#39; September 16)
+
+Superseded as a current checklist by [final-state acceptance](../evals/final-state-acceptance.md#remaining-release-gates).
+Do not execute paid runs from the historical instructions below.
 
 - ~~Execute automatic project/global update from a tracked 0.3.0 install against the final hosted layout, and pinned installs from the intended release revision.~~ Done against `main@534792f`; see "Executed hosted update and pin checks". After tagging, repeat the pinned install with `tree/v0.4.0/...` if the tag's revision differs from `534792f`.
 - ~~Exercise old repository slugs and legacy `open-gis` coexistence in an isolated installation.~~ Done; see "Executed old-slug, legacy identity and marketplace checks".
