@@ -1,8 +1,8 @@
 # 0.4.0 final-state acceptance
 
-Status: **fixed and corrected candidates not accepted; remaining trials run in this repository**.
-This file records OpenMapStack's release gate. The remaining trials use this repository's runner
-with the sandboxed Claude Code adapter ([ADR 0006](../docs/maintainers/decisions/0006-release-trials-in-repository-sandbox.md)).
+Status: **live-trial gates closed by the maintainer on 2026-09-26; the map-layer source contract is
+deferred to #67; the other release gates below remain open**. This file records OpenMapStack's
+release gate. Live trials used this repository's runner with the sandboxed Claude Code adapter ([ADR 0006](../docs/maintainers/decisions/0006-release-trials-in-repository-sandbox.md)).
 The OpenMapBench trials below remain supporting evidence; generic benchmarking continues there.
 Historical routing results remain in [the release record](../docs/release-0.4.0.md).
 
@@ -400,13 +400,13 @@ in the checker (`_manifest_layer_files`), not in shipped guidance, and it is che
 PyQGIS, although resolving it is static. So neither the agent's `validate` nor its `verify
 --rerun` could report it. Material 001 therefore has no full-gate pass at the final template.
 
-## Running the remaining trials
+## Running future trials
 
-Freeze a clean candidate at or after `737666a`. The $20, €5 and $10 authorizations of 2026-09-24
-and 2026-09-25 leave at least **$2.874802** (counting the unreported `480b5ad` trial at its cap),
-below one material trial. The $5 authorization of 2026-09-26 covered one material trial and is
-used; its unspent $2.136493 does not fund another. The next material trial needs fresh approval.
-Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
+Run no further paid trials for 0.4.0: the maintainer closed the live-trial gates on 2026-09-26.
+All earlier authorizations are closed and their unspent balances are not carried forward. The
+commands below are for future work such as #67, which needs fresh approval and a candidate frozen
+after that fix. Executed projects (guidance injected; the agent runs sandboxed; the cap is per
+trial):
 
 ```bash
 python3 evals/run.py --mode live --agent claude_code --model claude-sonnet-4-6 \
