@@ -404,8 +404,8 @@ PyQGIS, although resolving it is static. So neither the agent's `validate` nor i
 
 Freeze a clean candidate at or after `737666a`. The $20, €5 and $10 authorizations of 2026-09-24
 and 2026-09-25 leave at least **$2.874802** (counting the unreported `480b5ad` trial at its cap),
-and the $5 material authorization of 2026-09-26 leaves $2.136493; spending beyond that needs a new
-authorization.
+below one material trial. The $5 authorization of 2026-09-26 covered one material trial and is
+used; its unspent $2.136493 does not fund another. The next material trial needs fresh approval.
 Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
 
 ```bash
