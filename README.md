@@ -84,7 +84,8 @@ No installed sibling is required. Generated example outputs and downloaded
 source data are omitted; its pipeline needs network access and its documented
 GIS environment.
 
-Pin both parts of the coordinated release:
+Once the release tag and Python package are published, pin both parts of the
+coordinated release:
 
 ```bash
 npx skills@1.5.26 add https://github.com/jaakla/openmapstack-skills/tree/v0.4.0/skills/open-map-stack -a codex -y
