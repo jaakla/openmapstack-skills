@@ -378,11 +378,34 @@ Cases 070–073 are **parked** here: their remaining work moved to OpenMapBench,
 as jaakla/OpenMapBench#7 (runtime disclosure, 072's false premise, the 070 CRS contract, v1's
 hidden deliverable and CRS). They no longer block this repository's gate; see #39.
 
+## Material 001 at `9ef5c45` (2026-09-26)
+
+A separate **$5** was authorized for one material trial. Candidate `9ef5c45` (`main` after #65; collection
+`sha256:2177d75e666914b4d4d87dba15c0741da1576d7e7509b8ebebcd5878b4d6e3a0`), $4.50 cap, 3600 s timeout.
+
+Material 001 **passed its eval**: every hard and `rerun.*` assertion, candidates P1, P2, P5. 51 turns,
+**$2.863507** (record `fa3c0951` agent, `2c146348` grading). The agent read the template pipeline,
+kept its `finalize_run`, and was the first 001 agent in this round to run `verify project.yaml
+--rerun`: twice, 0 failed each time, with PyQGIS checks correctly `not_testable`.
+
+Independent sandboxed `verify --rerun` with the host's QGIS 3.40.15 **failed one check**:
+`qgis.layers_match_manifest` — manifest layers `roads` and `pois` name the *sources* `roads` and
+`pois`, not an output or override, so they resolve to no produced file. The worked example gives
+context layers pipeline-written copies (`main_roads_geojson`, `education_pois_geojson`), and
+`project-spec.md` requires every QGIS datasource to come from the canonical run. Clean rerun, the
+other eight `qgis.*` checks and the candidates all passed.
+
+The contract that a map layer's `source` names an `outputs` key or an override layer is stated only
+in the checker (`_manifest_layer_files`), not in shipped guidance, and it is checked only under
+PyQGIS, although resolving it is static. So neither the agent's `validate` nor its `verify
+--rerun` could report it. Material 001 therefore has no full-gate pass at the final template.
+
 ## Running the remaining trials
 
 Freeze a clean candidate at or after `737666a`. The $20, €5 and $10 authorizations of 2026-09-24
-and 2026-09-25 leave at least **$2.874802** (counting the unreported `480b5ad` trial at its cap);
-spending beyond that needs a new authorization.
+and 2026-09-25 leave at least **$2.874802** (counting the unreported `480b5ad` trial at its cap),
+and the $5 material authorization of 2026-09-26 leaves $2.136493; spending beyond that needs a new
+authorization.
 Executed projects (guidance injected; the agent runs sandboxed; the cap is per trial):
 
 ```bash
@@ -414,10 +437,10 @@ the routing cases; review outcomes and actual execution separately as below.
   producer payload requires a newly frozen candidate, not reuse of this candidate's evidence.
 - At the refrozen candidate `861b58b`: `chosen-engine-sql` passed (alone and in the collection),
   `bounded-discovery` carries forward from `24546c1`, and material 001 **failed** its clean rerun.
-  Material 001 then passed at `66741f1` with an independent real-QGIS verify. Trials at `66741f1`
-  and `480b5ad` ended as setup failures (provider spend limit; timeout during a long write). Run
-  material 001 at or after `737666a` with a longer timeout to show the fix is reliable, and find a
-  way to make agents run `verify --rerun`, which prose alone has not achieved.
+  Material 001 then passed at `66741f1` with an independent real-QGIS verify. At `9ef5c45` it
+  passed its eval and the agent ran `verify --rerun`, but independent QGIS verification failed
+  `qgis.layers_match_manifest` (map layers naming sources, not outputs). State that contract in
+  the guidance, check it without PyQGIS, and rerun material 001.
 - 070–073 are parked; jaakla/OpenMapBench#7 owns them. For the record: 071 and 073 passed at
   `f57e8c2`, 072 at `08df564`; 070 has no graded pass. Compilation was attempted at `b65a2b4` and
   needs review.
