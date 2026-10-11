@@ -32,6 +32,9 @@ For a fresh capture, configure the restricted reader identities described below 
 
 ## Explore the dashboard
 
+An additional [Observable Framework delivery sample](../observable-cities/)
+provides borough and eligibility filters, a thematic map, downloads, and recorded provenance.
+
 Open `dashboard.html` directly, or serve this directory with `python -m http.server`.
 It follows the Tartu example's map-with-sidebar layout:
 

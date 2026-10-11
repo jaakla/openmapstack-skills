@@ -9,9 +9,13 @@ on:
       - site/**
       - scripts/build_project_pages.py
       - tests/test_project_pages.py
+      - tests/test_observable_cities.py
+      - examples/observable-cities/**
       - examples/nyc-private-mobility/dashboard.html
       - examples/nyc-private-mobility/data/derived/**
       - examples/tartu-development/dashboard.html
+      - examples/tartu-development/project.yaml
+      - examples/nyc-private-mobility/project.yaml
 
 concurrency:
   group: github-pages
@@ -25,9 +29,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: examples/observable-cities/observable/package-lock.json
+      - name: Install project validation dependencies
+        run: python3 -m pip install -e .
       - name: Test and assemble static site
         run: |
-          python3 -m unittest -v tests.test_project_pages
+          python3 -m unittest -v tests.test_project_pages tests.test_observable_cities
           python3 scripts/build_project_pages.py --output _site
       - uses: actions/upload-pages-artifact@v4
         with:

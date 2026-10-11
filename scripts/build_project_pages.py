@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assemble the static project homepage and two generated example dashboards."""
+"""Build the project homepage, standalone dashboards and Observable city samples."""
 
 from __future__ import annotations
 
@@ -9,6 +9,9 @@ import json
 import math
 from pathlib import Path
 import shutil
+import subprocess
+import sys
+import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -121,10 +124,22 @@ def _tartu_preview(destination: Path) -> None:
     destination.write_text("\n".join(out) + "\n", encoding="utf-8")
 
 
-def build(destination: Path) -> None:
+def build(destination: Path, *, observable_projects: Path | None = None) -> None:
     destination = destination.resolve()
-    if destination in (ROOT, SITE, NYC, TARTU):
+    if destination == ROOT or any(destination == p or destination.is_relative_to(p)
+                                  for p in (SITE, ROOT / "examples")):
         raise ValueError("output must be a dedicated build directory")
+    if observable_projects is None:
+        with tempfile.TemporaryDirectory(prefix="oms-pages-observable-") as temporary:
+            projects = Path(temporary)
+            for city in ("nyc", "tartu"):
+                subprocess.run([sys.executable, str(ROOT / "examples/observable-cities/create.py"),
+                                str(projects / city), "--city", city], check=True)
+                subprocess.run([sys.executable, str(projects / city / "pipeline.py")], check=True)
+                subprocess.run([sys.executable, "-m", "openmapstack", "validate",
+                                str(projects / city / "project.yaml")], check=True)
+            build(destination, observable_projects=projects)
+        return
     assets = destination / "assets"
     nyc = destination / "demos" / "nyc"
     tartu = destination / "demos" / "tartu"
@@ -138,6 +153,15 @@ def build(destination: Path) -> None:
     shutil.copy2(SITE / "langsmith/index.html", renderer / "index.html")
     shutil.copy2(NYC / "dashboard.html", nyc / "index.html")
     shutil.copy2(TARTU / "dashboard.html", tartu / "index.html")
+    for city in ("nyc", "tartu"):
+        # Framework needs its complete module bundle and hashed attachments.
+        bundle = observable_projects / city / "views/observable"
+        if not (bundle / "index.html").is_file():
+            raise ValueError(f"missing {city} Observable bundle: {bundle}")
+        target = destination / "demos" / (city + "-observable")
+        if target.exists():
+            shutil.rmtree(target)
+        shutil.copytree(bundle, target)
     for name in ("hub-candidates.geojson", "zone-metrics.geojson"):
         shutil.copy2(NYC / "data" / "derived" / name, nyc / "data" / "derived" / name)
     _nyc_preview(assets / "nyc-preview.svg")
@@ -148,8 +172,10 @@ def build(destination: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=ROOT / "_site")
+    parser.add_argument("--observable-projects", type=Path,
+                        help="reuse built city projects under this directory (nyc/ and tartu/)")
     args = parser.parse_args()
-    build(args.output)
+    build(args.output, observable_projects=args.observable_projects)
     print(f"built GitHub Pages artifact at {args.output.resolve()}")
 
 

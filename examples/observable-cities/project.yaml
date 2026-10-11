@@ -1,0 +1,114 @@
+schema: openmapstack-project/v1
+project:
+  id: city-observable
+  title: City Observable snapshot explorer
+  question: Explore recorded city results.
+  created_at: '2026-10-09T00:00:00Z'
+  updated_at: '2026-10-09T00:00:00Z'
+  status: draft
+  author:
+    name: OpenMapStack example maintainers
+    email: examples@example.invalid
+  generated_with:
+    tool: OpenMapStack
+    url: https://github.com/jaakla/openmapstack-skills
+interpretation:
+  objective: Re-export the pinned city presentation snapshot.
+  assumptions: []
+sources: {}
+overrides: []
+processing:
+  analysis_crs: EPSG:4326
+  storage_crs: EPSG:4326
+  steps:
+    - id: export
+      operation: export
+      source: snapshot
+      output: snapshot_outputs
+    - id: render
+      operation: render
+      input: snapshot_outputs
+      output: views
+      integration: observable
+outputs:
+  features:
+    path: data/derived/features.geojson
+    format: GeoJSON (EPSG:4326)
+    generated_by: export
+  context:
+    path: data/derived/context.geojson
+    format: GeoJSON (EPSG:4326)
+    generated_by: export
+  points:
+    path: data/derived/points.geojson
+    format: GeoJSON (EPSG:4326)
+    generated_by: export
+  metrics:
+    path: data/derived/metrics.csv
+    format: CSV
+    kind: table
+    generated_by: export
+    table:
+      key: [id]
+      columns:
+        - {name: id, type: string}
+        - {name: label, type: string}
+        - {name: category, type: string}
+        - {name: value, type: number}
+  observable:
+    path: views/observable/index.html
+    format: HTML
+    kind: document
+    generated_by: render
+  observable_evidence:
+    path: delivery/observable-evidence.json
+    format: JSON
+    kind: document
+    generated_by: render
+  integration_evidence:
+    path: delivery/integration-evidence.json
+    format: JSON
+    kind: document
+    generated_by: render
+delivery:
+  schema: openmapstack-delivery/v1
+  targets:
+    - id: observable
+      kind: observable
+      mode: local
+      output: observable
+      inputs: [features, context, points, metrics]
+      evidence: observable_evidence
+integrations:
+  schema: openmapstack-integrations/v1
+  bindings: []
+  evidence: integration_evidence
+  bundles:
+    - {target: observable, path: views/observable}
+validation:
+  required: [snapshot_identity, snapshot_rows, delivery_observable, integration_evidence]
+  domain_checks: []
+presentation:
+  intent: report
+  primary_view: report
+  tables:
+    - output: metrics
+      downloads: [csv]
+runtime:
+  environment:
+    python: '3.12'
+    node: '24'
+    observable_framework: '1.13.4'
+  implementation:
+    preferred_engine: python
+    pipeline: pipeline.py
+    dependencies: [observable]
+runs:
+  latest:
+    id: unbuilt
+    started_at: '2026-10-09T00:00:00Z'
+    completed_at: '2026-10-09T00:00:00Z'
+    status: warning
+    inputs_hash: ''
+    outputs_hash: ''
+    validation_report: {path: validation/latest-report.json}

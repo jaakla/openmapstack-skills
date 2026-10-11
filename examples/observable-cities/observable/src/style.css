@@ -1,0 +1,24 @@
+@import url("observablehq:default.css");
+@import url("observablehq:theme-air.css");
+:root { --theme-foreground-focus: #0e7580; --theme-background-alt: #f2f7f7; }
+body { font-family: system-ui, sans-serif; }
+#observablehq-main { max-width: 1100px; margin: auto; padding: 28px 24px; }
+h1 { letter-spacing: -.045em; max-width: 24ch; }
+p, li { max-width: 90ch; }
+.eyebrow { color: #0e7580; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; font-weight: 700; }
+.notice { padding: 16px 20px; border-left: 3px solid #ae7a24; background: #fff8e9; }
+.controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; padding: 18px; background: #f2f7f7; border: 1px solid #cbd9dc; }
+.controls label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
+.controls select, .controls button { font: inherit; padding: 8px; max-width: 100%; }
+.controls label { min-width: 0; max-width: 100%; }
+.controls select { width: 100%; min-width: 0; box-sizing: border-box; }
+.controls label { grid-template-columns: minmax(0, 1fr); }
+#snapshot-status { font-weight: 650; color: #0e7580; }
+.map { border: 1px solid #cbd9dc; background: #f2f7f7; }
+.table-scroll { overflow: auto; max-width: 100%; max-height: 420px; }
+.table-scroll table { width: 100%; min-width: 680px; font-size: 13px; }
+.table-scroll td { white-space: nowrap; }
+th { text-align: left; }
+td, th { padding: 8px; border-bottom: 1px solid #cbd9dc; }
+[data-openmapstack-provenance] { margin-top: 32px; padding-top: 16px; border-top: 1px solid #cbd9dc; overflow-wrap: anywhere; }
+@media(max-width: 600px) { #observablehq-main { padding: 20px 16px; } h1 { font-size: 32px; } .controls { padding: 12px; } }

@@ -1,5 +1,8 @@
 # Tartu Development Access & Education — worked example
 
+Also available: an [Observable Framework delivery sample](../observable-cities/)
+with tier filtering, a thematic parcel map, downloads, and recorded provenance.
+
 A reproducible `openmapstack-project/v1` project that screens land near main
 roads against **25-minute pedestrian-network catchments** of municipal schools
 and kindergartens. `project.yaml` defines the analysis; `pipeline.py` produces

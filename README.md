@@ -2,7 +2,7 @@
 
 **AI agent skills for geospatial decisions, data discovery, spatial SQL and reproducible analysis projects.**
 
-Explore the [project homepage and two interactive example dashboards](https://jaakla.github.io/openmapstack-skills/). The static Pages site is assembled from the generated NYC and Tartu dashboards with `python3 scripts/build_project_pages.py`; no warehouse credentials are needed to serve it.
+Explore the [project homepage](https://jaakla.github.io/openmapstack-skills/), with NYC and Tartu examples in standalone HTML and Observable Framework. The [Observable city samples](examples/observable-cities/) include reactive filters, thematic maps, downloads, and delivery evidence. Build the complete Pages site with `python3 scripts/build_project_pages.py` (Python project dependencies, Node 20+ and npm required); no warehouse credentials or Observable account are needed.
 
 Install (assuming you have git and nodejs with npx already installed):
 ```bash
