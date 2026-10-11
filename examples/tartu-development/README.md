@@ -1,6 +1,6 @@
 # Tartu Development Access & Education — worked example
 
-Also available: an [Observable Framework delivery sample](../observable-cities/)
+Also available: an [Observable Framework delivery sample](https://github.com/jaakla/openmapstack-skills/tree/main/examples/observable-cities)
 with tier filtering, a thematic parcel map, downloads, and recorded provenance.
 
 A reproducible `openmapstack-project/v1` project that screens land near main
