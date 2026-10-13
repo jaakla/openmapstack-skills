@@ -9,8 +9,10 @@ from pathlib import Path
 import os
 import re
 import struct
+import sys
 import tempfile
 import threading
+from types import ModuleType, SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -19,11 +21,62 @@ ROOT = Path(__file__).resolve().parents[1]
 candidate = os.environ.get("OPENMAPSTACK_RASTER_CANDIDATE")
 if candidate and os.environ.get("OPENMAPSTACK_RASTER_TESTS") != "1":
     raise RuntimeError("candidate evaluation requires OPENMAPSTACK_RASTER_TESTS=1")
-SPEC = importlib.util.spec_from_file_location(
-    "raster_access_example", Path(candidate) if candidate else
-    ROOT / "examples/raster-access/raster_access.py")
-example = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(example)
+
+
+def load_example(path, name="raster_access_example"):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load raster example from {path}")
+    module = importlib.util.module_from_spec(spec)
+    previous = sys.modules.get(name)
+    sys.modules[name] = module
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        if previous is None:
+            sys.modules.pop(name, None)
+        else:
+            sys.modules[name] = previous
+        raise
+    return module
+
+
+example = load_example(Path(candidate) if candidate else
+                       ROOT / "examples/raster-access/raster_access.py")
+
+
+class CandidateImportTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.path = Path(self.temp.name) / "candidate.py"
+        self.module_name = "raster_import_regression"
+        modules = patch.dict(sys.modules)
+        modules.start()
+        self.addCleanup(modules.stop)
+
+    def test_postponed_annotation_dataclass_imports(self):
+        self.path.write_text(
+            "from __future__ import annotations\n"
+            "from dataclasses import dataclass\n"
+            "@dataclass\nclass Result:\n    value: int\n")
+        module = load_example(self.path, self.module_name)
+        self.assertIs(sys.modules[self.module_name], module)
+        self.assertEqual(module.Result(3).value, 3)
+
+    def test_failed_import_removes_partial_module(self):
+        self.path.write_text("raise RuntimeError('broken candidate')\n")
+        with self.assertRaisesRegex(RuntimeError, "broken candidate"):
+            load_example(self.path, self.module_name)
+        self.assertNotIn(self.module_name, sys.modules)
+
+    def test_failed_import_restores_previous_module(self):
+        previous = ModuleType(self.module_name)
+        sys.modules[self.module_name] = previous
+        self.path.write_text("raise RuntimeError('broken candidate')\n")
+        with self.assertRaisesRegex(RuntimeError, "broken candidate"):
+            load_example(self.path, self.module_name)
+        self.assertIs(sys.modules[self.module_name], previous)
 
 
 @contextmanager
@@ -197,17 +250,21 @@ class RasterAccessTests(unittest.TestCase):
                                           resampling="nearest", src_nodata=-9999,
                                           dst_nodata=-9999, chunks=(8, 8), warp_options={})
 
-    def cog(self):
+    def cog(self, calibrated=False):
         from rasterio.shutil import copy
         path = self.root / "raw.tif"
-        data = np.random.default_rng(42).integers(0, 65500, (1024, 1536), dtype="uint16")
-        mask = np.ones(data.shape, dtype="uint8") * 255
+        count = 2 if calibrated else 1
+        data = np.random.default_rng(42).integers(0, 65500, (count, 1024, 1536), dtype="uint16")
+        mask = np.ones(data.shape[-2:], dtype="uint8") * 255
         mask[80:130, 120:160] = 0
         with rio.open(path, "w", driver="GTiff", width=1536, height=1024,
-                      count=1, dtype="uint16", crs="EPSG:3301",
+                      count=count, dtype="uint16", crs="EPSG:3301",
                       transform=Affine(10, 0, 660000, 0, -10, 6470000)) as dst:
-            dst.write(data, 1)
+            dst.write(data)
             dst.write_mask(mask)
+            if calibrated:
+                dst.scales = (0.25, 2.5)
+                dst.offsets = (100.0, -30.0)
         cog = self.root / "image.tif"
         copy(path, cog, driver="COG", BLOCKSIZE=128, COMPRESS="DEFLATE",
              OVERVIEW_RESAMPLING="NEAREST")
@@ -228,7 +285,7 @@ class RasterAccessTests(unittest.TestCase):
                     arrays = [r async for r in example.cog_windows(
                         self.store(url), "image.tif", windows=[window], overview=overview)]
                     self.assertEqual(len(arrays), 1)
-                    array = arrays[0]
+                    array = arrays[0].raster
                     with rio.open(path) as src:
                         w = rio.windows.Window(117 * factor, 90 * factor, 70 * factor, 85 * factor)
                         expected = src.read(window=w, out_shape=(1, 85, 70), masked=True,
@@ -244,6 +301,47 @@ class RasterAccessTests(unittest.TestCase):
             asyncio.run(run())
         self.assertTrue(requests)
         self.assertLess(sum(end - start + 1 for _, start, end in requests), len(payload))
+
+    def test_per_band_calibration_survives_base_and_overview_reads(self):
+        def assert_calibration(record, expected_raw, src):
+            self.assertEqual(record.scales, src.scales)
+            self.assertEqual(record.offsets, src.offsets)
+            raw = record.raster.as_masked()
+            np.testing.assert_array_equal(raw.data, expected_raw.data)
+            scales = np.array(record.scales)[:, None, None]
+            offsets = np.array(record.offsets)[:, None, None]
+            actual = raw.astype("float64") * scales + offsets
+            expected = (expected_raw.astype("float64") * np.array(src.scales)[:, None, None]
+                        + np.array(src.offsets)[:, None, None])
+            np.testing.assert_array_equal(np.ma.getmaskarray(actual), np.ma.getmaskarray(expected))
+            np.testing.assert_array_equal(actual.compressed(), expected.compressed())
+
+        for calibrated in (False, True):
+            path = self.cog(calibrated=calibrated)
+            with range_origin({"/image.tif": path.read_bytes()}) as (url, _):
+                async def run():
+                    for overview, factor in ((None, 1), (0, 2)):
+                        # Both levels cross the fixture's invalid-pixel patch.
+                        window = Window(117 // factor, 90 // factor, 70, 85)
+                        records = [r async for r in example.cog_windows(
+                            self.store(url), "image.tif", windows=[window], overview=overview)]
+                        with rio.open(path) as src:
+                            w = rio.windows.Window(window.col_off * factor, window.row_off * factor,
+                                                   window.width * factor, window.height * factor)
+                            expected = src.read(window=w, out_shape=(src.count, 85, 70), masked=True,
+                                                resampling=rio.enums.Resampling.nearest)
+                            self.assertTrue(np.ma.getmaskarray(expected).any())
+                            self.assertTrue((~np.ma.getmaskarray(expected)).any())
+                            assert_calibration(records[0], expected, src)
+                            if calibrated:
+                                # Dropping calibration must fail the same oracle
+                                # even when raw pixels and georeferencing agree.
+                                lost = SimpleNamespace(raster=records[0].raster,
+                                                       scales=(1.0,) * src.count,
+                                                       offsets=(0.0,) * src.count)
+                                with self.assertRaises(AssertionError):
+                                    assert_calibration(lost, expected, src)
+                asyncio.run(run())
 
     def test_real_reads_obey_window_concurrency_and_do_not_prefetch_unbounded_batches(self):
         from async_geotiff import GeoTIFF

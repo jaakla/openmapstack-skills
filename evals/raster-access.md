@@ -13,7 +13,7 @@ Prepare Python 3.12 with `examples/raster-access/requirements.txt`, then run:
 OPENMAPSTACK_RASTER_TESTS=1 python -m unittest -v tests.test_raster_access
 ```
 
-The eight executable checks cover:
+The nine optional raster checks cover:
 
 - Graph construction without pixel reads, actual source-window observations,
   and a nontrivial CRS warp compared with a full-source rasterio oracle.
@@ -24,6 +24,9 @@ The eight executable checks cover:
 - Real HTTP 206 reads at base resolution and an explicitly selected overview,
   compared with rasterio values/masks/window transforms. Selected reads transfer
   less than the complete fixture; this is not a universal performance threshold.
+- Per-band calibration for base/overview reads, including non-unit scales,
+  nonzero offsets, default calibration and masks. Losing calibration must fail
+  even when the raw samples agree with the oracle.
 - Actual concurrent window reads limited to two, with no unbounded batch
   prefetch. This does not bound the library's internal HTTP request count.
 - Invalid level, pixel-budget and out-of-bounds requests.
@@ -32,7 +35,11 @@ The eight executable checks cover:
 - A stalled batch must time out and cancel both sibling reads. The read-stall
   injection tests cancellation, not production latency.
 
-Core test runs skip these eight checks unless selected. When selected, missing
+Three additional loader regressions run without raster dependencies: postponed
+annotation dataclasses import successfully, a failed import removes a partial
+module, and a failed replacement restores the preceding module registration.
+
+Core test runs skip the nine raster checks unless selected. When selected, missing
 packages and unavailable loopback sockets fail, so missing capability cannot
 produce green integration evidence. The PR workflow installs and explicitly
 selects this optional runtime. Generated synthetic rasters and results are
@@ -63,7 +70,11 @@ answers. Give it this prompt:
 > max_window_pixels=1048576, timeout=30)` is an async iterator using an obstore
 > store and async-geotiff Windows. Read only bounded batches; overview=None means
 > original resolution and a nonnegative index selects an existing overview.
-> Yield georeferenced RasterArray objects. Enforce window limits/deadlines,
+> Yield records exposing `raster` (the georeferenced RasterArray), `scales` and
+> `offsets` (per-band tuples in raster band order). Preserve raw samples and
+> calibration metadata for both base images and overviews; callers must be able
+> to apply `raw * scale + offset` without altering the valid-pixel mask.
+> Enforce window limits/deadlines,
 > preserve masks/transforms/CRS, reject unrecognized compression, propagate read
 > failures, and cancel in-flight siblings on failure. Transport retries are
 > finite and configured by the caller. Do not claim this reader also supplies

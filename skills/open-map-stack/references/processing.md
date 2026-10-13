@@ -250,6 +250,9 @@ window reads, pixels per window, deadlines and transport retries, and consumes
 results in batches. These bounds do not cap internal HTTP requests or decoded
 tile memory: budget whole intersecting tiles, metadata prefetch, bands and
 buffers. Preserve CRS, window transform, nodata/masks and scale/offset. Its
+window records include raw `raster` samples with per-band `scales` and `offsets`:
+`RasterArray` alone does not expose that calibration. Apply scale/offset only to
+valid samples or preserve them for the downstream consumer. The underlying
 `RasterArray.mask` uses True for valid pixels; `.as_masked()` converts to NumPy's
 opposite mask convention. Do not turn missing codecs or failed reads into
 empty/zero success. Verify decoder support on the selected runtime.

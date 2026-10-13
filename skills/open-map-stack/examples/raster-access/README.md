@@ -67,6 +67,7 @@ with its optional codec dependencies, or a bounded GDAL warp/write pipeline.
 ```python
 import asyncio
 from datetime import timedelta
+import numpy as np
 from async_geotiff import Window
 from obstore.store import HTTPStore
 from raster_access import cog_windows
@@ -78,13 +79,16 @@ async def main():
         retry_config={"max_retries": 2, "retry_timeout": timedelta(seconds=20)},
     )
     windows = [Window(col_off=128, row_off=64, width=64, height=64)]
-    async for raster in cog_windows(
+    async for window in cog_windows(
         store, "pinned-image.tif", windows=windows, overview=None,
         concurrency=2, max_window_pixels=65536, timeout=30,
     ):
-        values = raster.as_masked()
-        # Consume/reduce/write this result, retaining raster.crs and
-        # raster.transform. Do not accumulate every window into a huge list.
+        raster = window.raster
+        raw = raster.as_masked().astype("float64")
+        values = (raw * np.array(window.scales)[:, None, None]
+                  + np.array(window.offsets)[:, None, None])
+        # Consume/reduce/write this result, retaining its mask, raster.crs,
+        # raster.transform and calibration provenance. Do not accumulate windows.
         print(values.shape, raster.crs, raster.transform)
 
 asyncio.run(main())
@@ -99,6 +103,13 @@ decoders fetch whole intersecting storage tiles, may coalesce requests and
 prefetch metadata, and need additional buffers. Budget bands, dtype, decoded
 tile sizes and in-flight work as well as returned pixels. The caller controls
 storage authentication; never put secrets into source identifiers.
+
+Each yielded `COGWindow` carries `raster` (unscaled stored samples) plus per-band
+`scales` and `offsets` in the same band order, including for overviews. Apply
+`raw * scale + offset` only to valid pixels, as above, or retain these metadata
+for a downstream consumer. The upstream defaults for absent calibration are
+unit scales and zero offsets; units and measurement meaning still come from
+source metadata. `RasterArray` alone does not expose the scale/offset metadata.
 
 `RasterArray.mask` uses True for valid data. Use `.as_masked()` when consuming
 NumPy masked arrays, whose mask convention is the reverse. Preserve masks,

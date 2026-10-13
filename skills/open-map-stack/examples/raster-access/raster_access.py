@@ -2,7 +2,25 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from itertools import islice
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from async_geotiff import RasterArray
+
+
+@dataclass(frozen=True)
+class COGWindow:
+    """Raw samples plus calibration in the raster's band order.
+
+    Physical values = raw samples * scales + offsets; apply only to valid
+    pixels. The RasterArray retains the window CRS, transform and mask.
+    """
+
+    raster: RasterArray
+    scales: tuple[float, ...]
+    offsets: tuple[float, ...]
 
 
 def reproject_aoi(source, *, source_window, destination_grid, resampling,
@@ -37,7 +55,7 @@ def reproject_aoi(source, *, source_window, destination_grid, resampling,
 
 async def cog_windows(store, path, *, windows, overview, concurrency=2,
                       max_window_pixels=1024 * 1024, timeout=30):
-    """Yield bounded batches of explicit windows, preserving RasterArray metadata.
+    """Yield COGWindow records with raw pixels and per-band calibration.
 
     `overview=None` selects the base image; an integer selects an existing
     overview, finest first. Windows use that level's pixel coordinates.
@@ -59,6 +77,9 @@ async def cog_windows(store, path, *, windows, overview, concurrency=2,
         if not isinstance(overview, int) or not 0 <= overview < len(image.overviews):
             raise ValueError("overview must select an existing level")
         level = image.overviews[overview]
+    # RasterArray exposes pixels/masks/georeferencing, but not calibration.
+    # Overview samples use the same band calibration as the base image.
+    scales, offsets = tuple(image.scales), tuple(image.offsets)
 
     pending = iter(windows)
     while batch := list(islice(pending, concurrency)):
@@ -79,4 +100,4 @@ async def cog_windows(store, path, *, windows, overview, concurrency=2,
                 task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
         for result in results:
-            yield result
+            yield COGWindow(raster=result, scales=scales, offsets=offsets)
