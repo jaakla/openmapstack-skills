@@ -131,6 +131,28 @@ Pin STAC item IDs, Overture release versions, OSM extract timestamps, portal dow
 | PostGIS | Check SRID, GIST indexes, row counts, `ST_IsValid`, and `EXPLAIN ANALYZE` on expected queries |
 | Web map | Load the style in a browser, check network requests, source-layer names, attribution, legend, and mobile viewport |
 
+### Raster execution evidence
+
+A Dask graph before execution establishes deferred work, not bounded memory or
+correct pixels. Observe which source windows/storage tiles a bounded request
+actually reads, and compare its values, mask, transform and CRS with an
+independent rasterio/GDAL warp on the same explicit destination grid. Include
+an asymmetric raster and a window crossing chunk edges; categorical resampling
+must preserve source class codes. Test eager-operation and shifted-grid failures.
+
+For async COG readers, test original resolution and an explicit overview over a
+range-capable origin, and check active read concurrency and finite failure paths.
+Missing/unsupported codecs, timeouts and transport errors must remain errors.
+Preserve masks and scale/offset rather than interpreting raw sample values as
+physical measurements. The [bounded raster examples](../examples/raster-access/README.md)
+provide a tested optional runtime; no raster dependency is required for core
+manifest validation. Missing runtime evidence is `not_testable`, not passed.
+
+If reporting performance, record versions, storage location, selected pixels and
+levels, request/byte counts, memory and concurrency settings, and cold/warm cache
+conditions. A local correctness fixture is not a production throughput benchmark
+or evidence that a live agent follows the guidance.
+
 ## CRS and geometry gates
 
 Before metric operations:

@@ -1,0 +1,30 @@
+name: Optional raster examples
+
+on:
+  pull_request:
+    paths:
+      - 'examples/raster-access/**'
+      - 'skills/**/examples/raster-access/**'
+      - 'skills/**/references/processing.md'
+      - 'skills/**/references/analytics.md'
+      - 'skills/**/references/validation-and-ops.md'
+      - 'tests/test_raster_access.py'
+      - 'scripts/sync_skill_assets.py'
+      - 'evals/raster-access.md'
+      - '.github/workflows/raster-examples.yml'
+  workflow_dispatch:
+
+jobs:
+  raster-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the isolated optional example runtime
+        run: pip install -r examples/raster-access/requirements.txt
+      - name: Run local raster integration and mutation controls
+        env:
+          OPENMAPSTACK_RASTER_TESTS: '1'
+        run: python -m unittest -v tests.test_raster_access
