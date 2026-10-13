@@ -180,7 +180,7 @@ Do not assume flag compatibility or identical generalization between tools.
 | Publish a GeoParquet analysis result or Portolan catalog preview | Build a PMTiles companion directly; retain the original GeoParquet as analytical truth and carry its release, license, and attribution into delivery. |
 | Tile a regional subset of a remote GeoParquet collection | Remote range reads plus bbox/property filters can prune row groups. Verify the source layout and actual bytes read; bbox overlap is only a candidate filter when the task requires an exact AOI predicate. |
 | Rebuild large building, field-boundary, or event overlays on a limited-memory worker | Use streaming and bounded-memory/spill settings from the installed release; provision temporary disk and benchmark a representative subset. |
-| Reuse generalized data for multiple exports | Store overview GeoParquet, validate it, and export PMTiles separately. Overview rows and decoded tiles are generalized display data, not a lossless replacement for the source. |
+| Reuse generalized data for multiple exports | Store overview GeoParquet, validate it, and export PMTiles separately. For analysis, use the mode-specific canonical selection described below; decoded MVT remains display data. |
 | Distribute a large tiling job across workers | Follow upstream shard planning: shared input/version/plan, disjoint tile ownership, and the coarse-zoom job. Verify complete zoom coverage before merging; arbitrary overlapping archives are not interchangeable shards. |
 
 ### Version-aware workflow
@@ -206,6 +206,17 @@ tylertoo overview input.parquet overview.parquet --min-zoom 4 --max-zoom 14
 tylertoo validate overview.parquet
 tylertoo export-pmtiles overview.parquet overview.pmtiles --layer-name features
 ```
+
+Overview GeoParquet is not uniformly lossy. The upstream
+[overview contract](https://github.com/geoparquet-io/tylertoo/blob/v0.8.0/context/OVERVIEWS_SPEC.md#24-canonical-fidelity-normative)
+preserves source geometry and attribute values at the finest canonical level in
+`duplicating` mode; select that level using the file's metadata rather than
+counting all duplicated rows. In `partitioning` mode, features appear once,
+without geometry simplification, and the union of all levels is canonical.
+Verify the installed release's metadata and fidelity contract against the actual
+input to the overview stage (after any deliberate filtering/property selection).
+Coarser generalized representations and decoded MVT tiles are not substitutes
+for canonical analytical data.
 
 Default thinning can remove polygons at coarse and middle zooms. For parcels,
 administrative boundaries, choropleths, or pre-aggregated cells whose coverage

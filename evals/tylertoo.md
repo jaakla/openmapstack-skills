@@ -3,7 +3,23 @@
 The shared [web-delivery guidance](../skills/open-map-stack/references/web-delivery.md#tylertoo--geoparquet-native-vector-tiles)
 adds a tool choice, not a new project contract. These focused review scenarios
 cover that choice without extending the generic routing benchmark infrastructure.
-They are manual behavioral evals, not scored cases in `evals/run.py`.
+Case `026-tiler-selection` now makes the local native writer, no-thinning cells,
+and retained Tippecanoe workflow decisions runnable in fixture and live modes.
+It asks for bounded argv plans and grades their tool/input/options semantically,
+not by prose or token presence. Mutations `947`–`949` require rejection of the
+wrong writer, a missing coverage safeguard and an unwanted tool migration,
+each against a healthy control. This is planning coverage, not evidence of
+successful execution or map appearance. The remaining remote/sharding scenarios
+below are reviewer prompts, not automated claims.
+
+```bash
+python3 evals/run.py --mode fixture --case 026-tiler-selection \
+  --case 947-tiler-wrong-tool --case 948-tiler-thinning \
+  --case 949-tiler-replace-existing
+```
+
+The fixture controls and a stub live adapter test the grader without model
+calls. Actual live-agent runs remain subject to the explicit model/budget policy.
 
 | Prompt | Acceptance evidence | Failure to flag |
 |---|---|---|
@@ -28,16 +44,27 @@ attribute values and exclusion of an unwanted property. A missing-polygon
 mutation must fail the same oracle. These small checks do not prove browser
 appearance, remote I/O efficiency, distributed completeness or performance.
 
-Install a verified tylertoo release using upstream instructions, plus test-only
-Python dependencies `pyarrow`, `pmtiles`, and `mapbox-vector-tile`. Then run:
+The `tylertoo-integration` job in `.github/workflows/evals.yml` runs on every PR
+and push to main. It installs Python dependencies from
+`evals/requirements-tylertoo.txt`, downloads upstream v0.8.0 using
+`scripts/ci/install-tylertoo.sh`, verifies the pinned SHA-256 and reported version,
+and sets `OMS_TYLERTOO` at job scope before executing both real-tool tests.
+Installation/dependency errors fail the job; CI needs no manual preinstall or
+variable setup. The separate fixture job also runs the planning cases and
+mutation controls, including in its network-disabled container.
+
+To reproduce the integration job locally on Linux x86_64 in a Python environment:
 
 ```bash
-OMS_TYLERTOO=/absolute/path/to/tylertoo python3 -m unittest tests.test_tylertoo -v
-python3 -m unittest tests.test_collection -v
+python3 -m pip install -r evals/requirements-tylertoo.txt
+export OMS_TYLERTOO="$(mktemp -d)/tylertoo"
+bash scripts/ci/install-tylertoo.sh "$OMS_TYLERTOO"
+python3 -m unittest tests.test_tylertoo -v
+python3 -m unittest tests.test_collection tests.evals.test_tiling -v
 python3 scripts/sync_skill_assets.py --check
 ```
 
-Without `OMS_TYLERTOO`, runtime tests explicitly skip. With it, missing dependencies,
-unsupported flags, failed commands and incorrect artifacts fail; nothing is
-installed or fetched by the test. The integration check was exercised against
-upstream v0.8.0; rerun against the release selected for a real project.
+Ordinary local unit discovery without `OMS_TYLERTOO` skips the external-tool
+tests; the dedicated CI job always sets it. Test execution never installs or
+fetches anything. The committed installer is Linux x86_64-specific; other
+platforms can provide a verified executable through the same variable.

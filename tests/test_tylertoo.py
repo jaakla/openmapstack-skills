@@ -1,6 +1,7 @@
 """Opt-in real tiler QA; set OMS_TYLERTOO to a verified release executable.
 
-Requires pyarrow, pmtiles and mapbox-vector-tile in the test environment.
+CI installs the pinned release and evals/requirements-tylertoo.txt automatically.
+Local runs can opt in with the same dependencies (including Shapely).
 No network, model calls or downloads occur in these tests.
 """
 from __future__ import annotations
