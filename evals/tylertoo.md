@@ -48,7 +48,8 @@ The `tylertoo-integration` job in `.github/workflows/evals.yml` runs on every PR
 and push to main. It installs Python dependencies from
 `evals/requirements-tylertoo.txt`, downloads upstream v0.8.0 using
 `scripts/ci/install-tylertoo.sh`, verifies the pinned SHA-256 and reported version,
-and sets `OMS_TYLERTOO` at job scope before executing both real-tool tests.
+and exports `OMS_TYLERTOO` through `GITHUB_ENV` before executing both real-tool tests.
+The test step fails if that variable is missing.
 Installation/dependency errors fail the job; CI needs no manual preinstall or
 variable setup. The separate fixture job also runs the planning cases and
 mutation controls, including in its network-disabled container.
