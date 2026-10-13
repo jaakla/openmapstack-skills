@@ -198,29 +198,66 @@ result = sedona.sql("""
 
 ## Python — xarray + rioxarray for raster
 
-The modern raster stack. Replaces single-file rasterio for n-dimensional or time-series work.
+Use xarray for labelled multidimensional arrays, rioxarray for raster metadata
+and appropriate rasterio-backed operations, and odc-stac for STAC loading.
+**Lazy opening is not lazy execution.** Inspect the array/task graph before and
+after reprojection, clipping, reductions and writing. Metadata inspection may
+read headers; it must not be confused with loading the pixel array.
 
-```python
-import rioxarray
-import xarray as xr
+### Reprojection and materialization boundaries
 
-# Open single raster
-da = rioxarray.open_rasterio("input.tif", chunks={"x": 1024, "y": 1024})
+For a small raster that fits the stated memory budget, `.rio.reproject()` is an
+explicit eager operation. Opening it with `chunks=` does not make that warp
+Dask-backed. For actual Dask reprojection, use a verified odc-geo or pyresample
+path; [rioxarray documents this boundary](https://corteva.github.io/rioxarray/stable/rioxarray.html#rioxarray.raster_array.RasterArray.reproject).
+Retain GDAL/rasterio for mature conversion, warping and writing rather than
+assuming a new reader supplies all three.
 
-# Reproject
-da_3301 = da.rio.reproject("EPSG:3301")
+The runnable [bounded raster example](../examples/raster-access/README.md) uses
+`subset.odc.reproject(destination_grid, resampling=..., src_nodata=..., dst_nodata=..., chunks=...)`
+with an explicit `GeoBox`: CRS, affine transform, shape and therefore resolution
+and pixel registration. It selects a source window before graph construction,
+including the resampling support needed around the AOI. Keep the source open
+until execution. Verify that the warped array retains a Dask graph, then compute
+only a budgeted output or use a verified chunked writer. `.values`, `.compute()`,
+`.persist()`, and output writes are execution/memory boundaries, not evidence of
+bounded resource use. Polygon clipping can also materialize; crop by a derived
+window first and check the selected clipping implementation.
 
-# Clip to AOI
-import geopandas as gpd
-aoi = gpd.read_file("aoi.gpkg")
-da_clipped = da.rio.clip(aoi.geometry, aoi.crs)
+Pass the **in-memory** source nodata explicitly (for example NaN after masked
+loading), and explicitly retain output nodata metadata before writing. Matching
+grids alone does not ensure matching warp results: align transformation tolerance
+and interpolation/aggregation settings in chunked and full-source checks.
+Approximate transforms can select different class pixels at chunk boundaries;
+the example uses exact transformation and documents its sampling-scale policy.
 
-# Math is just xarray
-ndvi = (da.sel(band=4) - da.sel(band=3)) / (da.sel(band=4) + da.sel(band=3))
+Choose chunks from storage block layout, dtype, bands, operation buffers and
+worker concurrency, not a fixed byte-size rule. Align to storage tiles where
+useful, but profile reprojection dependencies and output chunks separately.
+Validate pixels, mask and transform against an independent rasterio/GDAL oracle;
+check chunk edges, and use nearest/mode for categorical data.
 
-# Write COG
-ndvi.rio.to_raster("ndvi.tif", driver="COG", compress="DEFLATE")
-```
+### Optional concurrent COG reading
+
+[async-geotiff](https://developmentseed.org/async-geotiff/latest/) with
+[obstore](https://developmentseed.org/obstore/latest/) is an optional read path
+for concurrent COG windows. It does not warp, resample, write, or automatically
+choose an overview. Inspect the available levels, choose original resolution or
+an explicit overview, and express each window in that level's pixel coordinates.
+
+The [same runnable example](../examples/raster-access/README.md) bounds active
+window reads, pixels per window, deadlines and transport retries, and consumes
+results in batches. These bounds do not cap internal HTTP requests or decoded
+tile memory: budget whole intersecting tiles, metadata prefetch, bands and
+buffers. Preserve CRS, window transform, nodata/masks and scale/offset. Its
+`RasterArray.mask` uses True for valid pixels; `.as_masked()` converts to NumPy's
+opposite mask convention. Do not turn missing codecs or failed reads into
+empty/zero success. Verify decoder support on the selected runtime.
+
+Assess [geoutils](https://geoutils.readthedocs.io/) for a concrete operation using
+its current documentation and an executable check. A planned accessor or Dask
+feature is not an installed capability. Keep existing tools when their verified
+behavior already meets the need.
 
 ### STAC → xarray (the canonical satellite ingest pattern)
 
@@ -251,7 +288,9 @@ ds = odc.stac.load(
 
 # Lazy NDVI per timestep
 ndvi = (ds.B08 - ds.B04) / (ds.B08 + ds.B04)
-ndvi_max = ndvi.max(dim="time").compute()  # materialize
+# Explicit eager boundary: this selected AOI/output must fit the memory budget.
+# For larger outputs use a verified chunked/streaming write path above.
+ndvi_max = ndvi.max(dim="time").compute()
 ndvi_max.rio.to_raster("ndvi_max.tif", driver="COG")
 ```
 
@@ -487,7 +526,7 @@ Reserve heredocs for short SQL or for trivial Python that has no quoting risk.
 
 * GIST/R-tree indexing is mandatory above ~10k features
 * Push joins to the database, not Python
-* Chunk size for raster work should align with COG internal block size (default 512×512)
+* Plan raster chunks from actual storage tiles, band/dtype size, buffers and concurrent tasks; see the raster execution boundaries above.
 * For Overture S3 queries, the `bbox` struct column enables predicate pushdown — filter on it
 * Materialized views in PostGIS for expensive recurring queries
-* For dask-backed xarray, keep chunks at 50–500 MB each — too small wastes scheduling overhead, too large blows memory
+* Verify each expensive xarray operation stays lazy when required; a Dask input alone does not prove bounded reprojection or writing.

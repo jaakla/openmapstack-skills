@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXAMPLE_FILES = ("README.md", "project.yaml", "pipeline.py", "dashboard-template.html", "routing.py", "qgis_delivery.py", "requirements.txt", "run_e2e.py", "data/overrides/planned-road.geojson")
 DELIVERY_EXAMPLE_FILES = ("README.md", "project.yaml", "pipeline.py", "create.py", "data/source/parcels.geojson")
 STACK_EXAMPLE_FILES = ('README.md', 'analysis.py', 'create.py', 'data/source/parcels.csv', 'dbt/dbt_project.yml', 'dbt/models/candidates.sql', 'dbt/models/measured.sql', 'dbt/models/scenarios.sql', 'dbt/models/sources.yml', 'dbt/profiles.yml', 'dbt/tests/spatial_correctness.sql', 'delivery.py', 'ingest.py', 'observable/observablehq.config.js', 'observable/package-lock.json', 'observable/package.json', 'observable/src/index.md', 'orchestration.py', 'parameters.json', 'pipeline.py', 'project.yaml', 'requirements-base.txt', 'requirements-composed.txt', 'requirements-dagster.txt', 'requirements-dbt.txt', 'requirements-dlt.txt')
+RASTER_EXAMPLE_FILES = ("README.md", "raster_access.py", "requirements.txt")
 NOTES = """# Installed example contents
 
 Generated maps, QGIS archives, source downloads, derived data, validation
@@ -40,6 +41,8 @@ def expected_assets(root=ROOT):
                 outputs[target / "examples/delivery-profiles" / relative] = (root / "examples/delivery-profiles" / relative).read_bytes()
             for relative in STACK_EXAMPLE_FILES:
                 outputs[target / "examples/established-stack" / relative] = (root / "examples/established-stack" / relative).read_bytes()
+            for relative in RASTER_EXAMPLE_FILES:
+                outputs[target / "examples/raster-access" / relative] = (root / "examples/raster-access" / relative).read_bytes()
             outputs[target / "schemas/project-v1.schema.json"] = (root / "openmapstack/schemas/project-v1.schema.json").read_bytes()
         for reference in skill["shared_references"]:
             source = generalist / "references" / reference

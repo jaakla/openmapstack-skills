@@ -262,13 +262,15 @@ For higher quality, use `s2cloudless` masks where available.
 
 ### Raster correctness checklist
 
+For operation-level laziness, explicit destination grids, bounded async COG
+reads and executable examples, see [Processing Stack](processing.md#reprojection-and-materialization-boundaries).
 Before computing indices or statistics:
 
 * Confirm band names, units, scale/offset, and NoData from `gdalinfo` or STAC asset metadata.
 * Align mixed-resolution bands deliberately. Sentinel-2 B03/B04/B08 are 10m; B11 is 20m, so choose resampling intentionally before NDMI/MNDWI/NDBI.
 * Keep categorical bands and masks on nearest-neighbor resampling.
 * Preserve CRS and transform after xarray operations; verify `rio.crs`, `rio.transform()`, and output bounds.
-* Avoid calling `.values` on large dask-backed arrays. Sample training pixels or process by chunks.
+* Avoid calling `.values` on large Dask-backed arrays. Check the graph after warping/clipping and at reductions/writes; opening with chunks does not guarantee lazy processing. Budget source tiles, output chunks, masks, intermediates and worker concurrency. Sample training pixels or process by chunks.
 
 ### Classification
 

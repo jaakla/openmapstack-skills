@@ -94,6 +94,12 @@ so an unsupported selection cannot publish a green `0/0` benchmark.
 
 ## Scenario generator for focused coverage (PR 8)
 
+For the optional lazy raster/async COG integration suite, independent numerical
+oracles, mutation controls and an executable candidate-module behavioral trial,
+see [raster access evaluation](raster-access.md). Its runtime and score evidence
+are separate from the default fixture suite; no paid trial is authorized by that
+documentation.
+
 `evals/fixtures/reference_pipeline/gen_spatial.py` produces small, focused
 projects for the failure modes the main mini-Tartu fixture does not exercise.
 Each scenario's correct answer is independently hand-derivable from its tiny
