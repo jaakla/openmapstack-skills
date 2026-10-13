@@ -65,6 +65,7 @@ CHECK_MODULES = (
     "overrides",
     "validation",
     "geodata",
+    "tiling",
     "tables",
     "presentation",
     "delivery",
@@ -82,6 +83,7 @@ DIMENSIONS = {
     "overrides": "override_handling",
     "provenance": "provenance",
     "geodata": "gis_correctness",
+    "tiling": "gis_correctness",
     "tables": "table_correctness",
     "validation": "validation_integrity",
     "qgis": "presentation_contract",
@@ -104,6 +106,7 @@ KNOWN_ANSWER_CHECKS = frozenset(
         "geodata.feature_field_equals",
         "geodata.field_range",
         "geodata.coordinate_pair_equals",
+        "tiling.command_matches",
         "delivery.selection_is",
     }
 )

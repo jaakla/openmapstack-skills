@@ -1,0 +1,65 @@
+id: 026-tiler-selection
+case_type: positive
+modes:
+- fixture
+- live
+score_types:
+  fixture: contract_ci
+  live: agent_benchmark
+project_dir: project
+hard_gate: true
+fixture:
+  generator: '{python} {evals_dir}/fixtures/tiler-selection/gen.py {project_dir}'
+live:
+  prompt_file: prompt.md
+  agent_workdir: project
+  fixtures: []
+assertions:
+- assert: tiling.command_matches
+  args:
+    path: tiling-plan.json
+    field: preview
+    expected:
+    - tylertoo
+    - tiles
+    - events.parquet
+    - events.pmtiles
+    - --min-zoom
+    - '4'
+    - --max-zoom
+    - '14'
+    - --layer-name
+    - events
+- assert: tiling.command_matches
+  args:
+    path: tiling-plan.json
+    field: coverage
+    expected:
+    - tylertoo
+    - tiles
+    - cells.parquet
+    - cells.pmtiles
+    - --min-zoom
+    - '4'
+    - --max-zoom
+    - '8'
+    - --layer-name
+    - cells
+    - --verbatim
+- assert: tiling.command_matches
+  args:
+    path: tiling-plan.json
+    field: existing
+    expected:
+    - tippecanoe
+    - --output
+    - cities.pmtiles
+    - --minimum-zoom
+    - '0'
+    - --maximum-zoom
+    - '10'
+    - --layer
+    - cities
+    - --feature-filter
+    - '{"*": [">", "population", 10000]}'
+    - cities.geojson

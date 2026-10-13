@@ -22,7 +22,7 @@ That is the point of it living in the shipped package rather than under
 any correct project on any data, so they transfer to data this repository
 has never seen. The exceptions — the ones that need a known answer — are
 `geodata.row_count(equals=)`, `feature_present`, `feature_absent`,
-`feature_field_equals`, `field_range`, and `coordinate_pair_equals`. The automatic
+`feature_field_equals`, `field_range`, `coordinate_pair_equals`, and `tiling.command_matches`. The automatic
 user-project plan admits only allowlisted, input-bound `validation.expectations`
 attestations, never an answer the pipeline computed and certified for itself.
 External harnesses can supply independent oracles to other known-answer checks.

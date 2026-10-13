@@ -6,6 +6,26 @@ on:
     branches: [main]
 
 jobs:
+  tylertoo-integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned test dependencies
+        run: python -m pip install -r evals/requirements-tylertoo.txt
+      - name: Install checksum-verified tylertoo release
+        run: |
+          bash scripts/ci/install-tylertoo.sh "${RUNNER_TEMP}/tylertoo/tylertoo"
+          echo "OMS_TYLERTOO=${RUNNER_TEMP}/tylertoo/tylertoo" >> "$GITHUB_ENV"
+      - name: Run real direct and overview exports and negative control
+        run: |
+          # Fail rather than silently taking the local-only test skip.
+          : "${OMS_TYLERTOO:?installer must configure the executable}"
+          python -m unittest tests.test_tylertoo -v
+
   fixture-evals:
     runs-on: ubuntu-latest
     # Deterministic fixture evals only: no LLM account required. Spatial is

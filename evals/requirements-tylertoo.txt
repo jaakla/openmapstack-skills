@@ -1,0 +1,5 @@
+# Independent readers and synthetic input writer for the real tiler CI job.
+pyarrow==26.0.0
+pmtiles==3.8.1
+mapbox-vector-tile==2.2.0
+shapely==2.2.0
