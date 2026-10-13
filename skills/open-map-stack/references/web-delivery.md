@@ -4,7 +4,7 @@ For selected existing tools and runnable dlt/Dagster/dbt/Observable/QGIS example
 see `established-stack.md`. Keep one owner per transformation/dependency;
 optional tool runtimes are required only for selected integration work.
 
-Generating tiles, serving them, and rendering them. The 2026 default stack: PMTiles + Martin (or static hosting) + MapLibre. tippecanoe for vector tile generation, TiTiler for dynamic raster tiling.
+Generating tiles, serving them, and rendering them. The 2026 default stack: PMTiles + Martin (or static hosting) + MapLibre. Choose tylertoo for direct GeoParquet vector tiling when its generalization fits the map, tippecanoe for established multi-format workflows, and TiTiler for dynamic raster tiling.
 
 ## Map review rules
 
@@ -32,7 +32,7 @@ kepler.gl does not replace MapLibre: it is an exploratory React/Redux applicatio
 1. **Static deployment, no server budget?** → Generate PMTiles, host on S3 / R2 / any static origin, fetch with MapLibre via the PMTiles protocol plugin.
 2. **Dynamic data in PostGIS, multi-user?** → Martin in front of PostGIS, MVT generation in-database with `ST_AsMVT`.
 3. **On-the-fly raster tiling from COGs?** → TiTiler (FastAPI-based) with on-demand resampling/styling.
-4. **Mixed vector + raster, batch generation, very large dataset?** → Planetiler for OSM-derived vector at planet scale; tippecanoe for everything else.
+4. **Mixed vector + raster, batch generation, very large dataset?** → Planetiler for OSM-derived vector at planet scale; tylertoo for GeoParquet-native batch builds; tippecanoe for other vector inputs or existing cartographic workflows. See the tool-selection guidance below.
 
 ## PMTiles — the modern default
 
@@ -47,7 +47,7 @@ Single file containing all zoom levels, served from any HTTP origin via range re
 
 ### Generating PMTiles
 
-From GeoJSON or GeoParquet via `tippecanoe` (now `felt/tippecanoe`):
+For GeoParquet-native input, see [tylertoo](#tylertoo--geoparquet-native-vector-tiles) below. With `tippecanoe` (`felt/tippecanoe`), convert GeoParquet to a supported input stream first:
 
 ```bash
 # Basic generation
@@ -165,6 +165,61 @@ tippecanoe -o combined.pmtiles \
   -L'{"file":"roads.geojson", "layer":"roads", "minzoom":4}'
 ```
 
+## tylertoo — GeoParquet-native vector tiles
+
+[tylertoo](https://github.com/geoparquet-io/tylertoo) builds PMTiles directly from
+GeoParquet, avoiding the GeoJSON/FlatGeobuf conversion stage needed by
+Tippecanoe. Keep Tippecanoe for existing tuned pipelines, GeoJSON streams,
+other supported input formats, or workflows requiring its specific behavior.
+Do not assume flag compatibility or identical generalization between tools.
+
+### Specific use cases
+
+| Task | Why consider tylertoo / what to verify |
+|---|---|
+| Publish a GeoParquet analysis result or Portolan catalog preview | Build a PMTiles companion directly; retain the original GeoParquet as analytical truth and carry its release, license, and attribution into delivery. |
+| Tile a regional subset of a remote GeoParquet collection | Remote range reads plus bbox/property filters can prune row groups. Verify the source layout and actual bytes read; bbox overlap is only a candidate filter when the task requires an exact AOI predicate. |
+| Rebuild large building, field-boundary, or event overlays on a limited-memory worker | Use streaming and bounded-memory/spill settings from the installed release; provision temporary disk and benchmark a representative subset. |
+| Reuse generalized data for multiple exports | Store overview GeoParquet, validate it, and export PMTiles separately. Overview rows and decoded tiles are generalized display data, not a lossless replacement for the source. |
+| Distribute a large tiling job across workers | Follow upstream shard planning: shared input/version/plan, disjoint tile ownership, and the coarse-zoom job. Verify complete zoom coverage before merging; arbitrary overlapping archives are not interchangeable shards. |
+
+### Version-aware workflow
+
+Read the current [CLI reference](https://geoparquet-io.github.io/tylertoo/reference/cli/),
+[Tippecanoe comparison](https://geoparquet-io.github.io/tylertoo/guides/tippecanoe/),
+and, when needed, [remote-read](https://geoparquet-io.github.io/tylertoo/guides/remote-reads/)
+or [scaling](https://geoparquet-io.github.io/tylertoo/guides/scaling/) guidance.
+Verify supported input CRS, geometry encodings, flags and limitations against
+`tylertoo --version` and subcommand help; pin the tested release in the project
+runtime. Explicitly reproject unsupported input CRS; never relabel coordinates.
+
+Illustrative local commands (choose zooms and names for the actual dataset):
+
+```bash
+tylertoo --version
+tylertoo tiles --help
+tylertoo tiles input.parquet output.pmtiles \
+  --min-zoom 4 --max-zoom 14 --layer-name features
+
+# Reusable overview followed by a separate tile export
+tylertoo overview input.parquet overview.parquet --min-zoom 4 --max-zoom 14
+tylertoo validate overview.parquet
+tylertoo export-pmtiles overview.parquet overview.pmtiles --layer-name features
+```
+
+Default thinning can remove polygons at coarse and middle zooms. For parcels,
+administrative boundaries, choropleths, or pre-aggregated cells whose coverage
+must remain complete, evaluate `--verbatim` and inspect tile sizes and coverage;
+explicit tuning or tile-size caps may reintroduce dropping. Even verbatim MVT
+is clipped and quantized display geometry. Compute counts/areas from the source.
+
+Before delivery, inspect archive bounds, zooms, source-layer names, properties
+and stable IDs where required; decode representative tiles and render low,
+middle and high zooms in MapLibre. Check missing classes, seams and coverage
+against the source. Record actual runtime, peak memory and output size when
+comparing tools; upstream speed claims are workload-specific, not guarantees.
+Apply the same range-request, CORS and attribution checks as other PMTiles.
+
 ## Planetiler — when tippecanoe is too slow
 
 For OSM-derived vector tiles at country or planet scale, **Planetiler** (Java) is dramatically faster than tippecanoe — it can generate planet-scale OpenMapTiles in a few hours on a single machine.
@@ -175,7 +230,7 @@ java -jar planetiler.jar --download \
   --output=planet.pmtiles
 ```
 
-Use Planetiler's profiles (OpenMapTiles, Shortbread, custom). Use tippecanoe for everything that isn't a global OSM-style basemap.
+Use Planetiler's profiles (OpenMapTiles, Shortbread, custom). For other vector overlays, choose between tylertoo and tippecanoe using the input format and required cartographic behavior above.
 
 ## Tile servers
 

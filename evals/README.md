@@ -21,6 +21,9 @@ the agent's narration.
 > when the produced project can be inspected, executed and independently
 > checked.
 
+For tylertoo/Tippecanoe tool-selection review scenarios and the opt-in real
+GeoParquet-to-PMTiles integration check, see [tylertoo delivery review](tylertoo.md).
+
 ## Execution modes and score types
 
 The 0.4.0 collection layout lives in `skills/`. Use `--collection` with live
