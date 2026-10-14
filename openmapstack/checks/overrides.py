@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from ..declarations import override_evidence_valid
 from .spatial import connect_spatial
 
 from . import (
@@ -57,15 +58,17 @@ def evidence_not_placeholder(workspace: Path, project_dir: str = ".") -> Asserti
     proj = load_project_yaml(workspace, project_dir)
     if proj is None:
         return failed("project.yaml missing", code="manifest_missing")
-    overrides = proj.get("overrides") or []
-    placeholder_markers = {"todo", "tbd", "n/a", "none", "..."}
+    overrides = proj.get("overrides")
+    if overrides is None:
+        overrides = []
+    if not isinstance(overrides, list):
+        return failed("overrides must be a list", code="placeholder_evidence")
     bad: list[str] = []
     for o in overrides:
-        evidence = o.get("evidence") or []
-        for e in evidence:
-            value = str(e.get("value", "")).strip().lower()
-            if not value or value in placeholder_markers:
-                bad.append(o.get("id", "?"))
+        if not isinstance(o, dict):
+            bad.append("?")
+        elif not override_evidence_valid(o.get("evidence")):
+            bad.append(o.get("id", "?"))
     if bad:
         return failed(f"overrides with placeholder/empty evidence: {bad}", code="placeholder_evidence")
     return passed("no placeholder evidence found")

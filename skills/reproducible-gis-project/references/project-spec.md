@@ -422,6 +422,12 @@ overrides:
 
 Before applying an override, validate that its target exists and that any asserted `from` value matches the immutable source. Reject placeholder evidence. The run report records each override as `applied`, `rejected`, or `not_testable`. Hypothetical scenario features do not require an external factual claim, but must use `geometry_origin: scenario`, say that they are hypothetical, and remain separate from authoritative presentation layers.
 
+Every override requires a nonempty evidence list. Each entry identifies evidence
+through `value`, `source`, or `title` (in that precedence order, using the first
+nonempty field), or a plain reference string. A planning-document title and page
+are valid without a `value` field. Declaration checks reject placeholders; they
+do not establish that the cited document exists or proves the claim.
+
 ### 2.4 Processing steps
 
 ```yaml

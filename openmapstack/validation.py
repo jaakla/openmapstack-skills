@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -15,6 +14,7 @@ from .checks import delivery as delivery_checks
 from .checks import integration as integration_checks
 from .checks import presentation as presentation_checks
 from . import delivery
+from .declarations import override_evidence_valid, present as _present
 from .integrity import (
     canonical_file_set_hash,
     declared_input_paths,
@@ -62,7 +62,6 @@ TARGET_ACTIONS = {
     "merge_features",
     "split_feature",
 }
-PLACEHOLDERS = {"", "todo", "tbd", "n/a", "none", "null", "...", "https://..."}
 
 
 @dataclass(frozen=True)
@@ -321,7 +320,7 @@ class _Validator:
             if action not in OVERRIDE_ACTIONS:
                 missing.append("supported action")
             evidence = override.get("evidence")
-            if not isinstance(evidence, list) or not evidence or any(_placeholder_evidence(item) for item in evidence):
+            if not override_evidence_valid(evidence):
                 missing.append("non-placeholder evidence")
             if action in TARGET_ACTIONS:
                 target = override.get("target")
@@ -1150,30 +1149,9 @@ def validate_project(value: str | Path, *, artifacts: bool = True) -> Validation
     return _Validator(project_file, project, artifacts=artifacts).run()
 
 
-def _present(value: object) -> bool:
-    if value is None:
-        return False
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-        return normalized not in PLACEHOLDERS and not normalized.startswith("todo-") and not normalized.startswith("todo ")
-    if isinstance(value, (list, dict, tuple, set)):
-        return bool(value)
-    if isinstance(value, (date, datetime)):
-        return True
-    return True
-
-
 def _unknown(value: object) -> bool:
     text = str(value).strip().lower()
     return any(marker in text for marker in ("unknown", "not stated", "unresolved", "tbd", "todo"))
-
-
-def _placeholder_evidence(value: object) -> bool:
-    if isinstance(value, dict):
-        candidate = value.get("value") or value.get("source") or value.get("title")
-    else:
-        candidate = value
-    return not _present(candidate)
 
 
 def _duplicates(values: Iterable[str]) -> list[str]:
