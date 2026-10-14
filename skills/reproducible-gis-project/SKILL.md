@@ -55,7 +55,9 @@ CLI setup and the worked example's runtime requirements.
    new run record, so a hand-patched pointer breaks it.
    Missing tools or unknown data semantics remain visible limitations. A stated
    intention to validate is not validation.
-5. Deliver the project, source/override policy, runtime instructions and
+5. Generate the findings artifact from pipeline results before output hashing;
+   keep the opening view focused and reveal supporting evidence on demand.
+   Deliver the project, source/override policy, runtime instructions and
    substantive method limitations together. Preserve the full presentation
    obligations for the selected targets in the workflow reference; a view alone is not
    the project.

@@ -1810,3 +1810,105 @@ class StateProtocolBrowserTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(_chromium_available(), "Playwright Chromium is not installed")
+class FocusedDisclosureBrowserTests(unittest.TestCase):
+    PAGE = '''<!doctype html><html data-oms-state="canonical"><meta name="viewport" content="width=device-width,initial-scale=1">
+<body><p data-oms-answer>One parcel qualifies.</p>
+<details data-oms-detail="evidence"><summary>Evidence and downloads</summary><p>Area: 20000 m².</p></details>
+</body></html>'''
+
+    def check(self, html=None, presentation=None, warnings=None):
+        workspace = make_workspace()
+        project = {"presentation": {"design_language": "openmapstack-views/0.2", **(presentation or {})},
+                   "warnings": warnings or []}
+        write_project(workspace, project)
+        write_dashboard(workspace, html or self.PAGE)
+        return visual.dashboard_loads_in_browser(workspace, settle_ms=50)
+
+    def assertCode(self, result, code):
+        self.assertEqual(result.status, "failed", result.detail)
+        self.assertIn(code, result.data.get("problem_codes", []), result.detail)
+
+    def test_focused_answer_and_closed_detail_pass_in_desktop_and_mobile(self):
+        result = self.check()
+        self.assertEqual(result.status, "passed", result.detail)
+
+    def test_missing_hidden_and_below_fold_answers_fail(self):
+        for change in ('data-removed-answer', 'data-oms-answer hidden', 'data-oms-answer style="margin-top:200vh"'):
+            with self.subTest(change=change):
+                self.assertCode(self.check(self.PAGE.replace('data-oms-answer', change)), 'opening_answer_absent')
+
+    def test_expanded_unlabelled_and_unreachable_details_fail(self):
+        self.assertCode(self.check(self.PAGE.replace('<details ', '<details open ')), 'detail_initially_expanded')
+        self.assertCode(self.check(self.PAGE.replace('<summary>Evidence and downloads</summary>', '')), 'detail_unreachable')
+        self.assertCode(self.check(self.PAGE.replace('<details ', '<details hidden ')), 'detail_unreachable')
+
+    def test_disclosure_that_changes_state_or_results_fails(self):
+        for script in ("document.documentElement.dataset.omsState='exploratory'",
+                       "document.querySelector('[data-oms-answer]').textContent='Two qualify.'"):
+            html = self.PAGE.replace('</body>', "<script>document.querySelector('details').addEventListener('toggle',()=>{"
+                                     + script + "});</script></body>")
+            self.assertCode(self.check(html), 'disclosure_changes_analysis')
+
+    def test_nested_disclosures_and_control_inside_closed_detail_are_reachable(self):
+        html = self.PAGE.replace('<p>Area: 20000 m².</p>', '''<details data-oms-detail="advanced"><summary>Threshold</summary>
+<input type="range" data-oms-control="threshold" min="10" max="30" value="20">
+</details>''').replace('</body>', '''<p data-oms-exploratory hidden>Exploratory <button data-oms-reset>Reset</button></p>
+<script>
+const control=document.querySelector('input');
+function render(){
+ const exploratory=control.value!=='20';
+ document.documentElement.dataset.omsState=exploratory?'exploratory':'canonical';
+ document.querySelector('[data-oms-exploratory]').hidden=!exploratory;
+ document.querySelector('[data-oms-answer]').textContent=control.value==='20'?'One parcel qualifies.':'Two qualify.';
+}
+control.addEventListener('input',render);
+document.querySelector('button').onclick=()=>{control.value='20';render()};
+</script></body>''')
+        result = self.check(html, presentation={"controls": {"filters": [{"id": "threshold", "canonical": 20}]}})
+        self.assertEqual(result.status, "passed", result.detail)
+
+    def test_warning_cannot_be_deferred_inside_detail(self):
+        warning = {"id": "W1", "statement": "Source incomplete"}
+        html = self.PAGE.replace('<p>Area: 20000 m².</p>', '<p data-testid="warnings">W1: Source incomplete</p>')
+        self.assertCode(self.check(html, warnings=[warning]), 'warning_not_visible')
+        html = self.PAGE.replace('<body>', '<body><p data-testid="warnings">W1: Source incomplete</p>')
+        result = self.check(html, warnings=[warning])
+        self.assertEqual(result.status, "passed", result.detail)
+
+    def test_existing_01_views_do_not_require_02_hooks(self):
+        result = self.check(self.PAGE.replace('data-oms-answer', 'data-old-answer').replace('data-oms-detail', 'data-old-detail'),
+                            presentation={"design_language": "openmapstack-views/0.1"})
+        self.assertEqual(result.status, "passed", result.detail)
+
+
+@unittest.skipUnless(_chromium_available(), "Playwright Chromium is not installed")
+class DeliveryDisclosureBrowserTests(unittest.TestCase):
+    def test_provenance_disclosure_is_reachable_but_hidden_or_missing_evidence_fails(self):
+        import subprocess
+        import sys
+        import yaml
+        from tests.test_delivery import example
+        from openmapstack.checks.delivery import web_view_loads
+
+        workspace = make_workspace()
+        path = example.create(workspace, focused=True)
+        subprocess.run([sys.executable, str(workspace / 'pipeline.py')], check=True, capture_output=True)
+        result = web_view_loads(workspace, 'dashboard')
+        self.assertEqual(result.status, 'passed', result.detail)
+        page = workspace / 'dashboard.html'
+        original = page.read_text()
+        for marker in ('data-removed-provenance', 'data-openmapstack-provenance hidden'):
+            page.write_text(original.replace('data-openmapstack-provenance', marker))
+            result = web_view_loads(workspace, 'dashboard')
+            self.assertEqual((result.status, result.data['code']), ('failed', 'delivery_view_unhealthy'))
+        page.write_text(original)
+        project = yaml.safe_load(path.read_text())
+        project['warnings'] = [{'id': 'W1', 'statement': 'Source incomplete'}]
+        write_project(workspace, project)
+        page.write_text(original.replace('</section>', '<p>Source incomplete</p></section>'))
+        result = web_view_loads(workspace, 'dashboard')
+        self.assertEqual(result.status, 'failed', result.detail)
+        self.assertIn('declared warning is not visible', result.detail)

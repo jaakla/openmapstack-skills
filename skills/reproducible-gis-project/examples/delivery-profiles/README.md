@@ -4,6 +4,11 @@ This offline example uses two explicitly synthetic rectangles, not authoritative
 parcel data. Their areas are 10,000 and 20,000 m² in EPSG:3301; the 15,000 m²
 threshold selects only `large`. One canonical pipeline creates the analytical
 table/geodata and only the selected views, then records evidence and run hashes.
+It also generates `findings.md`: readable findings with YAML frontmatter binding
+the question, scope, assumptions, validation and run to the cited CSV/geodata
+definitions and hashes. This artifact is generated for every delivery selection.
+The web view opens with the answer and a synthetic-data qualification; full
+results/downloads and methods/sources start behind labelled disclosures.
 
 With OpenMapStack installed, create a writable copy (default: built-in dashboard):
 
@@ -13,6 +18,12 @@ openmapstack run /tmp/oms-dashboard
 openmapstack inspect /tmp/oms-dashboard --json
 openmapstack verify /tmp/oms-dashboard --rerun
 ```
+
+Add `--focused` to `create.py` for the dashboard-only `openmapstack-views/0.2`
+demo. Its browser check also verifies a visible opening answer and closed,
+reachable supporting detail on desktop and mobile, with analytical state preserved.
+Playwright/Chromium are needed to execute those checks; missing capability is
+`not_testable`, never a pass. Existing 0.1 projects keep their previous contract.
 
 Other selections replace the default, rather than adding to it:
 

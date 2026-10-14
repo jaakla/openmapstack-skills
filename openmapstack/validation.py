@@ -158,6 +158,7 @@ class _Validator:
         self._integrations()
         self._presentation()
         self._views()
+        self._findings()
         self._warnings()
         self._runtime()
         self._validation_declaration()
@@ -511,6 +512,17 @@ class _Validator:
             for target in delivery.targets(self.project):
                 evidence = delivery_checks.evidence_matches(self.root, target["id"])
                 self.add(f"delivery.{target['id']}.evidence", evidence.status, evidence.detail, **evidence.data)
+
+    def _findings(self) -> None:
+        if "findings" not in self.project:
+            return
+        from . import findings
+
+        errors = findings.declaration_errors(self.root, self.project)
+        if not errors and self.artifacts:
+            errors = findings.artifact_errors(self.root, self.project)
+        self.add("findings.artifact", "failed" if errors else "passed",
+                 "; ".join(errors) if errors else "findings declaration/artifact is consistent")
 
     def _views(self) -> None:
         """Top-level ``views:`` names the project's pages (ADR 0007)."""

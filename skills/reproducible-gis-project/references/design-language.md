@@ -1,4 +1,4 @@
-# Design language for project views — `openmapstack-views/0.1`
+# Design language for project views — `openmapstack-views/0.2`
 
 A project's dashboard or report is written for its own analysis; no template fits
 every question. This language keeps those views recognisable and honest anyway. It
@@ -6,9 +6,11 @@ fixes the principles, the page archetypes, how a component is chosen, the names 
 the design tokens and a small state protocol the checks use. It leaves layout detail,
 colour values and new components to the project.
 
-A manifest opts in with `presentation.design_language: openmapstack-views/0.1`
+A new view opts in with `presentation.design_language: openmapstack-views/0.2`
 (project-spec.md s. 2.7, Pages and the design language). The checks then hold its
-pages to section 5. A view that does not declare a version is checked as before.
+pages to section 5 and the 0.2 additions below. Existing `openmapstack-views/0.1`
+views retain the shared protocol without the 0.2 additions. A view that does not
+declare a version is checked as before.
 
 ## 1. Principles
 
@@ -33,6 +35,51 @@ pages to section 5. A view that does not declare a version is checked as before.
   at least half the width, and every token has a light and a dark value.
 - **The reader's language.** Labels, dates and numbers follow the language and locale
   of the view, including decimal separators and thousands grouping.
+
+### Focused presentation — version 0.2
+
+Completeness belongs in the reproducible project and its findings artifact
+(`project-spec.md`, Findings); prominence in the view must serve the current
+question. Apply these defaults to new views unless the user asks for a broader
+overview:
+
+- Open with the requested answer and the figure needed to interpret it. Avoid
+  unrelated KPI cards, exhaustive tables and general background summaries. A map
+  stays primary when the question is spatial; charts are not required decoration.
+- Keep answer-changing limitations, unknowns and validation warnings visible
+  beside the answer. Put full assumptions, methods, sources and run evidence
+  behind a clearly labelled disclosure, accessible without chat.
+- Reveal detail in context: selecting a feature opens its evidence; “Compare
+  scenarios” opens relevant controls; “Results and downloads” opens a full table
+  or links to generated files. Collapsing a long report without deciding what the
+  reader needs does not meet this principle.
+- Start supporting source/context layers off unless needed to interpret the
+  answer. Keep required constraints and distinctions legible. Declare initial
+  layer visibility; switching visibility never implies a changed source dataset.
+- Offer controls for useful follow-up questions over computed results. Keep
+  advanced controls behind labelled disclosures; do not create a widget for every
+  internal pipeline parameter. Every declared control still needs to work, with
+  canonical/exploratory semantics unchanged.
+- Opening evidence, methods or downloads changes presentation only. Preserve the
+  selected scenario, filters, results and canonical/exploratory state. Optional
+  chat must not be the only route to supporting evidence.
+
+Version 0.2 adds two hooks to section 5:
+
+- `[data-oms-answer]` identifies the concise answer, readable in the initial
+  desktop and mobile viewport.
+- `<details data-oms-detail="evidence"><summary>Evidence and downloads</summary>…</details>`
+  marks supporting detail, initially closed. Use labelled native disclosures for
+  methods, full tables and advanced controls as appropriate; at least one provides
+  supporting evidence. These are presentation widgets, not analytical controls.
+  `[data-oms-result]` may identify additional result text that must remain stable
+  during disclosure.
+
+The browser check tests the initial answer, closed and reachable disclosures,
+and preservation of marked results and declared control/state values on expansion
+and collapse. It can reach analytical controls inside disclosures as well as tabs.
+These checks establish observable interaction behavior, not whether each sentence
+or chart earns its space; evaluate relevance against the actual user question.
 
 ## 2. Archetypes
 
@@ -172,5 +219,8 @@ one, so a published view is never failed by a rule written after it.
 
 ### Changelog
 
+- **0.2** — focused opening, progressive disclosure, artifact-backed detail and
+  browser checks for opening answers and presentation-only expansion. 0.1 views
+  keep their previous contract.
 - **0.1** — first version, drawn from the Tartu and NYC worked examples and an
   independent bridge-comparison project with a screening page and a report.

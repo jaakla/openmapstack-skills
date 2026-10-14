@@ -72,6 +72,15 @@ and 913 are visual-only mutations, proving that a dashboard which hides a
 manifest warning and one that ships no background map each fail in a real
 browser. Mutation detection is never included in contract or agent pass rates.
 
+Case `027-focused-findings` checks the pipeline-generated Markdown/frontmatter,
+its result evidence and clean rerun in fixture mode; visual mode additionally
+operates the focused 0.2 view on desktop/mobile. Mutations `950`–`952` reject
+stale evidence, a missing findings artifact and a stale run. Visual mutations
+`953`–`955` reject detail expanded at opening, an absent opening answer and
+disclosure that changes analytical state. Every mutation has a healthy control.
+These are deterministic artifact/interaction checks, not live-agent evidence that
+changed guidance produces relevant, concise dashboards.
+
 Every score type also publishes a `capability` block — assertions evaluated,
 how many were `not_testable`, and how many soft gates went unmet — and the
 runner says so on the same screen as the pass rate. A rate produced by an

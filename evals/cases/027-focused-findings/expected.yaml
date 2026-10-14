@@ -1,0 +1,41 @@
+id: 027-focused-findings
+case_type: positive
+modes:
+- fixture
+- visual
+score_types:
+  fixture: contract_ci
+  visual: integration_visual
+project_dir: project
+hard_gate: true
+fixture:
+  generator: '{python} {evals_dir}/fixtures/focused-findings/gen.py {project_dir}'
+  source_baseline: &id001
+  - source: ../../fixtures/delivery/parcels.geojson
+    destination: data/source/parcels.geojson
+  clean_rerun: {}
+visual:
+  generator: '{python} {evals_dir}/fixtures/focused-findings/gen.py {project_dir}'
+  source_baseline: *id001
+assertions:
+- assert: project.conforms_to_schema
+- assert: project.graph_resolves
+- assert: findings.artifact_matches
+- assert: validation.run_record_matches
+- assert: geodata.row_count
+  args:
+    path: $OUTPUT:candidates
+    equals: 1
+- assert: geodata.feature_present
+  args:
+    path: $OUTPUT:candidates
+    id_field: id
+    id: large
+- assert: rerun.clean_execution_succeeded
+  modes:
+  - fixture
+  args:
+    rerun_workspace: $RERUN
+- assert: visual.dashboard_loads_in_browser
+  modes:
+  - visual

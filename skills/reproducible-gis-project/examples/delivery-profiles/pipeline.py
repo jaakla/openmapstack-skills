@@ -18,6 +18,7 @@ from pathlib import Path
 import yaml
 
 from openmapstack.delivery import metadata_json, targets, write_evidence
+from openmapstack.findings import write_findings
 from openmapstack.integrity import canonical_file_set_hash, declared_input_paths, declared_output_paths, file_inventory
 from openmapstack.checks.delivery import evidence_matches
 
@@ -44,6 +45,9 @@ def main() -> None:
         writer.writerow(["id", "area_m2"])
         writer.writerows((f["properties"]["id"], f["properties"]["area_m2"]) for f in chosen)
 
+    ids = ", ".join(f["properties"]["id"] for f in chosen)
+    answer = (f"{len(chosen)} qualifying parcel(s): {ids}." if chosen else "No parcels qualify.")
+    answer += f" Minimum area: {minimum} m²."
     completed = datetime.datetime.now(datetime.timezone.utc).isoformat()
     for target in targets(project):
         path = ROOT / project["outputs"][target["output"]]["path"]
@@ -51,7 +55,7 @@ def main() -> None:
         metadata = metadata_json(ROOT, project, target)
         providers = "; ".join(s["provider"] for s in project["sources"].values())
         limitations = " ".join(a["statement"] + " " + a["rationale"] for a in project["interpretation"]["assumptions"])
-        warnings = " ".join(w["statement"] for w in project.get("warnings") or [])
+        warnings = " ".join(str(w.get("id", "")) + " " + w["statement"] for w in project.get("warnings") or [])
         provenance = f"{providers}; synthetic-v1; CC0; EPSG:3301. {limitations} {warnings}"
         credits = (f'Generated with AI using the free OpenMapStack toolkit. Analysis made: {completed}. '
                    f'Author: {project["project"]["author"]["name"]} ({project["project"]["author"]["email"]}).')
@@ -76,13 +80,26 @@ def main() -> None:
             # an installed Observable adapter or publication to its service.
             rows = "".join(f'<tr><td>{html.escape(f["properties"]["id"])}</td><td>{f["properties"]["area_m2"]}</td></tr>' for f in chosen)
             path.write_text(f'''<!doctype html><html lang="en"><meta charset="utf-8"><title>Delivery profile example</title>
-<body><h1>Synthetic parcel selection</h1><p>Minimum area: {minimum} m². This is a contract demonstration.</p>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {{color-scheme:light dark; --oms-bg:#fafaf8; --oms-text:#202522; --oms-surface:#fff; --oms-text-muted:#505951; --oms-border:#c9d0ca}}
+@media(prefers-color-scheme:dark) {{:root {{--oms-bg:#141916; --oms-text:#edf1ed; --oms-surface:#202822; --oms-text-muted:#bac5bc; --oms-border:#566458}}}}
+body {{font:1rem/1.6 system-ui,sans-serif; background:var(--oms-bg); color:var(--oms-text); max-width:44rem; margin:3rem auto; padding:0 1.25rem}}
+h1 {{font-size:1.4rem}} details {{border-top:1px solid var(--oms-border); padding:1rem 0}} summary {{cursor:pointer}} a {{color:inherit}}
+table {{width:100%; text-align:right}} th:first-child,td:first-child {{text-align:left}}
+</style>
+<body><h1>Synthetic parcel selection</h1><p data-oms-answer>{html.escape(answer)}</p>
+<p>This is a synthetic contract demonstration, not a factual parcel study.</p>
+<p data-testid="warnings">{html.escape(warnings)}</p>
+<details data-oms-detail="evidence"><summary>Results and downloads</summary>
 <table><thead><tr><th>Parcel</th><th>Area (m²)</th></tr></thead><tbody>{rows}</tbody></table>
-<a href="data/derived/areas.csv">Download CSV</a>
-<section data-openmapstack-provenance><h2>Provenance and limitations</h2>
+<a href="data/derived/areas.csv">Download CSV</a> · <a href="findings.md">Read findings</a>
+</details>
+<details data-oms-detail="methods"><summary>Methods and sources</summary>
+<section data-openmapstack-provenance data-testid="provenance"><h2>Provenance and limitations</h2>
 <p>Generated with AI using the free <a href="{html.escape(project["project"]["generated_with"]["url"], quote=True)}">OpenMapStack toolkit</a>.</p>
 <p>Analysis made: {completed}</p><p>Author: <a href="mailto:{html.escape(project["project"]["author"]["email"], quote=True)}">{html.escape(project["project"]["author"]["name"])}</a></p>
-<p>{html.escape(provenance)}</p></section>
+<p>{html.escape(provenance)}</p></section></details>
 <script id="openmapstack-view" type="application/json">{metadata}</script></body></html>''')
         if target.get("mode") == "hosted":
             build = ROOT / project["outputs"][target["build"]]["path"]
@@ -101,11 +118,15 @@ def main() -> None:
     status = "failed" if any(c["status"] == "failed" for c in checks) else "passed"
     run_id = started.strftime("run-%Y%m%d-%H%M%S")
     inputs = declared_input_paths(ROOT, project)
+    report = {"run_id": run_id, "status": status, "checks": checks}
+    write_findings(ROOT, project, report=report, scope="all two synthetic source rectangles",
+                   findings=[{"id": "qualifying_parcels", "statement": answer,
+                              "evidence": ["candidates", "areas"],
+                              "limitations": ["Synthetic input; not a real cadastral assessment."]}])
     outputs = declared_output_paths(project)
     inputs_hash = canonical_file_set_hash(ROOT, inputs)
     outputs_hash = canonical_file_set_hash(ROOT, outputs)
-    report = {"run_id": run_id, "status": status, "checks": checks,
-              "inputs_hash": inputs_hash, "outputs_hash": outputs_hash}
+    report.update(inputs_hash=inputs_hash, outputs_hash=outputs_hash)
     (ROOT / "validation").mkdir(exist_ok=True)
     (ROOT / "validation/latest-report.json").write_text(json.dumps(report, indent=2) + "\n")
     record = {"run_id": run_id, "status": status, "started_at": started.isoformat(),

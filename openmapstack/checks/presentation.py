@@ -12,7 +12,8 @@ from . import AssertionResult, failed, get_in, load_project_yaml, not_testable, 
 # Design-language versions a manifest may declare (ADR 0007), each with the
 # page archetypes it defines. A project that declares none keeps the checks
 # that predate the language.
-DESIGN_LANGUAGES = {"openmapstack-views/0.1": ("workspace", "report")}
+DESIGN_LANGUAGES = {version: ("workspace", "report") for version in
+                    ("openmapstack-views/0.1", "openmapstack-views/0.2")}
 CONTROL_KINDS = ("filters", "scenarios", "variants")
 CONTROL_EFFECTS = ("exploratory", "published")
 

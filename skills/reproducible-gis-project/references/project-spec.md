@@ -911,7 +911,8 @@ views:
 ```
 
 `presentation.design_language` names the version of the design language the pages
-follow (`openmapstack-views/0.1`; see `design-language.md`). Declaring it opts the
+follow (new views: `openmapstack-views/0.2`; existing 0.1 views retain their
+contract; see `design-language.md`). Declaring it opts the
 pages into that version's checks: every declared control is found and operated
 through the version's state protocol, on whichever tab it sits. A project that does
 not declare it keeps the checks that predate the language.
@@ -1129,7 +1130,9 @@ A static screenshot answers one question; the reader almost always has the next 
 (*what if the threshold were 3 km? what does that scenario override actually cost?*).
 Offer that as controls — a sidebar organised into tabs of collapsible sections, an
 on/off control per layer group, and a live control for each parameter the analysis
-turns on. Keep the interactivity small and legible: reconfiguring the published rule,
+turns on when it serves a useful follow-up question; internal parameters need no
+widget. In 0.2 views, advanced controls start behind labelled disclosures. Keep
+the interactivity small and legible: reconfiguring the published rule,
 not a second analysis engine in the browser.
 
 Four rules keep a reconfigurable view honest:
@@ -1175,6 +1178,57 @@ Four rules keep a reconfigurable view honest:
 
   `presentation.controls_match_pipeline` checks that the canonical option exists and
   that every listed column is a declared column of that output.
+
+### Findings
+
+New material projects generate `findings.md` from accepted pipeline results,
+independently of the selected delivery target. Existing projects without a
+`findings` declaration retain their previous checks. Bind it as a normal hashed
+output:
+
+```yaml
+findings:
+  schema: openmapstack-findings/v1
+  output: findings
+outputs:
+  findings:
+    path: findings.md
+    kind: document
+    format: Markdown
+    generated_by: render_findings   # a real declared processing step
+```
+
+`openmapstack.findings.write_findings(root, project, report=report, scope=scope,
+findings=items)` writes Markdown with YAML frontmatter, using the current
+execution's run ID and report before final output hashing. Each item has a unique
+`id`, a pipeline-authored `statement`, `evidence` (analytical output keys), and
+optional `limitations` (strings). Statements and numbers must come from the
+pipeline's results, not an independent calculation or an invented narrative.
+An empty result is a finding supported by the empty output, not a missing answer.
+The optional `validation_report` argument selects a different project-relative
+report path; the default is `validation/latest-report.json`.
+
+The frontmatter follows the packaged `findings-v1.schema.json`: question,
+project/run identity, scope, validation statuses, assumptions/warnings, structured
+findings, and cited output definitions (including declared column units and
+meaning) with file hashes. It binds analytical context through a SHA-256 of the
+shared delivery semantics. The generated body links to the same evidence,
+`project.yaml` and the validation report relative to the Markdown file.
+Keep substantive method/uncertainty qualifications in the findings and supporting
+result definitions; a short dashboard is not a reason to discard them.
+
+`openmapstack validate` and `verify` check a declared artifact against the current
+run, report, analytical context, output definitions/hashes and rendered body.
+`findings.artifact_matches` exposes the same check to evals. This proves consistency
+and provenance, not the truth of a statement: domain checks or independent oracles
+must still establish analytical correctness. The run inventory includes the whole
+Markdown file. Do not hash the run record/report into the findings: that creates
+a circular dependency. Generate again on every canonical execution.
+
+The view offers findings/results downloads in its supporting-evidence disclosure;
+selected output tables can also render there. A full table or every internal
+pipeline result need not occupy the initial screen. Embedded chat is optional
+future work, not a requirement of this format.
 
 ### Tabular results
 

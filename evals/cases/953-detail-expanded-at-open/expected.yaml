@@ -1,0 +1,20 @@
+id: 953-detail-expanded-at-open
+case_type: mutation
+modes:
+- visual
+score_types:
+  visual: mutation_tests
+project_dir: project
+hard_gate: true
+mutation:
+  control_generator: '{python} {evals_dir}/fixtures/focused-findings/gen.py {project_dir}'
+visual:
+  generator: '{python} {evals_dir}/fixtures/focused-findings/gen.py {project_dir}
+    --break expanded'
+  source_baseline:
+  - source: ../../fixtures/delivery/parcels.geojson
+    destination: data/source/parcels.geojson
+assertions:
+- assert: visual.dashboard_loads_in_browser
+  expect: failed
+  expect_code: detail_initially_expanded

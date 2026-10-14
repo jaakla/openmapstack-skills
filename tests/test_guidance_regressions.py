@@ -388,8 +388,9 @@ class TableOutputGuidanceTests(GuidanceCase):
     def test_the_delivery_rules_make_tables_outputs(self) -> None:
         for path, text in _shipped_copies("project-workflow.md").items():
             with self.subTest(path=path):
-                self.assertShips(text, "Tables are outputs too.", path)
-                self.assertShips(text, "`downloads: [csv, xlsx]`", path)
+                self.assertShips(text, "Declare non-spatial results with `kind: table`", path)
+                self.assertShips(text, "write every declared format", path)
+                self.assertShips(text, "rather than displaying every output", path)
 
     def test_the_contract_defines_tables_downloads_and_variants(self) -> None:
         for path, text in _shipped_copies("project-spec.md").items():

@@ -539,6 +539,13 @@
         "steps": {"type": "array", "minItems": 1}
       }
     },
+    "findings": {
+      "type": "object", "required": ["schema", "output"], "additionalProperties": false,
+      "properties": {
+        "schema": {"const": "openmapstack-findings/v1"},
+        "output": {"type": "string", "minLength": 1}
+      }
+    },
     "outputs": {
       "type": "object",
       "minProperties": 1,
@@ -585,7 +592,7 @@
     "presentation": {
       "type": "object",
       "properties": {
-        "design_language": {"enum": ["openmapstack-views/0.1"]},
+        "design_language": {"enum": ["openmapstack-views/0.1", "openmapstack-views/0.2"]},
         "tables": {
           "type": "array",
           "items": {
