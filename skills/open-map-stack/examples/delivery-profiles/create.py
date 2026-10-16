@@ -26,7 +26,7 @@ def create(destination: Path, kinds: list[str] | None = None, *, hosted: bool = 
         target = destination / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(HERE / name, target)
-    project["outputs"] = {k: v for k, v in project["outputs"].items() if v.get("kind") != "document"}
+    project["outputs"] = {k: v for k, v in project["outputs"].items() if v.get("kind") != "document" or k == "findings"}
     project["delivery"]["targets"] = []
     for kind in kinds:
         view = "project.qgz" if kind == "qgis" else f"{kind}.html"

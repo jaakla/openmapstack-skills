@@ -4,6 +4,9 @@ This offline example uses two explicitly synthetic rectangles, not authoritative
 parcel data. Their areas are 10,000 and 20,000 m² in EPSG:3301; the 15,000 m²
 threshold selects only `large`. One canonical pipeline creates the analytical
 table/geodata and only the selected views, then records evidence and run hashes.
+It also generates `findings.md`: readable findings with YAML frontmatter binding
+the question, scope, assumptions, validation and run to the cited CSV/geodata
+definitions and hashes. This artifact is generated for every delivery selection.
 
 With OpenMapStack installed, create a writable copy (default: built-in dashboard):
 

@@ -442,6 +442,16 @@ state. Projects without a language version keep their existing plan: selected
 web delivery targets receive smoke checks, and selected map-primary dashboards
 also receive the existing visual check.
 
+New material projects also generate `findings.md` from pipeline results before
+output hashing. Its readable Markdown and YAML frontmatter share findings,
+question/scope, run identity, assumptions, validation status and cited output
+definitions/hashes. CSV/Parquet/geodata remain the underlying results; the view
+need not display them all. `validate` and `verify` check a declared findings
+artifact for stale/missing evidence and consistency with the current run.
+Try the [offline example](examples/delivery-profiles/README.md);
+see [the findings contract](skills/open-map-stack/references/project-spec.md#findings)
+for the writer API and format. Embedded chat is a separate optional enhancement.
+
 See [the applicability reference](docs/verify-applicability.md) for the exact
 plan conditions, dependencies, current regression evidence, and deliberate
 exclusions. Explicit delivery targets add input-bound view evidence and web

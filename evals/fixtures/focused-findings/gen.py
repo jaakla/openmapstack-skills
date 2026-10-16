@@ -1,0 +1,38 @@
+"""Pipeline findings controls and isolated mutations; no model calls."""
+
+import argparse
+import importlib.util
+import subprocess
+import sys
+from pathlib import Path
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT))
+spec = importlib.util.spec_from_file_location("focused_example", ROOT / "examples/delivery-profiles/create.py")
+example = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(example)
+
+
+def generate(root: Path, mutation: str | None = None) -> None:
+    example.create(root)
+    subprocess.run([sys.executable, str(root / "pipeline.py")], check=True)
+    if mutation == "evidence":
+        (root / "data/derived/areas.csv").write_text("id,area_m2\nlarge,999999\n")
+    elif mutation == "missing":
+        (root / "findings.md").unlink()
+    elif mutation == "run":
+        findings = root / "findings.md"
+        header, body = findings.read_text()[4:].split("\n---\n", 1)
+        metadata = yaml.safe_load(header)
+        metadata["run_id"] = "run-stale"
+        findings.write_text("---\n" + yaml.safe_dump(metadata, sort_keys=False) + "---\n" + body)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("destination", type=Path)
+    parser.add_argument("--break", dest="mutation", choices=["evidence", "missing", "run"])
+    args = parser.parse_args()
+    generate(args.destination, args.mutation)

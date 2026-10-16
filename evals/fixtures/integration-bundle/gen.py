@@ -28,6 +28,7 @@ def generate(root: Path, mutation: str | None) -> None:
     script = root / "pipeline.py"
     # The canonical synthetic pipeline creates the entire bundle and its receipts.
     source = script.read_text().replace('href="data/derived/areas.csv"', 'href="../../data/derived/areas.csv"')
+    source = source.replace('href="findings.md"', 'href="../../findings.md"')
     source = source.replace('</body></html>', '<script src="app.js"></script></body></html>')
     source = source.replace('    write_evidence(ROOT, project)', '''    bundle = ROOT / "views/observable"
     (bundle / "app.js").write_text("window.openmapstackBundleFixture = true;")

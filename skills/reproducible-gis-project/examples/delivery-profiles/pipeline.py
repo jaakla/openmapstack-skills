@@ -18,6 +18,7 @@ from pathlib import Path
 import yaml
 
 from openmapstack.delivery import metadata_json, targets, write_evidence
+from openmapstack.findings import write_findings
 from openmapstack.integrity import canonical_file_set_hash, declared_input_paths, declared_output_paths, file_inventory
 from openmapstack.checks.delivery import evidence_matches
 
@@ -44,6 +45,9 @@ def main() -> None:
         writer.writerow(["id", "area_m2"])
         writer.writerows((f["properties"]["id"], f["properties"]["area_m2"]) for f in chosen)
 
+    ids = ", ".join(f["properties"]["id"] for f in chosen)
+    answer = (f"{len(chosen)} qualifying parcel(s): {ids}." if chosen else "No parcels qualify.")
+    answer += f" Minimum area: {minimum} m²."
     completed = datetime.datetime.now(datetime.timezone.utc).isoformat()
     for target in targets(project):
         path = ROOT / project["outputs"][target["output"]]["path"]
@@ -78,7 +82,7 @@ def main() -> None:
             path.write_text(f'''<!doctype html><html lang="en"><meta charset="utf-8"><title>Delivery profile example</title>
 <body><h1>Synthetic parcel selection</h1><p>Minimum area: {minimum} m². This is a contract demonstration.</p>
 <table><thead><tr><th>Parcel</th><th>Area (m²)</th></tr></thead><tbody>{rows}</tbody></table>
-<a href="data/derived/areas.csv">Download CSV</a>
+<a href="data/derived/areas.csv">Download CSV</a> · <a href="findings.md">Read findings</a>
 <section data-openmapstack-provenance><h2>Provenance and limitations</h2>
 <p>Generated with AI using the free <a href="{html.escape(project["project"]["generated_with"]["url"], quote=True)}">OpenMapStack toolkit</a>.</p>
 <p>Analysis made: {completed}</p><p>Author: <a href="mailto:{html.escape(project["project"]["author"]["email"], quote=True)}">{html.escape(project["project"]["author"]["name"])}</a></p>
@@ -101,11 +105,15 @@ def main() -> None:
     status = "failed" if any(c["status"] == "failed" for c in checks) else "passed"
     run_id = started.strftime("run-%Y%m%d-%H%M%S")
     inputs = declared_input_paths(ROOT, project)
+    report = {"run_id": run_id, "status": status, "checks": checks}
+    write_findings(ROOT, project, report=report, scope="all two synthetic source rectangles",
+                   findings=[{"id": "qualifying_parcels", "statement": answer,
+                              "evidence": ["candidates", "areas"],
+                              "limitations": ["Synthetic input; not a real cadastral assessment."]}])
     outputs = declared_output_paths(project)
     inputs_hash = canonical_file_set_hash(ROOT, inputs)
     outputs_hash = canonical_file_set_hash(ROOT, outputs)
-    report = {"run_id": run_id, "status": status, "checks": checks,
-              "inputs_hash": inputs_hash, "outputs_hash": outputs_hash}
+    report.update(inputs_hash=inputs_hash, outputs_hash=outputs_hash)
     (ROOT / "validation").mkdir(exist_ok=True)
     (ROOT / "validation/latest-report.json").write_text(json.dumps(report, indent=2) + "\n")
     record = {"run_id": run_id, "status": status, "started_at": started.isoformat(),

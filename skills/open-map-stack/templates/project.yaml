@@ -139,7 +139,16 @@ processing:
     #   expression: "area_m2 >= 20000"
     #   output: candidates
 
+findings:
+  schema: openmapstack-findings/v1
+  output: findings
+
 outputs:
+  findings:
+    path: findings.md
+    kind: document
+    format: Markdown
+    generated_by: render_delivery
   dashboard:
     path: dashboard.html
     format: HTML
