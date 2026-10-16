@@ -6,6 +6,7 @@
   <meta name="description" content="OpenMapStack: inspectable, reproducible geospatial work with NYC and Tartu examples in standalone HTML and Observable Framework.">
   <title>OpenMapStack skills· Geospatial AI work you can inspect and rerun</title>
   <link rel="stylesheet" href="./styles.css">
+  <script src="./installation.js" defer></script>
 </head>
 <body>
   <div class="page-shell">
@@ -18,7 +19,7 @@
       </a>
       <nav aria-label="Main navigation">
         <a href="https://github.com/jaakla/openmapstack-skills">GitHub</a>
-        <a href="https://github.com/jaakla/openmapstack-skills#openmapstack">Install</a>
+        <a href="#install">Install</a>
       </nav>
     </header>
 
@@ -27,7 +28,10 @@
         <div class="hero-copy">
           <h1 id="intro-title">Guardrails for the Geospatial AI work.</h1>
           <p>OpenMapStack skills helps AI coding agents produce reproducible GIS work with pinned sources, explicit assumptions, validation, and maps you can explore.</p>
-          <a class="primary-link" href="#examples">Explore the examples <span aria-hidden="true">→</span></a>
+          <div class="hero-actions">
+            <a class="primary-link" href="#install">Install the skills <span aria-hidden="true">→</span></a>
+            <a class="text-link" href="#examples">Explore the examples <span aria-hidden="true">→</span></a>
+          </div>
         </div>
         <div class="hero-art" aria-hidden="true">
           <svg viewBox="0 0 630 360" preserveAspectRatio="xMidYMid slice" focusable="false">
@@ -45,6 +49,101 @@
             </g>
             <g fill="none" stroke="#78a9ae" stroke-width="1.4" opacity=".55"><path d="M83 49v18m-9-9h18M464 49v18m-9-9h18M548 291v18m-9-9h18M296 286v18m-9-9h18"/></g>
           </svg>
+        </div>
+      </section>
+
+      <section class="installation" id="install" aria-labelledby="install-title">
+        <h2 id="install-title">Bring OpenMapStack to your AI client</h2>
+        <p class="section-intro"><code>open-map-stack</code> covers the full GIS workflow. Specialist skills offer a narrower scope.</p>
+        <div class="install-tabs" role="tablist" aria-label="AI client installation" hidden>
+          <button type="button" id="tab-chatgpt" role="tab" aria-controls="install-chatgpt">ChatGPT</button>
+          <button type="button" id="tab-claude" role="tab" aria-controls="install-claude">Claude</button>
+          <button type="button" id="tab-codex" role="tab" aria-controls="install-codex">Codex</button>
+          <button type="button" id="tab-cursor" role="tab" aria-controls="install-cursor">Cursor</button>
+        </div>
+        <div class="install-panels">
+          <article class="install-panel" id="install-chatgpt" aria-labelledby="chatgpt-title">
+            <p class="install-label">ChatGPT desktop · Work with local files</p>
+            <h3 id="chatgpt-title">Ask the Skill Installer</h3>
+            <ol class="install-steps">
+              <li>Open the ChatGPT desktop app and start a Work conversation with access to your local project.</li>
+              <li>Paste this request into the conversation:</li>
+            </ol>
+            <div class="code-block">
+              <pre><code id="command-chatgpt">Use the Skill Installer to install open-map-stack from
+https://github.com/jaakla/openmapstack-skills/tree/main/skills/open-map-stack
+Include the complete skill folder with its references and templates.</code></pre>
+              <button type="button" class="copy-button" data-copy="command-chatgpt" hidden>Copy request</button>
+            </div>
+            <p>Open <strong>Skills</strong> in the sidebar to confirm the skill is available, then start a new conversation and try the prompt below.</p>
+            <p class="install-note">This path uses standalone skills in the desktop app. For ChatGPT on the web or mobile, reusable skills are distributed through plugins; this repository currently provides direct skill folders and a Claude plugin.</p>
+            <a class="text-link" href="https://learn.chatgpt.com/docs/build-skills">ChatGPT skills documentation <span aria-hidden="true">↗</span></a>
+          </article>
+          <article class="install-panel" id="install-claude" aria-labelledby="claude-title">
+            <p class="install-label">Claude Code · Claude web and desktop</p>
+            <h3 id="claude-title">Install the Claude Code plugin</h3>
+            <p>Run these slash commands inside Claude Code to install all four skills:</p>
+            <div class="code-block">
+              <pre><code id="command-claude">/plugin marketplace add jaakla/openmapstack-skills
+/plugin install open-map-stack@open-map-stack</code></pre>
+              <button type="button" class="copy-button" data-copy="command-claude" hidden>Copy commands</button>
+            </div>
+            <p>Start a new session and ask Claude to use <code>open-map-stack</code>.</p>
+            <details class="install-details">
+              <summary>Using Claude on the web or desktop?</summary>
+              <ol class="install-steps">
+                <li>Enable <strong>Code execution and file creation</strong> in <strong>Settings → Capabilities</strong>. Managed workspaces may need an administrator to enable skills.</li>
+                <li>Download <a href="./skills/open-map-stack.zip" download>open-map-stack.zip</a>.</li>
+                <li>Open <strong>Customize → Skills → + → Create skill → Upload a skill</strong>, upload the ZIP, and enable it.</li>
+              </ol>
+              <p>The specialist guidance is already included in <code>open-map-stack.zip</code>. These separate skills offer a narrower scope; upload only the ZIPs you want to use:</p>
+              <ul class="skill-downloads">
+                <li><a href="./skills/reproducible-gis-project.zip" download>reproducible-gis-project.zip</a></li>
+                <li><a href="./skills/geospatial-data-discovery.zip" download>geospatial-data-discovery.zip</a></li>
+                <li><a href="./skills/spatial-sql.zip" download>spatial-sql.zip</a></li>
+              </ul>
+            </details>
+            <div class="example-links">
+              <a class="text-link" href="https://code.claude.com/docs/en/discover-plugins">Claude Code plugins <span aria-hidden="true">↗</span></a>
+              <a class="text-link" href="https://support.claude.com/en/articles/12512180-use-skills-in-claude">Claude skill uploads <span aria-hidden="true">↗</span></a>
+            </div>
+          </article>
+          <article class="install-panel" id="install-codex" aria-labelledby="codex-title">
+            <p class="install-label">Codex · Local CLI and IDE extension</p>
+            <h3 id="codex-title">Install from your terminal</h3>
+            <p>With Git and Node.js (including <code>npx</code>) installed, run this in your project directory:</p>
+            <div class="code-block">
+              <pre><code id="command-codex">npx skills add jaakla/openmapstack-skills --skill open-map-stack -a codex -y</code></pre>
+              <button type="button" class="copy-button" data-copy="command-codex" hidden>Copy command</button>
+            </div>
+            <p>Add <code>-g</code> to use the skill across your local projects.</p>
+            <p>Open Codex in the project and select <code>$open-map-stack</code>. If it does not appear, restart Codex.</p>
+            <a class="text-link" href="https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills">Codex skills documentation <span aria-hidden="true">↗</span></a>
+          </article>
+          <article class="install-panel" id="install-cursor" aria-labelledby="cursor-title">
+            <p class="install-label">Cursor · Local Agent</p>
+            <h3 id="cursor-title">Install in your Cursor project</h3>
+            <p>Open the project's integrated terminal. With Git and Node.js (including <code>npx</code>) installed, run:</p>
+            <div class="code-block">
+              <pre><code id="command-cursor">npx skills add jaakla/openmapstack-skills --skill open-map-stack -a cursor -y</code></pre>
+              <button type="button" class="copy-button" data-copy="command-cursor" hidden>Copy command</button>
+            </div>
+            <p>Add <code>-g</code> to use the skill across your local projects.</p>
+            <p>Start a new Agent chat and ask it to use <code>open-map-stack</code>. For Cloud Agents, commit project skills to the repository; global skills stay on your machine.</p>
+            <a class="text-link" href="https://cursor.com/docs/skills">Cursor skills documentation <span aria-hidden="true">↗</span></a>
+          </article>
+        </div>
+        <p class="copy-status" role="status" aria-live="polite"></p>
+        <div class="install-next">
+          <div>
+            <h3>Try your first request</h3>
+            <p class="first-request">“Use open-map-stack to find authoritative building footprints for Tartu, Estonia. Check coverage and licensing, and propose a reproducible analysis workflow.”</p>
+          </div>
+          <div>
+            <h3>Full workflow or focused task</h3>
+            <p><code>open-map-stack</code> includes all the guidance. <code>reproducible-gis-project</code> handles manifests and reruns; <code>geospatial-data-discovery</code> finds sources; <code>spatial-sql</code> works with a chosen SQL engine.</p>
+            <p>The Python CLI is a separate setup for executing and validating projects. See the <a href="https://github.com/jaakla/openmapstack-skills#install">full installation guide</a> for CLI setup, manual installs, and version pinning.</p>
+          </div>
         </div>
       </section>
 

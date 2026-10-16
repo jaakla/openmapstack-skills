@@ -147,6 +147,10 @@ def build(destination: Path, *, observable_projects: Path | None = None) -> None
         directory.mkdir(parents=True, exist_ok=True)
     shutil.copy2(SITE / "index.html", destination / "index.html")
     shutil.copy2(SITE / "styles.css", destination / "styles.css")
+    shutil.copy2(SITE / "installation.js", destination / "installation.js")
+    # Reuse the upload-package builder so site downloads retain full skill assets.
+    subprocess.run(["bash", str(ROOT / "scripts/build-claude-skill-package.sh"),
+                    "--out", str(destination / "skills")], check=True)
     # Public renderer code only: trial data arrives from LangSmith in-browser.
     renderer = destination / "langsmith"
     renderer.mkdir(exist_ok=True)

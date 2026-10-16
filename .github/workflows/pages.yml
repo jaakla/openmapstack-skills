@@ -8,13 +8,20 @@ on:
       - .github/workflows/pages.yml
       - site/**
       - scripts/build_project_pages.py
+      - scripts/build-claude-skill-package.sh
+      - scripts/sync_skill_assets.py
+      - collection.json
+      - skills/**
+      - templates/**
+      - openmapstack/schemas/**
       - tests/test_project_pages.py
       - tests/test_observable_cities.py
       - examples/observable-cities/**
+      - examples/delivery-profiles/**
+      - examples/established-stack/**
       - examples/nyc-private-mobility/dashboard.html
       - examples/nyc-private-mobility/data/derived/**
-      - examples/tartu-development/dashboard.html
-      - examples/tartu-development/project.yaml
+      - examples/tartu-development/**
       - examples/nyc-private-mobility/project.yaml
 
 concurrency:

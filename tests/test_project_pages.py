@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 from xml.etree import ElementTree
+from zipfile import ZipFile
 
 from scripts.build_project_pages import ROOT, build
 
@@ -33,6 +37,11 @@ class ProjectPagesTests(unittest.TestCase):
             self.assertIn("Waiting for LangSmith", renderer)
             self.assertIn('href="./demos/nyc/"', homepage)
             self.assertIn('href="./demos/tartu/"', homepage)
+            self.assertIn('href="#install"', homepage)
+            self.assertIn('src="./installation.js"', homepage)
+            for client in ("chatgpt", "codex", "cursor", "claude"):
+                self.assertIn(f'aria-controls="install-{client}"', homepage)
+                self.assertIn(f'id="install-{client}"', homepage)
             for city in ("nyc", "tartu"):
                 self.assertIn(f'href="./demos/{city}-observable/"', homepage)
                 bundle = projects / city / "views/observable"
@@ -41,12 +50,28 @@ class ProjectPagesTests(unittest.TestCase):
                         self.assertEqual(source.read_bytes(),
                             (output / "demos" / (city + "-observable") / source.relative_to(bundle)).read_bytes())
             for relative in (
-                "styles.css", "assets/nyc-preview.svg", "assets/tartu-preview.svg",
+                "styles.css", "installation.js", "assets/nyc-preview.svg", "assets/tartu-preview.svg",
                 "demos/nyc/index.html", "demos/tartu/index.html",
                 "demos/nyc/data/derived/hub-candidates.geojson",
                 "demos/nyc/data/derived/zone-metrics.geojson", ".nojekyll",
             ):
                 self.assertTrue((output / relative).exists(), relative)
+            self.assertEqual((ROOT / "site/installation.js").read_bytes(),
+                             (output / "installation.js").read_bytes())
+            collection = json.loads((ROOT / "collection.json").read_text())
+            for skill in collection["skills"]:
+                name = skill["name"]
+                self.assertIn(f'href="./skills/{name}.zip"', homepage)
+                source = ROOT / skill["path"]
+                with ZipFile(output / "skills" / f"{name}.zip") as archive:
+                    self.assertIn(f"{name}/SKILL.md", archive.namelist())
+                    self.assertTrue(any(path.startswith(f"{name}/references/")
+                                        for path in archive.namelist()))
+                    # Downloads carry the actual skill payload, including supporting files.
+                    for path in archive.namelist():
+                        self.assertTrue(path.startswith(f"{name}/"), path)
+                        self.assertEqual(archive.read(path),
+                                         (source.parent / path).read_bytes())
             for example, slug in (("nyc-private-mobility", "nyc"),
                                   ("tartu-development", "tartu")):
                 self.assertEqual((ROOT / "examples" / example / "dashboard.html").read_bytes(),
@@ -70,6 +95,15 @@ class ProjectPagesTests(unittest.TestCase):
             (projects / "tartu/views/observable/index.html").unlink()
             with self.assertRaisesRegex(ValueError, "missing tartu Observable bundle"):
                 build(root / "site", observable_projects=projects)
+
+    def test_build_fails_if_skill_packaging_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            projects = self.bundles(root)
+            with patch("scripts.build_project_pages.subprocess.run",
+                       side_effect=subprocess.CalledProcessError(1, "skill-package")):
+                with self.assertRaises(subprocess.CalledProcessError):
+                    build(root / "site", observable_projects=projects)
 
     def test_rebuild_removes_obsolete_observable_assets(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
