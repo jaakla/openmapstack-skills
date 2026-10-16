@@ -64,9 +64,13 @@ for skill in skills:
     print(f"{target}  ({len(files)} files, {target.stat().st_size // 1024} KB)")
 EOF
 
-rev="$(git -C "$ROOT" rev-parse --short HEAD)"
-if [[ -n "$(git -C "$ROOT" status --porcelain -- skills collection.json)" ]]; then
-  echo "Built from $rev plus uncommitted changes under skills/."
+if command -v git >/dev/null 2>&1 && [[ "$(git -C "$ROOT" rev-parse --is-inside-work-tree 2>/dev/null)" == true ]]; then
+  rev="$(git -C "$ROOT" rev-parse --short HEAD)"
+  if [[ -n "$(git -C "$ROOT" status --porcelain -- skills collection.json)" ]]; then
+    echo "Built from $rev plus uncommitted changes under skills/."
+  else
+    echo "Built from $rev."
+  fi
 else
-  echo "Built from $rev."
+  echo "Built from source directory."
 fi

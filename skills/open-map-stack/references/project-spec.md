@@ -1182,6 +1182,75 @@ Four rules keep a reconfigurable view honest:
   `presentation.controls_match_pipeline` checks that the canonical option exists and
   that every listed column is a declared column of that output.
 
+### Findings
+
+New material projects generate `findings.md` from accepted pipeline results,
+independently of the selected delivery target. Existing projects without a
+`findings` declaration retain their previous checks. Bind it as a normal hashed
+output:
+
+```yaml
+findings:
+  schema: openmapstack-findings/v1
+  output: findings
+outputs:
+  findings:
+    path: findings.md
+    kind: document
+    format: Markdown
+    generated_by: render_findings   # a real declared processing step
+```
+
+`openmapstack.findings.write_findings(root, project, report=report, scope=scope,
+findings=items)` writes Markdown with YAML frontmatter, using the current
+execution's run ID and report before final output hashing. Each item has a unique
+`id`, a pipeline-authored `statement`, `evidence` (analytical output keys), and
+optional `limitations` (strings). Statements and numbers must come from the
+pipeline's results, not an independent calculation or an invented narrative.
+An empty result is a finding supported by the empty output, not a missing answer.
+The optional `validation_report` argument selects a different project-relative
+report path; the default is `validation/latest-report.json`.
+
+The frontmatter follows the packaged `findings-v1.schema.json`: question,
+project/run identity, scope, validation statuses, assumptions/warnings, structured
+findings, and cited output definitions (including declared column units and
+meaning) with file hashes. Each evidence entry contains its `definition` and a
+`files` inventory of project-relative `path`/`sha256` pairs. This inventory must
+cover the primary output and every declared table download, exactly once:
+
+```yaml
+evidence:
+  areas:
+    definition: {path: data/derived/areas.csv, kind: table, downloads: [csv, xlsx]}
+    files:
+      - {path: data/derived/areas.csv, sha256: 'sha256:…'}
+      - {path: data/derived/areas.xlsx, sha256: 'sha256:…'}
+```
+
+The writer expands downloads using the same paths as the run inventory and
+rejects missing or unsafe evidence files. Validation rejects changed/missing
+download files and omitted, duplicated or extra inventory paths. Markdown links
+to every inventoried file. Findings bind analytical context through a SHA-256 of the
+shared delivery semantics. The generated body links to the same evidence,
+`project.yaml` and the validation report relative to the Markdown file.
+Keep substantive method/uncertainty qualifications in the findings and supporting
+result definitions; a short dashboard is not a reason to discard them.
+
+`openmapstack validate` and `verify` check a declared artifact against the current
+run, report, analytical context, output definitions/hashes and rendered body.
+`findings.artifact_matches` exposes the same check to evals. This proves consistency
+and provenance, not the truth of a statement: domain checks or independent oracles
+must still establish analytical correctness. The run inventory includes the whole
+Markdown file. Do not hash the run record/report into the findings: that creates
+a circular dependency. Generate again on every canonical execution.
+
+Selected delivery surfaces link to the findings artifact and its underlying
+results. For QGIS delivery, expose the findings in project metadata links and
+record the project-relative location in the abstract, so a moved project folder
+retains the reference. Do not embed an absolute local path or a findings hash in
+the view metadata; the view is generated before findings and final output hashes.
+Embedded chat is optional future work, not a requirement of this format.
+
 ### Tabular results
 
 A table output shown in the view is a working table, not a picture of one:

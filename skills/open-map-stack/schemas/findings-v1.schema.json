@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmapstack.org/schemas/findings-v1.schema.json",
+  "type": "object",
+  "required": ["schema", "project_id", "question", "run_id", "scope", "validation", "validation_report", "context_sha256", "assumptions", "warnings", "findings", "evidence"],
+  "additionalProperties": false,
+  "$defs": {
+    "text": {"type": "string", "pattern": "\\S"},
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "properties": {
+    "schema": {"const": "openmapstack-findings/v1"},
+    "project_id": {"$ref": "#/$defs/text"},
+    "question": {"$ref": "#/$defs/text"},
+    "run_id": {"$ref": "#/$defs/text"},
+    "scope": {"$ref": "#/$defs/text"},
+    "context_sha256": {"$ref": "#/$defs/hash"},
+    "validation_report": {"$ref": "#/$defs/text"},
+    "validation": {
+      "type": "object", "required": ["status", "checks"], "additionalProperties": false,
+      "properties": {
+        "status": {"enum": ["passed", "warning", "failed", "not_testable"]},
+        "checks": {"type": "array", "items": {
+          "type": "object", "required": ["id", "status"], "additionalProperties": false,
+          "properties": {"id": {"$ref": "#/$defs/text"}, "status": {"enum": ["passed", "warning", "failed", "not_testable"]}}
+        }}
+      }
+    },
+    "assumptions": {"type": "array", "items": {"type": "object", "required": ["statement", "rationale"], "properties": {
+      "statement": {"$ref": "#/$defs/text"}, "rationale": {"$ref": "#/$defs/text"}
+    }}},
+    "warnings": {"type": "array", "items": {"type": "object", "required": ["statement"], "properties": {"statement": {"$ref": "#/$defs/text"}}}},
+    "findings": {"type": "array", "minItems": 1, "items": {
+      "type": "object", "required": ["id", "statement", "evidence"], "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$"},
+        "statement": {"$ref": "#/$defs/text"},
+        "evidence": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/text"}},
+        "limitations": {"type": "array", "items": {"$ref": "#/$defs/text"}}
+      }
+    }},
+    "evidence": {"type": "object", "minProperties": 1, "additionalProperties": {
+      "type": "object", "required": ["definition", "files"], "additionalProperties": false,
+      "properties": {
+        "definition": {"type": "object", "required": ["path"], "properties": {"path": {"$ref": "#/$defs/text"}}},
+        "files": {"type": "array", "minItems": 1, "items": {
+          "type": "object", "required": ["path", "sha256"], "additionalProperties": false,
+          "properties": {"path": {"$ref": "#/$defs/text"}, "sha256": {"$ref": "#/$defs/hash"}}
+        }}
+      }
+    }}
+  }
+}

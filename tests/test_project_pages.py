@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -12,6 +15,73 @@ from xml.etree import ElementTree
 from zipfile import ZipFile
 
 from scripts.build_project_pages import ROOT, build
+
+
+class SkillPackageFooterTests(unittest.TestCase):
+    def setUp(self) -> None:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.source = self.root / "source"
+        (self.source / "scripts").mkdir(parents=True)
+        for name in ("build-claude-skill-package.sh", "sync_skill_assets.py"):
+            shutil.copy2(ROOT / "scripts" / name, self.source / "scripts" / name)
+        skill = self.source / "skills/demo"
+        (skill / "references").mkdir(parents=True)
+        (skill / "SKILL.md").write_text("---\nname: demo\ndescription: Package fixture.\n---\n")
+        (skill / "references/notes.md").write_text("Complete package payload.\n")
+        (self.source / "collection.json").write_text(json.dumps({"skills": [
+            {"name": "demo", "path": "skills/demo", "shared_references": []},
+        ]}))
+
+    def package(self, *, with_git: bool) -> str:
+        # Expose only the script's runtime tools, with python3 pinned to the
+        # interpreter running the tests. This reproduces the offline image's
+        # missing Git without relying on the host's PATH.
+        binaries = self.root / ("with-git" if with_git else "without-git")
+        binaries.mkdir(exist_ok=True)
+        for name in ("bash", "dirname", "mkdir", *(["git"] if with_git else [])):
+            target = shutil.which(name)
+            self.assertIsNotNone(target, name)
+            link = binaries / name
+            if not link.exists():
+                link.symlink_to(target)
+        (binaries / "python3").unlink(missing_ok=True)
+        (binaries / "python3").symlink_to(sys.executable)
+        self.assertEqual(shutil.which("git", path=str(binaries)) is not None, with_git)
+        result = subprocess.run(
+            [str(binaries / "bash"), str(self.source / "scripts/build-claude-skill-package.sh"),
+             "--out", str(self.root / "packages")],
+            env={**os.environ, "PATH": str(binaries)}, capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stderr, "")
+        with ZipFile(self.root / "packages/demo.zip") as archive:
+            self.assertEqual(set(archive.namelist()), {"demo/SKILL.md", "demo/references/notes.md"})
+            for name in archive.namelist():
+                self.assertEqual(archive.read(name), (self.source / "skills" / name).read_bytes())
+        return result.stdout.splitlines()[-1]
+
+    def test_packaging_succeeds_without_git_on_path(self) -> None:
+        self.assertEqual(self.package(with_git=False), "Built from source directory.")
+
+    @unittest.skipUnless(shutil.which("git"), "checkout detection requires Git")
+    def test_packaging_succeeds_outside_a_git_checkout(self) -> None:
+        self.assertEqual(self.package(with_git=True), "Built from source directory.")
+
+    @unittest.skipUnless(shutil.which("git"), "checkout footer requires Git")
+    def test_checkout_footer_preserves_revision_and_dirty_status(self) -> None:
+        def git(*args: str) -> str:
+            return subprocess.check_output(["git", "-C", str(self.source), *args], text=True).strip()
+
+        git("init", "-q")
+        git("add", "skills", "collection.json")
+        git("-c", "user.name=Package fixture", "-c", "user.email=fixture@example.invalid",
+            "commit", "-qm", "Package fixture")
+        revision = git("rev-parse", "--short", "HEAD")
+        self.assertEqual(self.package(with_git=True), f"Built from {revision}.")
+        (self.source / "skills/demo/references/notes.md").write_text("Changed package payload.\n")
+        self.assertEqual(self.package(with_git=True), f"Built from {revision} plus uncommitted changes under skills/.")
 
 
 class ProjectPagesTests(unittest.TestCase):

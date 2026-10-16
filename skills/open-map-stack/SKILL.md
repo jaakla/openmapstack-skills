@@ -56,8 +56,9 @@ a passing `validate` alone is not enough. The canonical pipeline must produce
 every file under `data/derived`, every selected deliverable, the run record, and the
 manifest's `runs.latest` and `project.status`, never a one-off script or a
 hand edit: a rerun writes a new run record, so a hand-patched pointer breaks it. Missing
-validation capability is `not_testable`, never an implicit pass. Follow the
-referenced workflow's presentation obligations for the selected targets.
+validation capability is `not_testable`, never an implicit pass. Generate durable
+Markdown findings from pipeline results. Follow the referenced workflow's
+presentation obligations for the selected targets.
 Record `delivery.schema: openmapstack-delivery/v1` for new projects, defaulting
 to the built-in dashboard. Respect explicit external-only or combined delivery;
 QGIS and Observable are optional targets. Existing manifests without `delivery`
