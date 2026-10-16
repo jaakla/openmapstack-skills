@@ -63,6 +63,8 @@ class NycDashboardTests(unittest.TestCase):
         manifest = copy.deepcopy(self.manifest)
         manifest["project"]["title"] = '<script>alert("title")</script>'
         payload = {"text": '</script><script>alert("data")</script>&'}
+        from openmapstack.credits import credit_payload
+        payload["credits"] = credit_payload(manifest)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "dashboard-template.html").write_text((EXAMPLE / "dashboard-template.html").read_text())

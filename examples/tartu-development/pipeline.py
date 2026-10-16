@@ -47,6 +47,7 @@ import pyproj
 import yaml
 
 from openmapstack.findings import write_findings
+from openmapstack.credits import credit_payload, html_credits, write_qgis_credits
 from openmapstack.integrity import declared_output_paths
 
 ROOT = Path(__file__).resolve().parent
@@ -1351,8 +1352,8 @@ def build_findings() -> list[dict]:
     }]
 
 
-def finalize_run(report: dict, manifest: list[dict], started_at: str, *, findings: list[dict] | None = None) -> None:
-    completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+def finalize_run(report: dict, manifest: list[dict], started_at: str, *, findings: list[dict] | None = None, completed_at: str | None = None) -> None:
+    completed_at = completed_at or datetime.datetime.now(datetime.timezone.utc).isoformat()
     input_paths = [
         path
         for directory in (SOURCE, OVERRIDES)
@@ -1460,13 +1461,18 @@ def _poi_class_counts() -> dict[str, int]:
     return counts
 
 
-def write_qgis_project(con: duckdb.DuckDBPyConnection) -> Path:
+def write_qgis_project(con: duckdb.DuckDBPyConnection, *, completed_at: str | None = None) -> Path:
     """Invoke the optional desktop adapter for this combined worked example."""
     import qgis_delivery
-    return qgis_delivery.write_qgis_project(con, ROOT=ROOT, PROJECT=PROJECT,
+    path = qgis_delivery.write_qgis_project(con, ROOT=ROOT, PROJECT=PROJECT,
         ANALYSIS_CRS=ANALYSIS_CRS, STORAGE_CRS=STORAGE_CRS,
         SUITABILITY_TIERS=SUITABILITY_TIERS,
-        scenario_inactive_count=_poi_class_counts().get("scenario_inactive", 0))
+                                          scenario_inactive_count=_poi_class_counts().get("scenario_inactive", 0))
+    payload = credit_payload(PROJECT, completed_at=completed_at)
+    write_qgis_credits(path, payload)
+    if (ROOT / "project.qgs").is_file():
+        write_qgis_credits(ROOT / "project.qgs", payload)
+    return path
 
 
 # ------------------------------ STEP 9: dashboard ---------------------------
@@ -1673,6 +1679,7 @@ def render_dashboard(con: duckdb.DuckDBPyConnection, validation: dict, manifest:
         layer_groups.append({**group, **binding})
 
     view = {
+        "credits": credit_payload(PROJECT),
         "project": {
             "id": pr["id"],
             "title": pr["title"],
@@ -1747,6 +1754,7 @@ def render_dashboard(con: duckdb.DuckDBPyConnection, validation: dict, manifest:
     html = (ROOT / pres["dashboard"]["template"]).read_text(encoding="utf-8")
     for token, value in {
         "__TITLE__": pr["title"],
+        "__CREDITS__": html_credits(view["credits"]),
         "__VIEW__": embed(view, round_coords=False),
         "__CANDIDATES__": embed(final_gj),
         "__ROADS__": embed(roads_gj),
@@ -1794,9 +1802,10 @@ def main(argv: list[str] | None = None) -> None:
     con.load_extension("spatial")
 
     override_results = run_pipeline(con, cadastre_gpkg, roads_geojson, pois_geojson)
-    write_qgis_project(con)
+    completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    write_qgis_project(con, completed_at=completed_at)
     validation = write_validation(con, run_id, override_results)
-    finalize_run(validation, manifest, started_at, findings=build_findings())
+    finalize_run(validation, manifest, started_at, findings=build_findings(), completed_at=completed_at)
     render_dashboard(con, validation, manifest)
     log.info("E2E full run complete!")
 

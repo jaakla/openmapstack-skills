@@ -85,7 +85,7 @@ export function table(city, features) {
 }
 
 export function provenance(info) {
-  const section = document.createElement("section"); section.setAttribute("data-openmapstack-provenance", "");
+  const section = document.createElement("div");
   const title = document.createElement("h2"); title.textContent = "Provenance & limitations"; section.append(title);
   for (const text of info.notes) { const p = document.createElement("p"); p.textContent = text; section.append(p); }
   return section;

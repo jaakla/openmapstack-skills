@@ -5,7 +5,7 @@ question: Identify potentially developable parcels meeting accessibility, educat
   catchment (25-minute walking distance to city-owned kindergarten and school), and
   land-use criteria in Tartu, and show them on an interactive map with education POIs
   and catchment areas.
-run_id: run-20261016-145543
+run_id: run-20261016-195411
 scope: Tartu linn land screening using pinned source snapshots captured 2026-09-28
 validation:
   status: warning
@@ -208,7 +208,7 @@ evidence:
 
 Identify potentially developable parcels meeting accessibility, education catchment (25-minute walking distance to city-owned kindergarten and school), and land-use criteria in Tartu, and show them on an interactive map with education POIs and catchment areas.
 
-Scope: Tartu linn land screening using pinned source snapshots captured 2026-09-28. Run: `run-20261016-145543`. Validation: **warning**.
+Scope: Tartu linn land screening using pinned source snapshots captured 2026-09-28. Run: `run-20261016-195411`. Validation: **warning**.
 
 ## screened_parcels_and_education_tiers
 

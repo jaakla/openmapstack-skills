@@ -207,7 +207,7 @@ project:
     url: https://example.org/mari     # optional author link
   generated_with:          # constant for this toolkit; shown in the credits header
     tool: OpenMapStack
-    url: https://github.com/jaakla/openmapstack-skills
+    url: https://jaakla.github.io/openmapstack-skills/
 
 interpretation:
   objective: >             # analyst interpretation of the objective
@@ -1282,11 +1282,48 @@ At the project level offer: `Sources`, `Assumptions`, `Manual edits`, `Processin
 
 The provenance tab of a dashboard, or the provenance section of a report, opens with a credits block before any other provenance content. Write it in the view's language and render all three lines:
 
-1. **Generated with:** a statement that the analysis was made with AI using the free OpenMapStack toolkit, linked to `project.generated_with.url` (https://github.com/jaakla/openmapstack-skills).
+1. **Generated with:** a statement that the analysis was made with AI using the free OpenMapStack toolkit, linked to `project.generated_with.url` (https://jaakla.github.io/openmapstack-skills/).
 2. **Analysis made:** the date and time of `runs.latest.completed_at`, shown with its UTC offset. Fall back to `project.updated_at` only for a view of a project that has no canonical run yet, and label it as such.
 3. **Author:** `project.author.name`, with `project.author.email` as a `mailto:` link and `project.author.url`, when present, as a link.
 
-An Estonian view, for example, reads: "Valmistatud AI abil, kasutades tasuta vahendit OpenMapStack" (linked), "Analüüs tehtud: 25.08.2026 08:42 (UTC+03:00)" and "Autor: Mari Maasikas, mari.maasikas@example.org". The values come from the manifest and the run record, never from the chat, so a canonical rerun refreshes the timestamp without a hand edit.
+Labels and surrounding prose may be translated. Keep the visible timestamp in
+ISO 8601 with its offset, e.g. `2026-08-25T08:42:00+03:00`, also in a `<time
+datetime="…" data-oms-credit="analysis">` element. The values come from the
+manifest and run record, never from chat or a separate rendering clock.
+
+**Renderer contract.** `openmapstack.credits.credit_payload(project,
+completed_at=completed_at)` prepares the identity and time;
+`html_credits(payload)` returns a static `data-openmapstack-credits` section with
+linked `toolkit`, `author` and optional `author-url` fields identified by
+`data-oms-credit`. Put it first in provenance, including in a labeled tab that
+the reader can open. Do not put the only copy in JSON, a script, a template or
+an invisible element. Dynamic controls must preserve that block. For QGIS,
+`write_qgis_credits(qgz_path, payload)` adds desktop-visible author, abstract and
+metadata links while retaining findings/provenance and other archive members.
+
+Capture one completion instant after analytical work and use it for every view,
+`runs.latest.completed_at` and the run record. Render declared view outputs before
+final output hashing. Legacy HTML snapshots that embed finalized aggregate run
+hashes are rendered afterward and remain outside their own hash set; do not add
+such a snapshot to the hash it embeds. Never embed a view's own final hash in it.
+A canonical rerun refreshes credits; QGIS archives containing that run time may
+change bytes even when their analytical layers reproduce.
+
+**Checks and legacy compatibility.** Both fields are optional in the v1 schema
+for compatibility, but their declared shapes are validated. A project with
+neither field gets warning `credits_legacy_missing`, not a new hard failure or
+an implicit pass. Declaring either opts into the complete pair: non-placeholder
+name, email and safe absolute HTTP(S) URLs. New projects and updated deliveries
+must declare both; the legacy warning is not an authoring exemption.
+`credits.declaration_valid` checks identity and an offset-bearing canonical time
+(or the explicitly labeled `project.updated_at` fallback only when no run exists).
+`credits.rendered_matches` checks every selected HTML/QGIS surface and declared
+report page, or known legacy view paths, against those values. Partial metadata, missing/hidden credits,
+stale times and mismatched links fail. Preflight checks declarations; full
+`validate` and `verify` also inspect artifacts. Geodata-only projects have no
+rendered surface to inspect. These offline checks establish field/link
+consistency, not remote URL availability, translation quality or CSS/JS pixel
+visibility; inspect the opened provenance tab in browser/native QA as well.
 
 ---
 

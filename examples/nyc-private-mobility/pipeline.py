@@ -39,6 +39,7 @@ import yaml
 
 from openmapstack.checks.spatial import connect_spatial
 from openmapstack.findings import write_findings
+from openmapstack.credits import credit_payload, html_credits, qgis_credits
 from openmapstack.integrity import (
     canonical_file_set_hash,
     declared_input_paths,
@@ -811,6 +812,7 @@ def build_findings(manifest: dict) -> list[dict]:
 def dashboard_payload(manifest: dict, checks: list[dict], status: str, run_id: str, fleet_summary: dict) -> dict:
     return {
         "title": manifest["project"]["title"], "run_id": run_id, "status": status,
+        "credits": credit_payload(manifest),
         "zones": json.loads((DERIVED / "zone-metrics.geojson").read_text()),
         "hubs": json.loads((DERIVED / "existing-hubs.geojson").read_text()),
         "fleet_points": json.loads((DERIVED / "fleet-positions.geojson").read_text()),
@@ -830,12 +832,14 @@ def dashboard_payload(manifest: dict, checks: list[dict], status: str, run_id: s
 
 
 def write_dashboard(manifest: dict, checks: list[dict], status: str, run_id: str, fleet_summary: dict) -> None:
-    payload = json.dumps(dashboard_payload(manifest, checks, status, run_id, fleet_summary),
+    data = dashboard_payload(manifest, checks, status, run_id, fleet_summary)
+    payload = json.dumps(data,
                          ensure_ascii=False, allow_nan=False, separators=(",", ":"))
     payload = payload.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
     template = (ROOT / "dashboard-template.html").read_text(encoding="utf-8")
     rendered = template.replace("__TITLE__", html.escape(manifest["project"]["title"]))
     rendered = rendered.replace("__DATA__", payload)
+    rendered = rendered.replace("__CREDITS__", html_credits(data["credits"]))
     (ROOT / "dashboard.html").write_text(rendered, encoding="utf-8")
     log("wrote dashboard.html")
 
@@ -1167,7 +1171,7 @@ def _canonical_xml(xml: str) -> str:
     return QGIS_DOCTYPE + ET.tostring(root, encoding="unicode") + "\n"
 
 
-def write_qgis_project(manifest: dict) -> None:
+def write_qgis_project(manifest: dict, *, completed_at: str | None = None) -> None:
     """Write project.qgs and project.qgz, preferring QGIS's own writer.
 
     Generated rather than hand-authored so the datasources cannot drift from
@@ -1197,6 +1201,7 @@ def write_qgis_project(manifest: dict) -> None:
                       description="Pipeline-generated findings, relative to this QGIS project",
                       format="Markdown", mimeType="text/markdown")
         xml = ET.tostring(document, encoding="unicode")
+    xml = qgis_credits(xml, credit_payload(manifest, completed_at=completed_at))
     xml = _strip_volatile(xml)
     (ROOT / "project.qgs").write_text(xml, encoding="utf-8")
     # A fixed timestamp keeps the archive byte-identical across reruns, which
@@ -1272,12 +1277,13 @@ def main() -> int:
         candidates.sort(key=lambda item: (-item["final_score"], item["zone_id"]))
         write_outputs(duck, metrics, candidates)
         fleet_summary = write_hub_context(duck, snapshots)
-        write_qgis_project(manifest)
         checks = run_checks(duck, snapshots, metrics, candidates, manifest["scoring"]["eligibility"])
+        # One analysis completion instant feeds both views and run evidence.
+        completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        write_qgis_project(manifest, completed_at=completed_at)
         checks.append(validate_qgis_project(manifest))
     finally:
         duck.close()
-    completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
     status, run_id = write_run_evidence(manifest, checks, snapshots, started_at, completed_at)
     write_dashboard(manifest, checks, status, run_id, fleet_summary)
     for check in checks:

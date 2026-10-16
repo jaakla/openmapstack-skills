@@ -6,8 +6,14 @@ project:
     fleet and hub coverage and account demand, and show ranked candidate zones on an interactive map while
     respecting all database access restrictions.
   created_at: '2026-09-17T00:00:00Z'
-  updated_at: '2026-10-16T14:55:42.712532+00:00'
+  updated_at: '2026-10-16T19:54:11.446916+00:00'
   status: validated
+  author:
+    name: OpenMapStack example maintainers
+    email: examples@example.invalid
+  generated_with:
+    tool: OpenMapStack
+    url: https://jaakla.github.io/openmapstack-skills/
 interpretation:
   objective: Rank NYC H3 resolution-8 cells for tenant alpha using pinned read-only captures of the provisioned
     PostGIS, BigQuery and MotherDuck demo databases. Spatially assign BigQuery trip pickups and MotherDuck
@@ -568,14 +574,14 @@ validation:
     expression: trips_total >= 30 AND hub_distance_m >= 1500 AND fleet_present <= 6
 runs:
   latest:
-    id: run-20261016-145542
-    started_at: '2026-10-16T14:55:42.111336+00:00'
-    completed_at: '2026-10-16T14:55:42.712532+00:00'
+    id: run-20261016-195411
+    started_at: '2026-10-16T19:54:10.872660+00:00'
+    completed_at: '2026-10-16T19:54:11.446916+00:00'
     status: passed
-    inputs_hash: sha256:777a35250e17256907fa819d0136d53d991e3727e4da4c0f7aed933efb52312d
-    outputs_hash: sha256:aec3ec21fcc7c33fe37c9e6b510cf4d36be0cef9a01afa205099268f1624eee9
+    inputs_hash: sha256:63b50048cbc8dcc2c95acf994a30e8ed09451c08bf62ecc65bca186b1e1c1737
+    outputs_hash: sha256:b08561cbc56bab5af393c41200d0b3cfacff6ab568dcb40724cde56032f31296
     record:
-      path: runs/run-20261016-145542.json
+      path: runs/run-20261016-195411.json
     validation_report:
       path: validation/latest-report.json
 runtime:

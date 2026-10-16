@@ -23,15 +23,14 @@ project:
     email: examples@example.invalid
   generated_with:
     tool: OpenMapStack
-    url: https://github.com/jaakla/openmapstack-skills
+    url: https://jaakla.github.io/openmapstack-skills/
 interpretation:
-  objective: Run one spatial method through selected external tools with reproducible
-    delivery.
+  objective: Run one spatial method through selected external tools with reproducible delivery.
   assumptions:
   - id: synthetic
     statement: Synthetic polygons in EPSG:3301 include a hole.
-    rationale: A hand-derived net-area oracle verifies the spatial method; this is
-      not a factual parcel study.
+    rationale: A hand-derived net-area oracle verifies the spatial method; this is not a factual parcel
+      study.
 sources:
   parcels:
     role: authoritative_input
@@ -66,8 +65,7 @@ sources:
     license:
       name: CC0-1.0
       url: https://creativecommons.org/publicdomain/zero/1.0/
-    rationale: Explicitly synthetic input permits an offline hand-derivable correctness
-      oracle.
+    rationale: Explicitly synthetic input permits an offline hand-derivable correctness oracle.
 overrides: []
 processing:
   analysis_crs: EPSG:3301
@@ -136,8 +134,7 @@ outputs:
     kind: table
     generated_by: export
     role: exploratory_companion
-    note: Precomputed canonical and exploratory thresholds; canonical remains the
-      accepted result.
+    note: Precomputed canonical and exploratory thresholds; canonical remains the accepted result.
     table:
       key:
       - scenario
@@ -258,7 +255,7 @@ integrations:
     role: presentation
     definition: delivery.py
     steps: []
-    sha256: sha256:080ab57439250eeb263fd8a144f4e2fa75dce9358be1641ae32dc3fb7c55b026
+    sha256: sha256:66f9ab7a4760b57bb1d70411732232662303046bcdce6c5ec5fe83785e585f3f
     steps_sha256: sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
   evidence: integration_evidence
   run_evidence: tool_run

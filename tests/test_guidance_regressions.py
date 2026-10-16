@@ -348,16 +348,16 @@ class CreditsHeaderGuidanceTests(GuidanceCase):
     Dashboards shipped without them gave readers no way to tell who made the
     analysis, when it ran, or which tool produced it."""
 
-    TOOLKIT_URL = "https://github.com/jaakla/openmapstack-skills"
+    TOOLKIT_URL = "https://jaakla.github.io/openmapstack-skills/"
 
     def test_the_delivery_rules_require_the_credits_block(self) -> None:
         for path, text in _shipped_copies("project-workflow.md").items():
             with self.subTest(path=path):
                 self.assertShips(text, "Credit the toolkit, the author and the run.", path)
-                self.assertShips(text, self.TOOLKIT_URL, path)
+                self.assertShips(text, "`project.generated_with`", path)
                 self.assertShips(text, "`runs.latest.completed_at`", path)
                 self.assertShips(text, "`project.author`", path)
-                self.assertShips(text, "never invent one", path)
+                self.assertShips(text, "Never invent an identity", path)
 
     def test_the_contract_defines_the_credits_header(self) -> None:
         for path, text in _shipped_copies("project-spec.md").items():

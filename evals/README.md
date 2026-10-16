@@ -80,6 +80,12 @@ a changed or missing secondary download while leaving the primary CSV intact. Ev
 mutation has a healthy control. These are deterministic artifact checks,
 not live-agent evidence that changed guidance produces correct findings.
 
+Cases `028-delivery-credits` and `029-legacy-credits` exercise complete HTML/QGIS
+credits and the explicit legacy warning. Mutations `958`–`961` reject partial
+metadata, missing credits, stale analysis time and a broken author link. Every
+mutation has a healthy control. They prove deterministic declaration/rendering
+checks, not live-agent adherence or remote URL availability.
+
 Every score type also publishes a `capability` block — assertions evaluated,
 how many were `not_testable`, and how many soft gates went unmet — and the
 runner says so on the same screen as the pass rate. A rate produced by an

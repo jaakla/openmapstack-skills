@@ -6,7 +6,7 @@ project:
     walking distance to city-owned kindergarten and school), and land-use criteria in Tartu, and show
     them on an interactive map with education POIs and catchment areas.
   created_at: 2026-08-25 08:15:03+03:00
-  updated_at: '2026-10-16T14:57:01.301525+00:00'
+  updated_at: '2026-10-16T19:55:28.194085+00:00'
   status: warning
   aoi:
     bbox:
@@ -15,6 +15,12 @@ project:
     - 685000
     - 6500000
     crs: EPSG:3301
+  author:
+    name: OpenMapStack example maintainers
+    email: examples@example.invalid
+  generated_with:
+    tool: OpenMapStack
+    url: https://jaakla.github.io/openmapstack-skills/
 interpretation:
   objective: Find cadastral parcels in Tartu satisfying stated land-use, minimum size (>= 2 ha), primary
     road accessibility (<= 2000 m), and overlap with 25-minute pedestrian-network catchments of verified
@@ -781,14 +787,14 @@ runtime:
     osmium: 4.3.1
 runs:
   latest:
-    id: run-20261016-145543
-    started_at: '2026-10-16T14:55:43.090961+00:00'
-    completed_at: '2026-10-16T14:57:01.301525+00:00'
+    id: run-20261016-195411
+    started_at: '2026-10-16T19:54:11.811454+00:00'
+    completed_at: '2026-10-16T19:55:28.194085+00:00'
     status: warning
-    inputs_hash: sha256:abeae946360c9a767bc11c8ecc1b21637e871458f756f7718d7d19eed1a37c9e
-    outputs_hash: sha256:b46fd97652468b512e970d69d743723f0ed38e6e5d128a3c1503e8bf3d3921fa
+    inputs_hash: sha256:c4d022b589f1c0201ff329aaaf8f392553ca2ba0f713bfbb97154566f51204ea
+    outputs_hash: sha256:e653b5b750c6e44c91beaa531a025965ed570117527c6aa9d4db1297292d2a2c
     record:
-      path: runs/run-20261016-145543.json
+      path: runs/run-20261016-195411.json
     validation_report:
       path: validation/latest-report.json
 findings:

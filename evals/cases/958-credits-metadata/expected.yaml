@@ -1,0 +1,19 @@
+id: 958-credits-metadata
+case_type: mutation
+modes:
+- fixture
+score_types:
+  fixture: mutation_tests
+project_dir: project
+hard_gate: true
+mutation:
+  control_generator: '{python} {evals_dir}/fixtures/credits/gen.py {project_dir}'
+fixture:
+  generator: '{python} {evals_dir}/fixtures/credits/gen.py {project_dir} --break metadata'
+  source_baseline:
+  - source: ../../fixtures/delivery/parcels.geojson
+    destination: data/source/parcels.geojson
+assertions:
+- assert: credits.declaration_valid
+  expect: failed
+  expect_code: credits_declaration_invalid

@@ -177,3 +177,14 @@ skill copies contain the updated manifest, scripts and template; generated
 findings and evidence must be produced by running a writable copy.
 For updates that claim current sources, use `--refresh` as described above;
 replaying these historical inputs is not a freshness check.
+
+## Delivery credits
+
+The manifest declares the example maintainers and OpenMapStack toolkit. The
+Provenance tab and QGIS metadata expose their links and the canonical analysis
+completion time, including its UTC offset. The pipeline captures one completion
+instant for the views and run record. Declared outputs are hashed in run evidence;
+the HTML snapshot then embeds that evidence without adding itself to its own hash
+set. A new run refreshes credits while preserving findings and source provenance.
+`openmapstack validate` and `verify` inspect the delivered values and links;
+preflight checks the declaration before artifacts exist.

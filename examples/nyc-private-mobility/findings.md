@@ -4,7 +4,7 @@ project_id: nyc-private-mobility
 question: Identify promising NYC areas for a new operations/charging hub for tenant
   alpha, using current fleet and hub coverage and account demand, and show ranked
   candidate zones on an interactive map while respecting all database access restrictions.
-run_id: run-20261016-145542
+run_id: run-20261016-195411
 scope: pinned tenant-alpha synthetic business snapshots on the NYC H3 resolution-8
   study grid
 validation:
@@ -138,7 +138,7 @@ evidence:
       generated_by: combine_metrics
     files:
     - path: data/derived/zone-metrics.geojson
-      sha256: sha256:15d1cdc1cd75ac1869ffb5caf9cd188f72ae85a34a9af652e21ee17e41bdb286
+      sha256: sha256:05bdbff38c709c61f41be0baf741e6a675fe0949c8ea1a11068f10518ebb4b2f
   zone_metrics_parquet:
     definition:
       path: data/derived/zone-metrics.parquet
@@ -146,13 +146,13 @@ evidence:
       generated_by: combine_metrics
     files:
     - path: data/derived/zone-metrics.parquet
-      sha256: sha256:9681185017fb0ab4de09d88c4295544db507c284f36b7600b3bd8a03eedeec62
+      sha256: sha256:c0446a17f36e8ca3365a18332d686f340086197a4bf4df7d34d19d41927e7a1d
 ---
 # Findings
 
 Identify promising NYC areas for a new operations/charging hub for tenant alpha, using current fleet and hub coverage and account demand, and show ranked candidate zones on an interactive map while respecting all database access restrictions.
 
-Scope: pinned tenant-alpha synthetic business snapshots on the NYC H3 resolution-8 study grid. Run: `run-20261016-145542`. Validation: **passed**.
+Scope: pinned tenant-alpha synthetic business snapshots on the NYC H3 resolution-8 study grid. Run: `run-20261016-195411`. Validation: **passed**.
 
 ## eligible_hub_cells
 

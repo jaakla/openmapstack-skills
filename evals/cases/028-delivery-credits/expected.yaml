@@ -1,0 +1,22 @@
+id: 028-delivery-credits
+case_type: positive
+modes:
+- fixture
+score_types:
+  fixture: contract_ci
+project_dir: project
+hard_gate: true
+fixture:
+  generator: '{python} {evals_dir}/fixtures/credits/gen.py {project_dir}'
+  source_baseline:
+  - source: ../../fixtures/delivery/parcels.geojson
+    destination: data/source/parcels.geojson
+  clean_rerun: {}
+assertions:
+- assert: project.conforms_to_schema
+- assert: credits.declaration_valid
+- assert: credits.rendered_matches
+- assert: validation.run_record_matches
+- assert: rerun.clean_execution_succeeded
+  args:
+    rerun_workspace: $RERUN

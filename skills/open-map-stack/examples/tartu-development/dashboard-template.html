@@ -564,6 +564,7 @@ input[type="range"]::-moz-range-thumb {
   .brand .sub { display: none; }
   .draw-hud { max-width: calc(100% - 24px); }
 }
+.credits-block{padding:16px;border-bottom:1px solid var(--oms-border);font-size:12px;overflow-wrap:anywhere}[data-openmapstack-credits] p{margin:0 0 .6em}
 </style>
 </head>
 <body>
@@ -597,7 +598,7 @@ input[type="range"]::-moz-range-thumb {
       <section class="tabpanel is-active" data-panel="analysis" role="tabpanel" id="panel-analysis" aria-labelledby="tab-analysis"></section>
       <section class="tabpanel" data-panel="map" role="tabpanel" id="panel-map" aria-labelledby="tab-map"></section>
       <section class="tabpanel" data-panel="edit" role="tabpanel" id="panel-edit" aria-labelledby="tab-edit"></section>
-      <section class="tabpanel" data-panel="data" role="tabpanel" id="panel-provenance" aria-labelledby="tab-provenance" data-testid="provenance"></section>
+      <section class="tabpanel" data-panel="data" role="tabpanel" id="panel-provenance" aria-labelledby="tab-provenance" data-testid="provenance"><div class="credits-block">__CREDITS__</div><div id="provenance-content"></div></section>
     </div>
   </aside>
 
@@ -829,7 +830,7 @@ const POIS = __POIS__;
     if (map.getSource("draft-overrides")) map.getSource("draft-overrides").setData(DRAWN_OVERRIDES);
     updateSelectionOverlay();
     renderEditorTab();
-    const provenancePanel = $('[data-panel="data"]');
+    const provenancePanel = $('#provenance-content');
     if (provenancePanel) provenancePanel.innerHTML = dataTab();
     refresh();
   }
@@ -1969,7 +1970,7 @@ const POIS = __POIS__;
   $('[data-acc="layers"]').setAttribute("data-testid", "legend");
   $('[data-acc="warnings"]').setAttribute("data-testid", "warnings");
   $('[data-panel="edit"]').innerHTML = editorTab();
-  $('[data-panel="data"]').innerHTML = dataTab();
+  $('#provenance-content').innerHTML = dataTab();
 
   $$(".tab").forEach((tab) => {
     tab.addEventListener("click", () => activateTab(tab.dataset.tab));

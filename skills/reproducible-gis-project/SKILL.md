@@ -56,6 +56,8 @@ CLI setup and the worked example's runtime requirements.
    Missing tools or unknown data semantics remain visible limitations. A stated
    intention to validate is not validation.
 5. Generate the findings artifact from pipeline results before output hashing.
+   Declare the real author and toolkit, and render linked credits with the
+   canonical run time in every delivered view (workflow credits requirement).
    Deliver the project, source/override policy, runtime instructions and
    substantive method limitations together. Preserve the full presentation
    obligations for the selected targets in the workflow reference; a view alone is not
