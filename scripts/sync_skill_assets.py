@@ -44,6 +44,7 @@ def expected_assets(root=ROOT):
             for relative in RASTER_EXAMPLE_FILES:
                 outputs[target / "examples/raster-access" / relative] = (root / "examples/raster-access" / relative).read_bytes()
             outputs[target / "schemas/project-v1.schema.json"] = (root / "openmapstack/schemas/project-v1.schema.json").read_bytes()
+            outputs[target / "schemas/findings-v1.schema.json"] = (root / "openmapstack/schemas/findings-v1.schema.json").read_bytes()
         for reference in skill["shared_references"]:
             source = generalist / "references" / reference
             outputs[target / "references" / reference] = source.read_bytes()

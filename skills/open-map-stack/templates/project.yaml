@@ -139,7 +139,16 @@ processing:
     #   expression: "area_m2 >= 20000"
     #   output: candidates
 
+findings:
+  schema: openmapstack-findings/v1
+  output: findings
+
 outputs:
+  findings:
+    path: findings.md
+    kind: document
+    format: Markdown
+    generated_by: render_delivery
   dashboard:
     path: dashboard.html
     format: HTML
@@ -212,6 +221,7 @@ validation:
     #   preconditions: {tie_break: "keyed set; no order-dependent selection"}
 
 presentation:
+  design_language: openmapstack-views/0.2
   intent: analytical_workspace      # analytical_workspace | discovery | report
   primary_view: map
   layout:
@@ -224,7 +234,7 @@ presentation:
       tabs:
         - id: analysis
           title: Analysis
-          sections: [summary, metrics, criteria, assumptions, warnings]
+          sections: [summary, warnings]  # other details open on demand
         - id: map
           title: Map
           sections: [scenario_controls, filters, layer_controls, basemap]

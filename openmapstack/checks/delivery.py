@@ -183,7 +183,7 @@ def web_view_loads(workspace: Path, target_id: str, project_dir: str = ".") -> A
     path = project_path(root, project["outputs"][target["output"]]["path"])
     if path is None or not path.is_file():
         return failed("selected web artifact missing", code="delivery_artifact_missing")
-    from .visual import _playwright
+    from .visual import _playwright, _reveal
     try:
         playwright = _playwright()
     except ImportError:
@@ -211,7 +211,9 @@ def web_view_loads(workspace: Path, target_id: str, project_dir: str = ".") -> A
                 else:
                     provenance = page.locator('[data-openmapstack-provenance]')
                     if not provenance.is_visible():
-                        problems.append("provenance is not visible")
+                        _reveal(page, provenance.element_handle())
+                    if not provenance.is_visible():
+                        problems.append("provenance is not reachable")
                     visible = provenance.inner_text()
                     for source in (project.get("sources") or {}).values():
                         if str(source.get("provider", "")) not in visible:

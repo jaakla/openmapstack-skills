@@ -11,12 +11,14 @@ import yaml
 HERE = Path(__file__).resolve().parent
 
 
-def create(destination: Path, kinds: list[str] | None = None, *, hosted: bool = False) -> Path:
+def create(destination: Path, kinds: list[str] | None = None, *, hosted: bool = False, focused: bool = False) -> Path:
     kinds = ["dashboard"] if kinds is None else kinds
     if not kinds or len(set(kinds)) != len(kinds) or set(kinds) - {"dashboard", "qgis", "observable"}:
         raise ValueError("choose distinct targets from dashboard,qgis,observable")
     if hosted and "observable" not in kinds:
         raise ValueError("hosted evidence requires the observable target")
+    if focused and kinds != ["dashboard"]:
+        raise ValueError("the focused demo uses dashboard-only delivery")
     destination = destination.resolve()
     if destination == HERE.resolve():
         raise ValueError("create a separate workspace, not generated artifacts in this example")
@@ -26,7 +28,7 @@ def create(destination: Path, kinds: list[str] | None = None, *, hosted: bool = 
         target = destination / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(HERE / name, target)
-    project["outputs"] = {k: v for k, v in project["outputs"].items() if v.get("kind") != "document"}
+    project["outputs"] = {k: v for k, v in project["outputs"].items() if v.get("kind") != "document" or k == "findings"}
     project["delivery"]["targets"] = []
     for kind in kinds:
         view = "project.qgz" if kind == "qgis" else f"{kind}.html"
@@ -51,6 +53,10 @@ def create(destination: Path, kinds: list[str] | None = None, *, hosted: bool = 
             "layer_groups": [{"id": "analysis", "title": "Analysis"}],
             "layers": [{"source": "candidates", "group": "analysis", "semantic_role": "primary_result"}],
         }
+    if focused:
+        project["presentation"]["design_language"] = "openmapstack-views/0.2"
+        project["views"] = [{"id": "answer", "output": "dashboard", "archetype": "report",
+                             "scope": "all two synthetic source rectangles", "entry": True}]
     path = destination / "project.yaml"
     path.write_text(yaml.safe_dump(project, sort_keys=False), encoding="utf-8")
     return path
@@ -61,5 +67,6 @@ if __name__ == "__main__":
     parser.add_argument("destination", type=Path)
     parser.add_argument("--targets", default="dashboard")
     parser.add_argument("--hosted", action="store_true")
+    parser.add_argument("--focused", action="store_true", help="check the dashboard against design language 0.2")
     args = parser.parse_args()
-    print(create(args.destination, args.targets.split(","), hosted=args.hosted))
+    print(create(args.destination, args.targets.split(","), hosted=args.hosted, focused=args.focused))

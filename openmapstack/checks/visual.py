@@ -607,11 +607,18 @@ _BROWSER_HINT = "install openmapstack[visual] and run `python -m playwright inst
 # checker can click them the way a reader would.
 _MARK_OWNING_TABS_JS = """(element) => {
   const panels = [];
-  for (let p = element.closest('[role="tabpanel"]'); p; p = p.parentElement && p.parentElement.closest('[role="tabpanel"]')) {
+  for (let p = element; p; p = p.parentElement) {
+    if (!p.matches('[role="tabpanel"], details:not([open])')) continue;
     panels.unshift(p);
   }
   let n = 0;
   for (const panel of panels) {
+    if (panel.matches('details')) {
+      const summary = panel.querySelector(':scope > summary');
+      if (summary && summary !== element && !summary.contains(element))
+        summary.setAttribute('data-oms-check-tab', String(n++));
+      continue;
+    }
     let tab = panel.id ? document.querySelector('[role="tab"][aria-controls="' + CSS.escape(panel.id) + '"]') : null;
     if (!tab && panel.getAttribute('aria-labelledby')) tab = document.getElementById(panel.getAttribute('aria-labelledby'));
     if (tab && tab.getAttribute('role') === 'tab') tab.setAttribute('data-oms-check-tab', String(n++));
@@ -644,7 +651,7 @@ _PAGE_TEXT_JS = """() => {
 
 
 def _reveal(page: Any, element: Any, settle_ms: int = 150) -> bool:
-    """Open the tabs that hide ``element``; True when it is then visible."""
+    """Open owning tabs/disclosures; True when the element is then visible."""
     try:
         if element.is_visible():
             return True
@@ -784,6 +791,60 @@ def _control_is_canonical(info: dict, control: dict) -> bool:
         except (ValueError, TypeError):
             return False
     return str(value) == str(canonical)
+
+
+def _disclosure_problems(page: Any, problems: "_Problems", *, settle_ms: int, warnings: list) -> None:
+    """Version 0.2: a visible answer and reachable detail that preserves state.
+
+    These observable checks do not grade editorial relevance or impose a
+    card/word count. Those judgments require task-specific evaluation.
+    """
+    answer = _first_visible(page, "[data-oms-answer]")
+    viewport = page.viewport_size
+    box = answer.bounding_box() if answer else None
+    if (answer is None or not answer.inner_text().strip() or not box
+            or box["y"] < 0 or box["y"] + box["height"] > viewport["height"]
+            or box["x"] < 0 or box["x"] + box["width"] > viewport["width"]):
+        problems.add("opening_answer_absent", "the requested answer must be readable in the initial viewport")
+    if warnings:
+        panel = _first_visible(page, "[data-testid='warnings']")
+        text = page.inner_text("body")
+        if panel is None or any(str(w.get("id", "")) not in text for w in warnings):
+            problems.add("warning_not_visible", "manifest warnings must be visible at opening, before revealing detail")
+    details = page.query_selector_all("[data-oms-detail]")
+    if not details:
+        problems.add("detail_unreachable", "provide a labelled disclosure for supporting evidence")
+        return
+    # Snapshot values even when controls live in closed panels. Opening a
+    # disclosure is presentation only, including while exploring a scenario.
+    snapshot_js = """() => JSON.stringify({
+      state: document.documentElement.dataset.omsState,
+      values: [...document.querySelectorAll('[data-oms-control], [data-oms-layer-group], [data-oms-value]')]
+        .map(e => [e.value, e.checked, e.getAttribute('aria-pressed'), e.getAttribute('aria-checked')]),
+      results: [...document.querySelectorAll('[data-oms-answer], [data-oms-result]')].map(e => e.textContent)
+    })"""
+    initially_expanded = [d.evaluate("e => e.tagName !== 'DETAILS' || e.open") for d in details]
+    for detail, expanded in zip(details, initially_expanded):
+        if expanded:
+            problems.add("detail_initially_expanded", "supporting detail must use closed details elements at opening")
+            continue
+        summary = detail.query_selector(":scope > summary")
+        if summary is None or not _reveal(page, summary) or not summary.inner_text().strip():
+            problems.add("detail_unreachable", "supporting detail has no reachable labelled summary")
+            continue
+        before = page.evaluate(snapshot_js)
+        summary.click(timeout=3000)
+        _settle(page, settle_ms)
+        if not detail.evaluate("""e => e.open && (
+            e.innerText.trim().length > e.querySelector('summary').innerText.trim().length ||
+            [...e.querySelectorAll('input,select,button,canvas,img,svg,a[href]')].some(c =>
+              c.getClientRects().length && getComputedStyle(c).visibility !== 'hidden'))"""):
+            problems.add("detail_unreachable", "opening supporting detail does not reveal content")
+        changed = before != page.evaluate(snapshot_js)
+        summary.click(timeout=3000)
+        _settle(page, settle_ms)
+        if changed or before != page.evaluate(snapshot_js):
+            problems.add("disclosure_changes_analysis", "opening/closing supporting detail changed analytical state or results")
 
 
 def _protocol_page_problems(
@@ -1013,6 +1074,10 @@ def _protocol_check(
                         context.close()
                         continue
 
+                    focused = view["presentation"].get("design_language") == "openmapstack-views/0.2"
+                    if focused:
+                        _disclosure_problems(page, page_problems, settle_ms=settle_ms, warnings=warnings)
+
                     map_required = bool(view["presentation"].get("map"))
                     if _first_visible(page, _MAP_SELECTOR) is None:
                         if map_required:
@@ -1045,16 +1110,18 @@ def _protocol_check(
                         page_problems.add("browser_console_error", f"{len(console_errors)} console error(s): {console_errors[:3]}")
                     context.close()
 
-                    if map_required:
+                    if map_required or focused:
                         mobile_context = browser.new_context(viewport=_viewport(mobile_size))
                         mobile = mobile_context.new_page()
                         mobile.goto(uri, wait_until="domcontentloaded")
                         _settle(mobile, settle_ms)
+                        if focused:
+                            _disclosure_problems(mobile, page_problems, settle_ms=settle_ms, warnings=warnings)
                         map_element = _first_visible(mobile, _MAP_SELECTOR, require_height=True)
                         width = _viewport(mobile_size)["width"]
-                        if map_element is None:
+                        if map_element is None and map_required:
                             page_problems.add("map_absent", "no visible map on the mobile viewport")
-                        else:
+                        elif map_element is not None:
                             box = map_element.bounding_box()
                             evidence[f"{view['id']}:mobile_map_width"] = box["width"]
                             if box["width"] < width / 2:

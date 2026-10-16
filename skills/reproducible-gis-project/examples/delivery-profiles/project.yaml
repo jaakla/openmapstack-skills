@@ -48,8 +48,13 @@ processing:
     - {id: load, operation: read, source: parcels, output: raw}
     - {id: select, operation: area_filter, input: raw, output: selected, minimum_area_m2: 15000}
     - {id: export, operation: export, input: selected, output: analytical_outputs}
+    - {id: render_findings, operation: findings, input: analytical_outputs, output: findings_artifact}
     - {id: render, operation: render, input: analytical_outputs, output: views}
+findings:
+  schema: openmapstack-findings/v1
+  output: findings
 outputs:
+  findings: {path: findings.md, format: Markdown, kind: document, generated_by: render_findings}
   candidates:
     path: data/derived/candidates.geojson
     format: GeoJSON EPSG:3301

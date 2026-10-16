@@ -343,6 +343,10 @@ def verify_project(
         _run(runs, "integration.bindings_valid", integration_checks.bindings_valid, root)
         _run(runs, "integration.evidence_matches", integration_checks.evidence_matches, root)
 
+    if "findings" in manifest:
+        from .checks.findings import artifact_matches
+        _run(runs, "findings.artifact_matches", artifact_matches, root)
+
     # -- presentation and QGIS: the product matches what the manifest claims
     selected_targets = []
     if "delivery" in manifest:

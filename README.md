@@ -442,6 +442,22 @@ state. Projects without a language version keep their existing plan: selected
 web delivery targets receive smoke checks, and selected map-primary dashboards
 also receive the existing visual check.
 
+New built-in views use `openmapstack-views/0.2`: open with the requested answer
+and essential limitations, then reveal supporting evidence, full tables, layers
+and advanced controls on demand. The browser check verifies the opening answer
+on desktop/mobile and that expanding detail preserves analytical state. Existing
+0.1 views retain their contract. These checks do not judge editorial relevance.
+
+New material projects also generate `findings.md` from pipeline results before
+output hashing. Its readable Markdown and YAML frontmatter share findings,
+question/scope, run identity, assumptions, validation status and cited output
+definitions/hashes. CSV/Parquet/geodata remain the underlying results; the view
+need not display them all. `validate` and `verify` check a declared findings
+artifact for stale/missing evidence and consistency with the current run.
+Try the [offline example](examples/delivery-profiles/README.md) with `--focused`;
+see [the findings contract](skills/open-map-stack/references/project-spec.md#findings)
+for the writer API and format. Embedded chat is a separate optional enhancement.
+
 See [the applicability reference](docs/verify-applicability.md) for the exact
 plan conditions, dependencies, current regression evidence, and deliberate
 exclusions. Explicit delivery targets add input-bound view evidence and web

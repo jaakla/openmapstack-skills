@@ -22,6 +22,7 @@ import duckdb
 import yaml
 
 from openmapstack.delivery import metadata_json, write_evidence
+from openmapstack.findings import write_findings
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "data" / "derived"
@@ -242,6 +243,10 @@ def main() -> None:
     # visibly too; metadata is evidence, not a substitute for the visible view.
     # Once the declared analytical outputs and views exist:
     # write_evidence(ROOT, project)
+    # Generate findings from the same accepted results, before final output hashes:
+    # write_findings(ROOT, project, report=report, scope="the analysis population",
+    #     findings=[{"id": "answer", "statement": answer_from_results,
+    #                "evidence": ["example_output"]}])
     # STEP 7 — the pipeline, not a hand edit, records the run in project.yaml.
     finalize_run(report, started.isoformat())
 
