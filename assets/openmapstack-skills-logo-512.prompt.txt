@@ -1,0 +1,3 @@
+Generated with the built-in image generation tool, then resized to 512 x 512 pixels.
+
+Use case: logo-brand. Create one polished square 512x512 logo for openmapstack-skills, an open geospatial agent-skills project. A distinctive, compact abstract mark combining stacked map layers and an open folded-map silhouette; the geometry should subtly suggest an O. Clean flat vector-style design, bold simple shapes, carefully balanced negative space, crisp edges, recognizable at small icon sizes. Centered symbol with generous safe margins. Choose a restrained professional cartographic color treatment. Plain solid background. Symbol only, no text, no lettering, no watermarks, no mockup, no decorative surrounding objects, no gradients or shadows. Output exactly 512 by 512 pixels.
