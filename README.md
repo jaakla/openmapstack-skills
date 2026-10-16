@@ -448,6 +448,9 @@ question/scope, run identity, assumptions, validation status and cited output
 definitions/hashes. CSV/Parquet/geodata remain the underlying results; the view
 need not display them all. `validate` and `verify` check a declared findings
 artifact for stale/missing evidence and consistency with the current run.
+Evidence inventories hash and link every declared table download as well as the
+primary result, so changing or removing an XLSX/JSON export invalidates findings.
+The offline example also exposes a portable findings reference in QGIS metadata.
 Try the [offline example](examples/delivery-profiles/README.md);
 see [the findings contract](skills/open-map-stack/references/project-spec.md#findings)
 for the writer API and format. Embedded chat is a separate optional enhancement.

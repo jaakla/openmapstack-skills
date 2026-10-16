@@ -7,7 +7,7 @@ score_types:
 project_dir: project
 hard_gate: true
 fixture:
-  generator: '{python} {evals_dir}/fixtures/focused-findings/gen.py {project_dir}'
+  generator: '{python} {evals_dir}/fixtures/focused-findings/gen.py {project_dir} --downloads'
   source_baseline:
   - source: ../../fixtures/delivery/parcels.geojson
     destination: data/source/parcels.geojson
@@ -17,6 +17,10 @@ assertions:
 - assert: project.graph_resolves
 - assert: findings.artifact_matches
 - assert: validation.run_record_matches
+- assert: tables.downloads_consistent
+  args:
+    path: $OUTPUT:areas
+    formats: [csv, json]
 - assert: geodata.row_count
   args:
     path: $OUTPUT:candidates

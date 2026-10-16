@@ -11,9 +11,11 @@ import csv
 import datetime
 import html
 import json
+import os
 import platform
 import zipfile
 from pathlib import Path
+from urllib.parse import quote
 
 import yaml
 
@@ -63,10 +65,15 @@ def main() -> None:
             # Contract fixture: complete CRS and portable source, not a claim of
             # native QGIS runtime success. That is checked independently.
             crs = '<spatialrefsys><authid>EPSG:3301</authid><proj4>+proj=lcc +lat_1=59.33333333333334 +lat_2=58 +lat_0=57.51755393055556 +lon_0=24 +x_0=500000 +y_0=6375000 +ellps=GRS80 +units=m +no_defs</proj4></spatialrefsys>'
+            findings_path = ROOT / project["outputs"][project["findings"]["output"]]["path"]
+            findings_relative = Path(os.path.relpath(findings_path, path.parent)).as_posix()
+            findings_url = quote(findings_relative, safe="/.-_")
+            abstract = credits + " " + provenance + f" Findings: {findings_relative} (relative to this QGIS project)."
             xml = f'''<qgis version="3.40.0"><projectCrs>{crs}</projectCrs>
 <properties><SpatialRefSys><ProjectionsEnabled type="int">1</ProjectionsEnabled></SpatialRefSys></properties>
 <customproperties><property key="openmapstack.delivery" value="{html.escape(metadata, quote=True)}"/></customproperties>
-<projectMetadata><title>Synthetic parcel selection</title><abstract>{html.escape(credits + " " + provenance)}</abstract><author>{html.escape(project["project"]["author"]["name"])}</author></projectMetadata>
+<projectMetadata><title>Synthetic parcel selection</title><abstract>{html.escape(abstract)}</abstract><author>{html.escape(project["project"]["author"]["name"])}</author>
+<links><link name="Findings" type="WWW:LINK" url="{html.escape(findings_url, quote=True)}" description="Pipeline-generated findings, relative to this QGIS project" format="Markdown" mimeType="text/markdown"/></links></projectMetadata>
 <layer-tree-group name=""><layer-tree-group name="Analysis"><layer-tree-layer id="candidates" name="candidates" checked="Qt::Checked"/></layer-tree-group></layer-tree-group>
 <projectlayers><maplayer type="vector" geometry="Polygon"><id>candidates</id><layername>candidates</layername>
 <datasource>./data/derived/candidates.geojson</datasource><provider>ogr</provider><srs>{crs}</srs>

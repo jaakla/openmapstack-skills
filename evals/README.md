@@ -74,7 +74,9 @@ browser. Mutation detection is never included in contract or agent pass rates.
 
 Case `027-focused-findings` checks pipeline-generated Markdown/frontmatter,
 its result evidence and clean rerun in fixture mode. Mutations `950`–`952`
-reject stale evidence, a missing findings artifact and a stale run. Every
+reject stale evidence, a missing findings artifact and a stale run. Case 027
+also generates a secondary JSON table download; mutations `956`–`957` reject
+a changed or missing secondary download while leaving the primary CSV intact. Every
 mutation has a healthy control. These are deterministic artifact checks,
 not live-agent evidence that changed guidance produces correct findings.
 

@@ -1214,7 +1214,23 @@ report path; the default is `validation/latest-report.json`.
 The frontmatter follows the packaged `findings-v1.schema.json`: question,
 project/run identity, scope, validation statuses, assumptions/warnings, structured
 findings, and cited output definitions (including declared column units and
-meaning) with file hashes. It binds analytical context through a SHA-256 of the
+meaning) with file hashes. Each evidence entry contains its `definition` and a
+`files` inventory of project-relative `path`/`sha256` pairs. This inventory must
+cover the primary output and every declared table download, exactly once:
+
+```yaml
+evidence:
+  areas:
+    definition: {path: data/derived/areas.csv, kind: table, downloads: [csv, xlsx]}
+    files:
+      - {path: data/derived/areas.csv, sha256: 'sha256:…'}
+      - {path: data/derived/areas.xlsx, sha256: 'sha256:…'}
+```
+
+The writer expands downloads using the same paths as the run inventory and
+rejects missing or unsafe evidence files. Validation rejects changed/missing
+download files and omitted, duplicated or extra inventory paths. Markdown links
+to every inventoried file. Findings bind analytical context through a SHA-256 of the
 shared delivery semantics. The generated body links to the same evidence,
 `project.yaml` and the validation report relative to the Markdown file.
 Keep substantive method/uncertainty qualifications in the findings and supporting
@@ -1229,7 +1245,11 @@ Markdown file. Do not hash the run record/report into the findings: that creates
 a circular dependency. Generate again on every canonical execution.
 
 Selected delivery surfaces link to the findings artifact and its underlying
-results. Embedded chat is optional future work, not a requirement of this format.
+results. For QGIS delivery, expose the findings in project metadata links and
+record the project-relative location in the abstract, so a moved project folder
+retains the reference. Do not embed an absolute local path or a findings hash in
+the view metadata; the view is generated before findings and final output hashes.
+Embedded chat is optional future work, not a requirement of this format.
 
 ### Tabular results
 

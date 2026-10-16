@@ -40,8 +40,14 @@
       }
     }},
     "evidence": {"type": "object", "minProperties": 1, "additionalProperties": {
-      "type": "object", "required": ["definition", "sha256"], "additionalProperties": false,
-      "properties": {"definition": {"type": "object", "required": ["path"], "properties": {"path": {"$ref": "#/$defs/text"}}}, "sha256": {"$ref": "#/$defs/hash"}}
+      "type": "object", "required": ["definition", "files"], "additionalProperties": false,
+      "properties": {
+        "definition": {"type": "object", "required": ["path"], "properties": {"path": {"$ref": "#/$defs/text"}}},
+        "files": {"type": "array", "minItems": 1, "items": {
+          "type": "object", "required": ["path", "sha256"], "additionalProperties": false,
+          "properties": {"path": {"$ref": "#/$defs/text"}, "sha256": {"$ref": "#/$defs/hash"}}
+        }}
+      }
     }}
   }
 }

@@ -15,7 +15,7 @@ from urllib.parse import quote
 import yaml
 
 from .delivery import shared_semantics
-from .integrity import sha256_file
+from .integrity import declared_output_paths, file_inventory, sha256_file
 from .project import get_in, project_path
 from .schema import load_packaged_schema, validation_errors
 
@@ -68,8 +68,10 @@ def render(root: Path, document: Path, metadata: dict) -> str:
         lines.extend([f"## {item['id']}", "", item["statement"], "", "Evidence:", ""])
         for key in item["evidence"]:
             entry = metadata["evidence"][key]
-            href = _link(root, document, root / entry["definition"]["path"])
-            lines.append(f"- [{key}]({href})")
+            for file in entry["files"]:
+                href = _link(root, document, root / file["path"])
+                label = key if file["path"] == entry["definition"]["path"] else f"{key} ({Path(file['path']).suffix[1:]})"
+                lines.append(f"- [{label}]({href})")
         for limitation in item.get("limitations", []):
             lines.extend(["", f"Limitation: {limitation}"])
         lines.append("")
@@ -108,10 +110,10 @@ def write_findings(root: Path, project: dict, *, report: dict, scope: str, findi
             output = (project.get("outputs") or {}).get(key) if isinstance(key, str) else None
             if not isinstance(output, dict) or output.get("kind", "geodata") not in {"geodata", "table"}:
                 raise ValueError(f"finding evidence {key!r} must reference an analytical output")
-            target = project_path(root, output.get("path"))
-            if target is None or not target.is_file():
+            paths = declared_output_paths({"outputs": {key: output}})
+            if not paths:
                 raise ValueError(f"finding evidence {key!r} is missing or unsafe")
-            evidence[key] = {"definition": output, "sha256": sha256_file(target)}
+            evidence[key] = {"definition": output, "files": file_inventory(root, paths)}
     metadata = {
         "schema": SCHEMA, "project_id": project["project"]["id"],
         "question": project["project"]["question"], "run_id": report["run_id"],
@@ -178,11 +180,18 @@ def artifact_errors(root: Path, project: dict) -> list[str]:
         if not isinstance(output, dict) or output.get("kind", "geodata") not in {"geodata", "table"}:
             errors.append(f"findings evidence {key!r} does not resolve to an analytical output")
             continue
-        target = project_path(root, output.get("path"))
-        if evidence["definition"] != output or target is None or not target.is_file():
-            errors.append(f"findings evidence {key!r} is missing or its definition changed")
-        elif sha256_file(target) != evidence["sha256"]:
-            errors.append(f"findings evidence {key!r} hash differs from the result file")
+        if evidence["definition"] != output:
+            errors.append(f"findings evidence {key!r} definition changed")
+        paths = declared_output_paths({"outputs": {key: output}})
+        files = {file["path"]: file["sha256"] for file in evidence["files"]}
+        if set(files) != set(paths) or len(files) != len(evidence["files"]):
+            errors.append(f"findings evidence {key!r} file inventory differs from declared result/download paths")
+        for relative in paths:
+            target = project_path(root, relative)
+            if target is None or not target.is_file():
+                errors.append(f"findings evidence {key!r} file {relative!r} is missing or unsafe")
+            elif relative in files and sha256_file(target) != files[relative]:
+                errors.append(f"findings evidence {key!r} hash differs from result file {relative!r}")
     if not errors and body != render(root, path, metadata):
         errors.append("findings Markdown differs from its structured metadata")
     return errors
