@@ -223,3 +223,22 @@ backend enforces and which are only conventions. In summary:
 - `openmapstack verify --rerun` rebuilds the project in a clean workspace
   and reproduces every output with no failures; the rerun carries
   `README.md` as documentation.
+
+## Pipeline findings
+
+Every canonical execution generates [`findings.md`](findings.md) from the exported
+zone metrics and ranked candidate cells, before final run hashing. It records
+eligibility counts, the leading cell when one exists, and demand inside the study
+grid. Each statement links to hashed GeoJSON/GeoParquet evidence; both analytical
+formats are bound separately. There are no declared multi-file table downloads
+in this example (the dashboard's visible-row CSV is an exploratory export).
+The dashboard's Analysis tab and the QGIS project's metadata link to the same
+project-relative Markdown file.
+
+These are results of pinned synthetic business snapshots, not present-day NYC
+market recommendations, live tracking, verified sites, or evidence of warehouse
+permission enforcement. The historical TLC coordinate placement and model limits
+remain visible in the dashboard's Provenance tab and the findings. `validate
+--preflight` and `verify --rerun` check consistency; they do not establish those
+unverified real-world claims. Keep the small findings, dashboard, run record and
+validation report together when regenerating this worked example.

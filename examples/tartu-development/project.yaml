@@ -6,7 +6,7 @@ project:
     walking distance to city-owned kindergarten and school), and land-use criteria in Tartu, and show
     them on an interactive map with education POIs and catchment areas.
   created_at: 2026-08-25 08:15:03+03:00
-  updated_at: '2026-10-09T09:04:23.901780+00:00'
+  updated_at: '2026-10-16T14:57:01.301525+00:00'
   status: warning
   aoi:
     bbox:
@@ -48,23 +48,23 @@ sources:
     portal_page: https://geoportaal.maaruum.ee/eng/spatial-data/cadastral-data-p310.html
     access:
       method: http(s) bulk download
-      downloaded_at: '2026-10-08T21:08:17.831470+00:00'
-      retrieved_at: '2026-10-08T21:08:17.831470+00:00'
+      downloaded_at: '2026-09-28T20:55:21.976024+00:00'
+      retrieved_at: '2026-09-28T20:55:21.976024+00:00'
       file:
         archive_name: Tartu_maakond_KATASTER_GPKG.zip
         extracted_file: Tartu_maakond_KATASTER_GPKG.gpkg
         table_name: Tartu maakond
         format: GeoPackage (GPKG/SQLite)
-        size_bytes: 55799808
+        size_bytes: 55791616
         row_count: 79182
         column_count: 32
       request_spec: 'Direct county GPKG zip download from Maa- ja Ruumiamet S3 storage: https://s3.pilw.io/rp-kemit-kataster/ANDMED/Tartu_maakond_KATASTER_GPKG.zip
         extracted to data/source/Tartu_maakond_KATASTER_GPKG.gpkg containing layer ''Tartu maakond'' (79,082
         parcels in EPSG:3301).'
     version:
-      published_at: '2026-10-07'
-      identifier: Tartu_maakond_KATASTER_GPKG (daily snapshot 2026-10-07)
-      etag: 6c24f01dc29413e35b347866bec4ecac-4
+      published_at: '2026-09-28'
+      identifier: Tartu_maakond_KATASTER_GPKG (daily snapshot 2026-09-28)
+      etag: 2e36bb4d8b2a94996ee668c378f475ed-4
     selection:
       municipality: Tartu linn
       filter: pindala >= 20000 AND siht1 IN ('MAATULUNDUSMAA', 'TOOTMISMAA', 'ARIMAA')
@@ -121,8 +121,8 @@ sources:
     portal_page: https://geoportaal.maaruum.ee/est/ruumiandmed/eesti-topograafia-andmekogu/laadi-etak-andmed-alla-p609.html
     access:
       method: WFS 2.0.0 (GetFeature)
-      downloaded_at: '2026-10-08T21:08:21.500682+00:00'
-      retrieved_at: '2026-10-08T21:08:21.500682+00:00'
+      downloaded_at: '2026-09-28T20:55:37.511054+00:00'
+      retrieved_at: '2026-09-28T20:55:37.511054+00:00'
       file:
         name: etak_main_roads.geojson
         layer_name: etak:e_501_tee_j
@@ -176,8 +176,8 @@ sources:
     portal_page: https://geohub.tartulv.ee/
     access:
       method: ArcGIS REST FeatureServer / GeoJSON
-      downloaded_at: '2026-10-08T21:08:36.773474+00:00'
-      retrieved_at: '2026-10-08T21:08:36.773474+00:00'
+      downloaded_at: '2026-09-28T20:55:42.406623+00:00'
+      retrieved_at: '2026-09-28T20:55:42.406623+00:00'
       file:
         name: tartu_municipal_education.geojson
         table_name: education_pois
@@ -228,8 +228,8 @@ sources:
     portal_page: https://download.geofabrik.de/europe/estonia.html
     access:
       method: http(s) bulk download
-      retrieved_at: '2026-10-08T21:08:45.485245+00:00'
-      downloaded_at: '2026-10-08T21:08:45.485245+00:00'
+      retrieved_at: '2026-09-28T20:56:04.044855+00:00'
+      downloaded_at: '2026-09-28T20:56:04.044855+00:00'
     version:
       identifier: estonia-260901.osm.pbf
       published_at: '2026-09-04'
@@ -381,6 +381,14 @@ processing:
     - GeoPackage
     - GeoParquet
     - GeoJSON
+  - id: render_findings
+    operation: summarize
+    output: findings
+    note: Generate evidence-bound Markdown from this execution before final run hashing; retain uncertainty
+      and snapshot limitations.
+    inputs:
+    - candidate_parcels
+    - effective_education_pois
 outputs:
   candidate_parcels_gpkg:
     path: data/derived/final-candidates.gpkg
@@ -418,6 +426,11 @@ outputs:
     format: GeoJSON (EPSG:4326)
     generated_by: calculate_education_catchments
     role: routing_evidence
+  findings:
+    path: findings.md
+    kind: document
+    format: Markdown
+    generated_by: render_findings
 validation:
   required:
   - geometry_valid
@@ -768,13 +781,16 @@ runtime:
     osmium: 4.3.1
 runs:
   latest:
-    id: run-20261009-090336
-    started_at: '2026-10-09T09:03:36.518904+00:00'
-    completed_at: '2026-10-09T09:04:23.901780+00:00'
+    id: run-20261016-145543
+    started_at: '2026-10-16T14:55:43.090961+00:00'
+    completed_at: '2026-10-16T14:57:01.301525+00:00'
     status: warning
-    inputs_hash: sha256:b3661890364f321d9cf0e5b18700fe9c5f99ee9da0d5a45564ed44e29767ee05
-    outputs_hash: sha256:282abf6cf522e94a1bb9518201dcfae0f8d3f28835115bb4e91ec87eb1402913
+    inputs_hash: sha256:abeae946360c9a767bc11c8ecc1b21637e871458f756f7718d7d19eed1a37c9e
+    outputs_hash: sha256:b46fd97652468b512e970d69d743723f0ed38e6e5d128a3c1503e8bf3d3921fa
     record:
-      path: runs/run-20261009-090336.json
+      path: runs/run-20261016-145543.json
     validation_report:
       path: validation/latest-report.json
+findings:
+  schema: openmapstack-findings/v1
+  output: findings

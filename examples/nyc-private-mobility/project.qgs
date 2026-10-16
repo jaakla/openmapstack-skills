@@ -144,4 +144,10 @@
       <ProjectionsEnabled type="int">1</ProjectionsEnabled>
     </SpatialRefSys>
   </properties>
+  <projectMetadata>
+    <abstract> Findings: findings.md (relative to this QGIS project). Synthetic snapshot screening; not live tracking or verified sites.</abstract>
+    <links>
+      <link description="Pipeline-generated findings, relative to this QGIS project" format="Markdown" mimeType="text/markdown" name="Findings" type="WWW:LINK" url="findings.md" />
+    </links>
+  </projectMetadata>
 </qgis>

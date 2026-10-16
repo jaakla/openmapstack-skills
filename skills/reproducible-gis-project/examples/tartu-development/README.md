@@ -14,18 +14,22 @@ the run's input inventory and hash.
 
 ## Run
 
-Python **3.12+** is required for the pinned Valhalla binary wheel. From this directory:
+Python **3.12+** is required for the pinned Valhalla binary wheel. The findings
+writer also requires the OpenMapStack support package from a checkout containing
+findings support. Replace `/path/to/openmapstack-skills` below with that checkout
+(the repository root, not the installed skill directory). From this directory:
 
 ```bash
 python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -e /path/to/openmapstack-skills
 .venv/bin/python pipeline.py
 ```
 
 Or with uv:
 
 ```bash
-uv run --python 3.12 --with-requirements requirements.txt python pipeline.py
+uv run --python 3.12 --with /path/to/openmapstack-skills --with-requirements requirements.txt python pipeline.py
 ```
 
 `run_e2e.py` calls the same implementation. No Docker daemon, external routing
@@ -41,7 +45,8 @@ catchments. Subsequent runs reuse the verified graph in `data/cache/routing/`.
 That cache is disposable: removing it forces a rebuild, not a methodological
 fallback. No graph or routing failure is replaced with a circular buffer.
 
-Use `pipeline.py --refresh` before committing regenerated artifacts. It refreshes
+Use `pipeline.py --refresh` before committing artifacts that claim updated sources
+(the explicitly dated snapshot replay below is a different scope). It refreshes
 the official sources and downloads the declared OSM snapshot again, verifying
 the same SHA-256. Change that pin explicitly when updating OSM. Rerun after
 changing the implementation, dependencies or manifest so run hashes match.
@@ -144,3 +149,31 @@ draft editing. Noncanonical settings are labelled exploratory; facility edits an
 drawn geometry require a pipeline rerun to change network measurements.
 `pipeline.py` rewrites manifest run metadata using YAML serialization, so persistent
 explanations belong in data fields, not comments.
+
+## Pipeline findings and snapshot replay
+
+Every canonical execution generates [`findings.md`](findings.md) before final run
+hashing. The statements count accepted parcels by education tier, identify road
+eligibility that depends on the hypothetical connector, and compare baseline and
+effective kindergarten catchment membership within the accepted parcel set.
+Counts come from the exported full-precision candidate properties, not browser
+filters. Evidence binds all three candidate formats (GeoPackage, GeoParquet and
+GeoJSON) plus the relevant catchment, facility and official-road outputs. There
+are no declared multi-file table downloads here; the finalizer nevertheless
+inventories every declared output and any declared table download.
+
+Open **Read pipeline findings** above the dashboard panels, or the relative
+`findings.md` link in QGIS project metadata. Sampled contour intersections are
+not exact journey times or surveyed access. The road and kindergarten changes
+remain hypothetical, and the education-source license remains unresolved.
+
+The checked-in findings are an explicitly dated replay of the coherent local
+source snapshots captured on **2026-09-28**, including the pinned **2026-09-01** OSM
+network. They do not claim fresh source acquisition or present-day suitability.
+This replay reuses the verified local routing cache; a clean `verify --rerun`
+rebuilds the graph from the pinned network because the cache is disposable.
+No downloaded sources, routing tiles or derived GIS files are committed. Installed
+skill copies contain the updated manifest, scripts and template; generated
+findings and evidence must be produced by running a writable copy.
+For updates that claim current sources, use `--refresh` as described above;
+replaying these historical inputs is not a freshness check.
