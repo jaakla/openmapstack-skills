@@ -7,6 +7,7 @@ import unittest
 from .helpers import make_workspace, minimal_project, write_project
 
 from openmapstack.checks import overrides as overrides_assertions  # noqa: E402
+from openmapstack.validation import validate_project
 
 
 def _override_project(**override_fields):
@@ -63,6 +64,72 @@ class ProvenanceTests(unittest.TestCase):
 
 
 class EvidenceNotPlaceholderTests(unittest.TestCase):
+    def assert_evidence_status(self, evidence, expected):
+        workspace = make_workspace()
+        path = write_project(workspace, _override_project(evidence=evidence))
+        validation = validate_project(path, artifacts=False)
+        declaration = next(check for check in validation.checks if check.id == "override.declaration")
+        self.assertEqual(declaration.status, expected, declaration.message)
+        result = overrides_assertions.evidence_not_placeholder(workspace)
+        self.assertEqual(result.status, expected, result.detail)
+        if expected == "failed":
+            self.assertEqual(result.data["code"], "placeholder_evidence")
+            self.assertIn("OVERRIDE-001", result.detail)
+
+    def test_supported_references_agree_with_validator(self) -> None:
+        for evidence in (
+            [{"type": "planning_document", "title": "Adopted development plan", "page": 37}],
+            [{"type": "planning_document", "source": "documents/adopted-plan.pdf", "page": 37}],
+            [{"type": "url", "value": "https://example.invalid/plan"}],
+            [{"type": "field_survey", "value": "surveyed 2026-01-01"}],
+            ["Adopted development plan, page 37"],
+            [{"title": "Adopted plan"}, {"source": "documents/survey.pdf"}],
+        ):
+            with self.subTest(evidence=evidence):
+                self.assert_evidence_status(evidence, "passed")
+
+    def test_placeholder_references_agree_with_validator(self) -> None:
+        for field in ("value", "source", "title"):
+            for placeholder in ("", "  ", "TODO", "tBd", "N/A", "none", "null", "...", "https://...", "TODO-find plan", "todo obtain plan"):
+                with self.subTest(field=field, placeholder=placeholder):
+                    self.assert_evidence_status([{field: placeholder}], "failed")
+
+    def test_missing_and_malformed_evidence_agree_with_validator(self) -> None:
+        for evidence in (None, [], {}, "Adopted plan", [None], [{}], [[]], [{"type": "planning_document", "page": 37}]):
+            with self.subTest(evidence=evidence):
+                self.assert_evidence_status(evidence, "failed")
+        workspace = make_workspace()
+        project = _override_project()
+        del project["overrides"][0]["evidence"]
+        path = write_project(workspace, project)
+        validation = validate_project(path, artifacts=False)
+        declaration = next(check for check in validation.checks if check.id == "override.declaration")
+        self.assertEqual(declaration.status, "failed")
+        self.assertEqual(overrides_assertions.evidence_not_placeholder(workspace).status, "failed")
+
+    def test_valid_reference_does_not_hide_a_placeholder(self) -> None:
+        self.assert_evidence_status([{"title": "Adopted plan"}, {"value": "TBD"}], "failed")
+        # Preserve the validator's precedence: a nonempty placeholder value
+        # cannot be rescued by a real title on that same entry.
+        self.assert_evidence_status([{"value": "TBD", "title": "Adopted plan"}], "failed")
+
+    def test_absent_overrides_pass_and_malformed_overrides_fail(self) -> None:
+        workspace = make_workspace()
+        for overrides in ([], None):
+            with self.subTest(overrides=overrides):
+                write_project(workspace, minimal_project(overrides=overrides))
+                self.assertEqual(overrides_assertions.evidence_not_placeholder(workspace).status, "passed")
+        project = minimal_project()
+        del project["overrides"]
+        write_project(workspace, project)
+        self.assertEqual(overrides_assertions.evidence_not_placeholder(workspace).status, "passed")
+        for overrides in ({}, "invalid", [None], ["invalid"]):
+            with self.subTest(overrides=overrides):
+                write_project(workspace, minimal_project(overrides=overrides))
+                result = overrides_assertions.evidence_not_placeholder(workspace)
+                self.assertEqual(result.status, "failed")
+                self.assertEqual(result.data["code"], "placeholder_evidence")
+
     def test_real_evidence_passes(self) -> None:
         workspace = make_workspace()
         write_project(workspace, _override_project())
