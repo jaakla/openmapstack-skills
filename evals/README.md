@@ -84,7 +84,11 @@ Cases `028-delivery-credits` and `029-legacy-credits` exercise complete HTML/QGI
 credits and the explicit legacy warning. Mutations `958`–`961` reject partial
 metadata, missing credits, stale analysis time and a broken author link. Every
 mutation has a healthy control. They prove deterministic declaration/rendering
-checks, not live-agent adherence or remote URL availability.
+checks, not live-agent adherence or remote URL availability. Case `030` is a
+healthy translated-QGIS control with truthful run evidence. Mutation `962`
+rejects an orphan hidden tabpanel; `963`–`965` independently corrupt translated
+QGIS time, identity and toolkit links. Attribution prose remains an authoring
+and visual-review requirement, not a multilingual meaning check.
 
 Every score type also publishes a `capability` block — assertions evaluated,
 how many were `not_testable`, and how many soft gates went unmet — and the

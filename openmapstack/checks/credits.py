@@ -83,16 +83,55 @@ class _HTML(HTMLParser):
             node["text"] += data
 
 
-def _hidden(node: dict) -> bool:
+def _reachable_panel(node: dict, nodes: list[dict], visiting: tuple[int, ...]) -> bool:
+    """A hidden panel needs an unambiguous, visible and enabled tab control.
+
+    Static associations do not prove that its handler works; browser QA does.
+    Cycles and a control inside its own hidden panel cannot establish access.
+    """
+    attrs = node["attrs"]
+    panel_id = attrs.get("id")
+    if not panel_id or sum(n["attrs"].get("id") == panel_id for n in nodes) != 1:
+        return False
+    labels = attrs.get("aria-labelledby", "").split()
+    for tab in nodes:
+        values = tab["attrs"]
+        tab_id = values.get("id")
+        if (values.get("role") != "tab" or not tab_id or tab_id not in labels
+                or panel_id not in values.get("aria-controls", "").split()
+                or sum(n["attrs"].get("id") == tab_id for n in nodes) != 1
+                or any(parent is node for parent in tab["parents"])
+                or (tab["tag"] == "input" and values.get("type", "").lower() == "hidden")
+                or "disabled" in values or values.get("aria-disabled") == "true"
+                or any("disabled" in parent["attrs"] and parent["tag"] == "fieldset"
+                       or parent["attrs"].get("aria-disabled") == "true" for parent in tab["parents"])
+                or values.get("aria-selected", "false") != "false"):
+            continue
+        label_ids = values.get("aria-labelledby", "").split()
+        named = (tab["text"].strip() or values.get("aria-label", "").strip()
+                 or any(n["attrs"].get("id") in label_ids and n["text"].strip() for n in nodes)
+                 or any(any(parent is tab for parent in n["parents"]) and n["attrs"].get("alt", "").strip() for n in nodes))
+        if not named:
+            continue
+        if not _hidden(tab, nodes, visiting):
+            return True
+    return False
+
+
+def _hidden(node: dict, nodes: list[dict], visiting: tuple[int, ...] = ()) -> bool:
+    if id(node) in visiting:
+        return True
+    visiting = (*visiting, id(node))
     for ancestor in [node, *node["parents"]]:
         attrs = ancestor["attrs"]
         if ancestor["tag"] in {"script", "style", "template", "noscript"}:
             return True
-        if attrs.get("role") == "tabpanel":
-            continue  # A labeled tab is opened by the independent browser check.
+        if "inert" in attrs:
+            return True
         style = re.sub(r"\s", "", attrs.get("style", "").lower())
         if "hidden" in attrs or attrs.get("aria-hidden") == "true" or any(rule in style for rule in ["display:none", "visibility:hidden", "opacity:0"]):
-            return True
+            if attrs.get("role") != "tabpanel" or not _reachable_panel(ancestor, nodes, visiting):
+                return True
     return False
 
 
@@ -100,13 +139,13 @@ def _html_errors(path: Path, expected: dict) -> list[str]:
     parser = _HTML()
     parser.feed(path.read_text(encoding="utf-8"))
     blocks = [node for node in parser.nodes if "data-openmapstack-credits" in node["attrs"]]
-    if len(blocks) != 1 or _hidden(blocks[0]):
+    if len(blocks) != 1 or _hidden(blocks[0], parser.nodes):
         return ["view must expose exactly one non-hidden credits block"]
     block = blocks[0]
     errors = []
     def field(role):
         values = [node for node in parser.nodes if node["attrs"].get("data-oms-credit") == role and any(parent is block for parent in node["parents"])]
-        return values[0] if len(values) == 1 and not _hidden(values[0]) else None
+        return values[0] if len(values) == 1 and not _hidden(values[0], parser.nodes) else None
 
     author, toolkit = expected["author"], expected["generated_with"]
     normalize = lambda text: " ".join(text.split())
@@ -130,8 +169,12 @@ def _html_errors(path: Path, expected: dict) -> list[str]:
             raise ValueError("stale timestamp")
     except (TypeError, ValueError):
         errors.append("visible analysis timestamp/offset differs from the canonical completion time")
-    fallback_label = "no canonical run yet" in block["text"]
-    if fallback_label != expected["fallback"]:
+    clock_source = node["attrs"].get("data-oms-clock-source") if node else None
+    expected_source = "project.updated_at" if expected["fallback"] else "runs.latest.completed_at"
+    # Old helper output had only an English fallback label. New renderers bind
+    # the source independently so labels, including that explanation, translate.
+    if (clock_source != expected_source if clock_source is not None else
+            ("no canonical run yet" in block["text"]) != expected["fallback"]):
         errors.append("pre-run timestamp fallback label differs")
     return errors
 
@@ -149,20 +192,26 @@ def _qgis_errors(path: Path, expected: dict) -> list[str]:
     if len(nodes) != 1:
         return ["QGIS must expose one desktop-visible metadata block"]
     node = nodes[0]
-    abstract = node.findtext("abstract", "")
+    # Three leading logical credit lines, followed by unrestricted provenance.
+    # Labels translate; the identity, ISO instant and field-name source do not.
+    header = node.findtext("abstract", "").splitlines()[:3]
     author, toolkit = expected["author"], expected["generated_with"]
     errors = []
-    if "Generated with AI using the free OpenMapStack toolkit." not in abstract:
-        errors.append("QGIS toolkit attribution missing")
+    if not header or toolkit["tool"] not in header[0]:
+        errors.append("QGIS toolkit identity missing from the credit header")
     if f"{author['name']} ({author['email']})" != node.findtext("author", ""):
         errors.append("QGIS author differs from the manifest")
-    times = re.findall(r"Analysis made: (\S+)", abstract)
+    times = re.findall(r"(?<![\w])\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})(?![\w:+-])", header[1] if len(header) > 1 else "")
     try:
         if len(times) != 1 or credits.instant(times[0]) != credits.instant(expected["analysis_at"]):
             raise ValueError("stale timestamp")
     except ValueError:
         errors.append("QGIS analysis timestamp/offset differs from the canonical completion time")
-    if ("no canonical run yet" in abstract) != expected["fallback"]:
+    header_text = "\n".join(header)
+    sources = re.findall(r"\[clock:([^\]]*)\]", header_text)
+    expected_source = "project.updated_at" if expected["fallback"] else "runs.latest.completed_at"
+    if (sources != [expected_source] if "[clock:" in header_text else
+            ("no canonical run yet" in header_text) != expected["fallback"]):
         errors.append("QGIS pre-run timestamp fallback label differs")
     urls = [link.get("url") for link in node.findall("links/link")]
     for url in [toolkit["url"], "mailto:" + quote(author["email"], safe="@+.-_"), *([author["url"]] if author.get("url") else [])]:

@@ -4,6 +4,8 @@ import importlib.util
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 import yaml
 from openmapstack.credits import credit_payload
@@ -14,8 +16,25 @@ example = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(example)
 
 
-def generate(destination: Path, mutation: str | None = None, legacy: bool = False):
+def generate(destination: Path, mutation: str | None = None, legacy: bool = False, translated: bool = False):
     path = example.create(destination, ['dashboard', 'qgis'])
+    if translated:
+        pipeline = path.parent / 'pipeline.py'
+        # Translation is part of this fixture's canonical pipeline, before run
+        # hashing. The healthy translated control must have truthful evidence.
+        wrapper = '''
+_english_qgis_credits = qgis_credits
+def qgis_credits(xml, payload):
+    return _english_qgis_credits(xml, payload).replace(
+        'Generated with AI using the free OpenMapStack toolkit.',
+        'Koostatud tehisintellekti abil tasuta OpenMapStack tööriistakomplektiga.').replace(
+        'Analysis made:', 'Analüüs tehtud:').replace('Author:', 'Autor:')
+
+'''
+        original = pipeline.read_text()
+        marker = 'if __name__ == "__main__":'
+        assert marker in original
+        pipeline.write_text(original.replace(marker, wrapper + marker))
     subprocess.run([sys.executable, str(path.parent / 'pipeline.py')], check=True)
     project = yaml.safe_load(path.read_text())
     page = path.parent / project['outputs']['dashboard']['path']
@@ -30,13 +49,33 @@ def generate(destination: Path, mutation: str | None = None, legacy: bool = Fals
         page.write_text(page.read_text().replace(credit_payload(project)['analysis_at'], '2000-01-01T00:00:00+00:00'))
     elif mutation == 'link':
         page.write_text(page.read_text().replace('href="mailto:examples@example.invalid"', 'href="mailto:wrong@example.invalid"'))
+    elif mutation == 'tabpanel':
+        page.write_text(page.read_text().replace('data-openmapstack-credits', 'data-openmapstack-credits role="tabpanel" hidden'))
+    elif mutation in {'qgis-time', 'qgis-identity', 'qgis-link'}:
+        archive_path = path.parent / project['outputs']['qgis']['path']
+        with zipfile.ZipFile(archive_path) as archive:
+            members = [(info, archive.read(info)) for info in archive.infolist()]
+        with zipfile.ZipFile(archive_path, 'w') as archive:
+            for info, data in members:
+                if info.filename.endswith('.qgs'):
+                    tree = ET.fromstring(data)
+                    if mutation == 'qgis-time':
+                        abstract = tree.find('projectMetadata/abstract')
+                        abstract.text = abstract.text.replace(credit_payload(project)['analysis_at'], '2000-01-01T00:00:00+00:00')
+                    elif mutation == 'qgis-identity':
+                        tree.find('projectMetadata/author').text = 'Vale autor'
+                    else:
+                        tree.find('projectMetadata/links/link[@url="https://jaakla.github.io/openmapstack-skills/"]').set('url', 'https://wrong.invalid')
+                    data = ET.tostring(tree)
+                archive.writestr(info, data)
     path.write_text(yaml.safe_dump(project, sort_keys=False))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('destination', type=Path)
-    parser.add_argument('--break', dest='mutation', choices=['metadata', 'missing', 'stale', 'link'])
+    parser.add_argument('--break', dest='mutation', choices=['metadata', 'missing', 'stale', 'link', 'tabpanel', 'qgis-time', 'qgis-identity', 'qgis-link'])
     parser.add_argument('--legacy', action='store_true')
+    parser.add_argument('--translated', action='store_true')
     args = parser.parse_args()
-    generate(args.destination, args.mutation, args.legacy)
+    generate(args.destination, args.mutation, args.legacy, args.translated)

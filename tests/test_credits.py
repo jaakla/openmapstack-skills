@@ -128,6 +128,113 @@ class CreditsTests(unittest.TestCase):
         self.qgz.write_bytes(b"broken zip")
         self.assertEqual(rendered_matches(self.root).status, "failed")
 
+    def test_hidden_tabpanel_requires_a_visible_enabled_associated_tab(self):
+        body = credits.html_credits(credits.credit_payload(self.project))
+        panel = '<section id="credits-panel" role="tabpanel" aria-labelledby="credits-tab" hidden>' + body + '</section>'
+        tab = '<button id="credits-tab" role="tab" aria-controls="credits-panel" aria-selected="false">Credits</button>'
+        self.html.write_text(tab + panel)
+        self.assertEqual(rendered_matches(self.root).status, "passed")
+        for control in (tab.replace(' aria-selected="false"', ''),
+                        tab.replace('>Credits</button>', ' aria-labelledby="caption"></button>') + '<span id="caption">Credits</span>',
+                        tab.replace('>Credits</button>', '><img alt="Credits"></button>')):
+            self.html.write_text(control + panel)
+            self.assertEqual(rendered_matches(self.root).status, 'passed')
+        # The block itself can be the panel, but role alone grants no exemption.
+        own_panel = body.replace('data-openmapstack-credits', 'data-openmapstack-credits role="tabpanel" hidden')
+        mutations = [
+            own_panel, panel, tab.replace('aria-controls="credits-panel"', 'aria-controls="other"') + panel,
+            tab.replace('id="credits-tab"', 'id="other"') + panel,
+            tab.replace('role="tab"', 'role="button"') + panel,
+            tab.replace('role="tab"', 'role="tab" hidden') + panel,
+            '<div style="display:none">' + tab + '</div>' + panel,
+            tab.replace('role="tab"', 'role="tab" disabled') + panel,
+            tab.replace('role="tab"', 'role="tab" aria-disabled="true"') + panel,
+            '<fieldset disabled>' + tab + '</fieldset>' + panel,
+            '<div aria-disabled="true">' + tab + '</div>' + panel,
+            tab.replace('<button', '<input type="hidden"').replace('</button>', '') + panel,
+            tab.replace('aria-selected="false"', 'aria-selected="true"') + panel,
+            tab + tab + panel, tab + panel + panel,
+            panel.replace(body, tab + body),  # Its only control is unreachable inside it.
+            '<div inert>' + tab + panel + '</div>',
+            tab + panel.replace(body, body.replace('data-openmapstack-credits', 'data-openmapstack-credits hidden')),
+        ]
+        for index, html in enumerate(mutations):
+            with self.subTest(index=index):
+                self.html.write_text(html)
+                result = rendered_matches(self.root)
+                self.assertEqual((result.status, result.data["code"]), ("failed", "credits_rendered_mismatch"))
+
+    def test_translated_qgis_header_binds_identity_clock_and_links(self):
+        original = self.qgz.read_bytes()
+        def translate(tree):
+            abstract = tree.find('projectMetadata/abstract')
+            abstract.text = abstract.text.replace('Generated with AI using the free OpenMapStack toolkit.',
+                'Koostatud tehisintellekti abil tasuta OpenMapStack tööriistakomplektiga.').replace(
+                'Analysis made:', 'Analüüs tehtud:').replace('Author:', 'Autor:')
+            # Source timestamps elsewhere are not the analysis completion time.
+            abstract.text += '\nAllikas laaditud: 2020-01-01T00:00:00+00:00'
+            for link in tree.findall('projectMetadata/links/link'):
+                link.set('name', 'Tõlgitud viide')
+        self.edit_qgis(translate)
+        translated = self.qgz.read_bytes()
+        self.assertEqual(rendered_matches(self.root).status, 'passed')
+        timestamp = credits.credit_payload(self.project)['analysis_at']
+        mutations = [
+            lambda tree: setattr(tree.find('projectMetadata/author'), 'text', 'Vale autor'),
+            lambda tree: setattr(tree.find('projectMetadata/abstract'), 'text',
+                tree.findtext('projectMetadata/abstract').replace('OpenMapStack', 'Other toolkit')),
+            lambda tree: setattr(tree.find('projectMetadata/abstract'), 'text',
+                tree.findtext('projectMetadata/abstract').replace(timestamp, '2000-01-01T00:00:00+00:00')),
+            lambda tree: setattr(tree.find('projectMetadata/abstract'), 'text',
+                tree.findtext('projectMetadata/abstract').replace(timestamp, '2000-01-01T00:00:00')),
+            lambda tree: setattr(tree.find('projectMetadata/abstract'), 'text',
+                tree.findtext('projectMetadata/abstract').replace('[clock:runs.latest.completed_at]', '[clock:project.updated_at]')),
+            lambda tree: setattr(tree.find('projectMetadata/abstract'), 'text',
+                tree.findtext('projectMetadata/abstract').replace('[clock:runs.latest.completed_at]', '[clock:]')),
+            lambda tree: tree.find('projectMetadata/links/link[@url="https://jaakla.github.io/openmapstack-skills/"]').set('url', 'https://wrong.invalid'),
+        ]
+        for index, mutation in enumerate(mutations):
+            with self.subTest(index=index):
+                self.qgz.write_bytes(translated)
+                self.edit_qgis(mutation)
+                self.assertEqual(rendered_matches(self.root).status, 'failed')
+        self.qgz.write_bytes(translated)
+        credits.write_qgis_credits(self.qgz, credits.credit_payload(self.project))
+        with zipfile.ZipFile(self.qgz) as archive:
+            abstract = ET.fromstring(archive.read('project.qgs')).findtext('projectMetadata/abstract')
+        self.assertEqual(abstract.count('[clock:runs.latest.completed_at]'), 1)
+        self.assertNotIn('Analüüs tehtud:', abstract)
+        self.assertIn('Allikas laaditud:', abstract)
+        self.qgz.write_bytes(original)
+        # Existing canonical headers without the new clock marker still work.
+        self.edit_qgis(lambda tree: setattr(tree.find('projectMetadata/abstract'), 'text',
+            tree.findtext('projectMetadata/abstract').replace(' [clock:runs.latest.completed_at]', '')))
+        self.edit_qgis(translate)
+        self.assertEqual(rendered_matches(self.root).status, 'passed')
+
+    def test_translated_prerun_fallback_keeps_language_independent_clock_source(self):
+        self.project['runs']['latest'] = None
+        self.save()
+        payload = credits.credit_payload(self.project)
+        body = credits.html_credits(payload).replace('project updated time; no canonical run yet',
+            'projekti uuendamise aeg; kanooniline käivitus puudub')
+        self.html.write_text(body)
+        credits.write_qgis_credits(self.qgz, payload)
+        self.edit_qgis(lambda tree: setattr(tree.find('projectMetadata/abstract'), 'text',
+            tree.findtext('projectMetadata/abstract').replace('Analysis made:', 'Analüüs tehtud:').replace(
+                'project updated time; no canonical run yet', 'projekti uuendamise aeg; kanooniline käivitus puudub')))
+        self.assertEqual(rendered_matches(self.root).status, 'passed')
+        self.html.write_text(body.replace('data-oms-clock-source="project.updated_at"',
+                                         'data-oms-clock-source="runs.latest.completed_at"'))
+        self.assertEqual(rendered_matches(self.root).status, 'failed')
+
+    def test_attribution_prose_is_an_authoring_and_visual_requirement(self):
+        body = self.html.read_text().replace('Generated with AI using the free ', '').replace(' toolkit.</p>', '</p>')
+        self.html.write_text(body)
+        # The bounded checker certifies fields/links, not multilingual meaning.
+        self.assertEqual(rendered_matches(self.root).status, 'passed')
+        self.assertIn('Generated with AI using the free ', credits.html_credits(credits.credit_payload(self.project)))
+
     def test_author_and_clock_changes_require_new_rendered_credits(self):
         # A shorter name must not pass by matching a substring of stale text.
         self.project["project"]["author"]["name"] = "OpenMapStack"

@@ -1288,7 +1288,9 @@ The provenance tab of a dashboard, or the provenance section of a report, opens 
 
 Labels and surrounding prose may be translated. Keep the visible timestamp in
 ISO 8601 with its offset, e.g. `2026-08-25T08:42:00+03:00`, also in a `<time
-datetime="…" data-oms-credit="analysis">` element. The values come from the
+datetime="…" data-oms-credit="analysis" data-oms-clock-source="runs.latest.completed_at">`
+element (`project.updated_at` as the source for the pre-run fallback). Preserve
+these field identifiers when translating labels. The values come from the
 manifest and run record, never from chat or a separate rendering clock.
 
 **Renderer contract.** `openmapstack.credits.credit_payload(project,
@@ -1297,9 +1299,23 @@ completed_at=completed_at)` prepares the identity and time;
 linked `toolkit`, `author` and optional `author-url` fields identified by
 `data-oms-credit`. Put it first in provenance, including in a labeled tab that
 the reader can open. Do not put the only copy in JSON, a script, a template or
-an invisible element. Dynamic controls must preserve that block. For QGIS,
+an invisible element. A hidden `role="tabpanel"` only qualifies when it has a
+unique ID and a visible, enabled, named `role="tab"` with a unique ID, reciprocal
+`aria-controls` / `aria-labelledby` and an inactive selection state
+(`aria-selected="false"` when declared). Controls hidden
+inside their own panel, disabled/inert controls and ambiguous IDs do not establish
+access. These associations do not prove that a click handler works; browser QA
+must actually open the panel. Dynamic controls must preserve the block. For QGIS,
 `write_qgis_credits(qgz_path, payload)` adds desktop-visible author, abstract and
 metadata links while retaining findings/provenance and other archive members.
+Its abstract starts with three logical credit lines: toolkit identity
+(`OpenMapStack`), the offset-bearing ISO analysis time, and author. The time line
+includes `[clock:runs.latest.completed_at]` or `[clock:project.updated_at]` to bind
+the source without depending on a translated label. Keep that marker when
+translating; the author metadata field and link URLs also remain bound to the
+manifest. Source provenance, including other timestamps, follows these lines.
+Earlier canonical helper headers without a marker remain supported; the old
+English pre-run fallback label is also accepted for compatibility.
 
 Capture one completion instant after analytical work and use it for every view,
 `runs.latest.completed_at` and the run record. Render declared view outputs before
@@ -1322,8 +1338,14 @@ report page, or known legacy view paths, against those values. Partial metadata,
 stale times and mismatched links fail. Preflight checks declarations; full
 `validate` and `verify` also inspect artifacts. Geodata-only projects have no
 rendered surface to inspect. These offline checks establish field/link
-consistency, not remote URL availability, translation quality or CSS/JS pixel
-visibility; inspect the opened provenance tab in browser/native QA as well.
+consistency, not remote URL availability or CSS/JS pixel visibility. In particular,
+**the checker does not certify the meaning of attribution prose in any language**:
+a toolkit anchor alone can pass its field/link predicate, even though omitting
+the required AI/free-toolkit statement violates the delivery requirement above.
+Renderers must emit that statement and a labeled pre-run fallback, if applicable;
+reviewers must inspect their meaning in the view's language. The shared helpers
+emit the required prose; static field checks are not a complete credits review.
+Inspect the opened provenance tab in browser/native QA as well.
 
 ---
 

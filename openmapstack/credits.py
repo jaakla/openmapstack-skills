@@ -81,12 +81,13 @@ def html_credits(payload: dict) -> str:
     esc = html.escape
     author, tool = payload["author"], payload["generated_with"]
     timestamp = payload["analysis_at"]
+    clock_source = "project.updated_at" if payload["fallback"] else "runs.latest.completed_at"
     fallback = " (project updated time; no canonical run yet)" if payload["fallback"] else ""
     website = (f' · <a data-oms-credit="author-url" href="{esc(author["url"], quote=True)}">Author website</a>'
                if author.get("url") else "")
     return (f'<section data-openmapstack-credits aria-label="Delivery credits">'
             f'<p>Generated with AI using the free <a data-oms-credit="toolkit" href="{esc(tool["url"], quote=True)}">OpenMapStack</a> toolkit.</p>'
-            f'<p>Analysis made: <time data-oms-credit="analysis" datetime="{esc(timestamp, quote=True)}">{esc(timestamp)}</time>{fallback}</p>'
+            f'<p>Analysis made: <time data-oms-credit="analysis" data-oms-clock-source="{clock_source}" datetime="{esc(timestamp, quote=True)}">{esc(timestamp)}</time>{fallback}</p>'
             f'<p>Author: <a data-oms-credit="author" href="mailto:{quote(author["email"], safe="@+.-_")}">{esc(author["name"])} ({esc(author["email"])})</a>{website}</p></section>')
 
 
@@ -100,14 +101,18 @@ def qgis_credits(xml: str, payload: dict) -> str:
     if abstract is None:
         abstract = ET.SubElement(metadata, "abstract")
     author, toolkit = payload["author"], payload["generated_with"]
+    clock_source = "project.updated_at" if payload["fallback"] else "runs.latest.completed_at"
     text = ("Generated with AI using the free OpenMapStack toolkit.\n"
             f"Analysis made: {payload['analysis_at']}" +
-            (" (project updated time; no canonical run yet)" if payload["fallback"] else "") +
+            (" (project updated time; no canonical run yet)" if payload["fallback"] else "") + f" [clock:{clock_source}]" +
             f"\nAuthor: {author['name']} ({author['email']}).")
     previous = abstract.text or ""
     # Replacing a managed header is idempotent and removes stale timestamps.
-    if previous.startswith("Generated with AI using the free OpenMapStack toolkit.\nAnalysis made:"):
-        previous = "\n".join(previous.splitlines()[3:]).lstrip()
+    lines = previous.splitlines()
+    if (previous.startswith("Generated with AI using the free OpenMapStack toolkit.\nAnalysis made:")
+            or len(lines) >= 3 and "OpenMapStack" in lines[0]
+            and re.search(r"\[clock:(?:runs\.latest\.completed_at|project\.updated_at)\]", lines[1])):
+        previous = "\n".join(lines[3:]).lstrip()
     abstract.text = text + ("\n" + previous if previous else "")
     field = metadata.find("author")
     if field is None:

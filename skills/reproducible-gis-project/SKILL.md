@@ -58,6 +58,7 @@ CLI setup and the worked example's runtime requirements.
 5. Generate the findings artifact from pipeline results before output hashing.
    Declare the real author and toolkit, and render linked credits with the
    canonical run time in every delivered view (workflow credits requirement).
+   Review the required attribution prose too; field checks cannot certify its meaning.
    Deliver the project, source/override policy, runtime instructions and
    substantive method limitations together. Preserve the full presentation
    obligations for the selected targets in the workflow reference; a view alone is not
