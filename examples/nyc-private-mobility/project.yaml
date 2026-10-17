@@ -6,8 +6,14 @@ project:
     fleet and hub coverage and account demand, and show ranked candidate zones on an interactive map while
     respecting all database access restrictions.
   created_at: '2026-09-17T00:00:00Z'
-  updated_at: '2026-10-09T09:00:17.286174+00:00'
+  updated_at: '2026-10-16T19:54:11.446916+00:00'
   status: validated
+  author:
+    name: OpenMapStack example maintainers
+    email: examples@example.invalid
+  generated_with:
+    tool: OpenMapStack
+    url: https://jaakla.github.io/openmapstack-skills/
 interpretation:
   objective: Rank NYC H3 resolution-8 cells for tenant alpha using pinned read-only captures of the provisioned
     PostGIS, BigQuery and MotherDuck demo databases. Spatially assign BigQuery trip pickups and MotherDuck
@@ -484,6 +490,14 @@ processing:
     operation: export
     input: scored_candidates
     output: hub_candidates
+  - id: render_findings
+    operation: summarize
+    output: findings
+    note: Generate evidence-bound Markdown from this execution before final run hashing; retain uncertainty
+      and snapshot limitations.
+    inputs:
+    - hub_candidates
+    - zone_metrics
 scoring:
   weights:
     demand: 0.45
@@ -530,10 +544,16 @@ outputs:
     path: project.qgz
     format: QGIS project archive (EPSG:4326)
     generated_by: export_candidates
+    kind: document
   fleet_positions_geojson:
     path: data/derived/fleet-positions.geojson
     format: GeoJSON (EPSG:4326)
     generated_by: export_fleet_points
+  findings:
+    path: findings.md
+    kind: document
+    format: Markdown
+    generated_by: render_findings
 validation:
   required:
   - geometry_valid
@@ -554,14 +574,14 @@ validation:
     expression: trips_total >= 30 AND hub_distance_m >= 1500 AND fleet_present <= 6
 runs:
   latest:
-    id: run-20261009-090017
-    started_at: '2026-10-09T09:00:16.733493+00:00'
-    completed_at: '2026-10-09T09:00:17.286174+00:00'
+    id: run-20261016-195411
+    started_at: '2026-10-16T19:54:10.872660+00:00'
+    completed_at: '2026-10-16T19:54:11.446916+00:00'
     status: passed
-    inputs_hash: sha256:454236128f75068bc06bd78f659eae400499a98d49f25574dfd8be87e531a794
-    outputs_hash: sha256:0e00f59245f23b07bf42a4565dbc9b6556b542ebe56a4fd85a22c895747338ea
+    inputs_hash: sha256:63b50048cbc8dcc2c95acf994a30e8ed09451c08bf62ecc65bca186b1e1c1737
+    outputs_hash: sha256:b08561cbc56bab5af393c41200d0b3cfacff6ab568dcb40724cde56032f31296
     record:
-      path: runs/run-20261009-090017.json
+      path: runs/run-20261016-195411.json
     validation_report:
       path: validation/latest-report.json
 runtime:
@@ -685,3 +705,6 @@ presentation:
     - No raw vehicle or customer records appear in the dashboard; only aggregate analysis evidence.
   intent: analytical_workspace
   primary_view: map
+findings:
+  schema: openmapstack-findings/v1
+  output: findings

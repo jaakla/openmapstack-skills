@@ -282,12 +282,14 @@ class ForeignProjectVerifyTests(unittest.TestCase):
         self.assertEqual(statuses["metamorphic.trail-order"], "passed")
         self.assertEqual(statuses["project.parameters_match_steps"], "passed")
         self.assertEqual(statuses["validation.run_record_matches"], "passed")
+        self.assertEqual(statuses["credits.declaration_valid"], "warning")
         self._assert_golden("river-crossings", text, payload)
 
     def test_district_facilities_project_reports_stably(self) -> None:
         text, payload = self._run("district-facilities", _catchments_project)
         statuses = {check["check"]: check["status"] for check in payload["checks"]}
         self.assertEqual(statuses["expectation.d1-count"], "warning")
+        self.assertEqual(statuses["credits.declaration_valid"], "warning")
         self.assertEqual(statuses["validation.warning_or_failed_propagates_to_status"], "passed")
         self.assertEqual(payload["status"], "warning")
         self._assert_golden("district-facilities", text, payload)

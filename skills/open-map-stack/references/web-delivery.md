@@ -455,3 +455,15 @@ Smoke test before handing off:
 * Data updates more often than every few hours → use Martin in front of PostGIS
 * Per-user filtering or styling that can't be expressed as Mapbox style filters → server-side rendering or dynamic SQL via Martin functions
 * Raster with on-demand band math / colormap → TiTiler
+
+## Delivery credits
+
+Read `project-spec.md` section 3, Credits header. The HTML renderer must consume
+`project.author`, `project.generated_with` and the canonical completion time,
+then put the shared credits block first in provenance. Preserve it when tabs,
+filters or other controls update dynamic content. Static checks verify values
+and links; browser QA must open provenance and confirm the block is visible,
+readable at narrow widths and navigable, and that its AI/free-toolkit attribution
+actually states the required meaning in the view's language. Field checks alone
+do not certify that prose. Use the same run time as all other
+selected views and run evidence; generate before hashing.

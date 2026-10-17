@@ -144,4 +144,16 @@
       <ProjectionsEnabled type="int">1</ProjectionsEnabled>
     </SpatialRefSys>
   </properties>
+  <projectMetadata>
+    <abstract>Generated with AI using the free OpenMapStack toolkit.
+Analysis made: 2026-10-16T19:54:11.446916+00:00
+Author: OpenMapStack example maintainers (examples@example.invalid).
+ Findings: findings.md (relative to this QGIS project). Synthetic snapshot screening; not live tracking or verified sites.</abstract>
+    <links>
+      <link description="Pipeline-generated findings, relative to this QGIS project" format="Markdown" mimeType="text/markdown" name="Findings" type="WWW:LINK" url="findings.md" />
+      <link description="OpenMapStack toolkit" format="" mimeType="" name="OpenMapStack toolkit" type="WWW:LINK" url="https://jaakla.github.io/openmapstack-skills/" />
+      <link description="Author email" format="" mimeType="" name="Author email" type="WWW:LINK" url="mailto:examples@example.invalid" />
+    </links>
+    <author>OpenMapStack example maintainers (examples@example.invalid)</author>
+  </projectMetadata>
 </qgis>
