@@ -164,6 +164,50 @@ class CreditsTests(unittest.TestCase):
                 result = rendered_matches(self.root)
                 self.assertEqual((result.status, result.data["code"]), ("failed", "credits_rendered_mismatch"))
 
+    def test_implicit_tab_name_excludes_hidden_descendants(self):
+        panel = '<section id="panel" role="tabpanel" aria-labelledby="tab" hidden>' + credits.html_credits(credits.credit_payload(self.project)) + '</section>'
+        tab = '<button id="tab" role="tab" aria-controls="panel">{}</button>'
+        self.html.write_text(tab.format('').replace('<button ', '<button alt="Credits" ') + panel)
+        self.assertEqual(rendered_matches(self.root).status, 'failed')
+        for content in ('<span hidden>Credits</span>', '<span aria-hidden="true">Credits</span>',
+                        '<span style="display:none">Credits</span>', '<span inert>Credits</span>',
+                        '<span hidden><b>Credits</b></span>', '<img hidden alt="Credits">',
+                        '<span hidden><img alt="Credits"></span>'):
+            with self.subTest(content=content):
+                self.html.write_text(tab.format(content) + panel)
+                self.assertEqual(rendered_matches(self.root).status, 'failed')
+        for content in ('<span hidden>Decoration</span><b>Credits</b>',
+                        '<span hidden>Decoration</span>Credits', '<img alt="Credits">'):
+            with self.subTest(content=content):
+                self.html.write_text(tab.format(content) + panel)
+                self.assertEqual(rendered_matches(self.root).status, 'passed')
+
+    def test_qgis_header_author_matches_independently_of_native_author(self):
+        original = self.qgz.read_bytes()
+        author = self.project['project']['author']
+        value = f"{author['name']} ({author['email']})"
+        for line in ('Autor: ' + value + '.', value, '作者: ' + value):
+            self.qgz.write_bytes(original)
+            def replace_header(tree):
+                abstract = tree.find('projectMetadata/abstract')
+                lines = abstract.text.splitlines()
+                lines[2] = line
+                abstract.text = '\n'.join(lines)
+            self.edit_qgis(replace_header)
+            self.assertEqual(rendered_matches(self.root).status, 'passed')
+        for line in ('Autor: Wrong author (wrong@example.invalid)',
+                     f"Autor: Wrong author ({author['email']})",
+                     f"Autor: {author['name']} (wrong@example.invalid)",
+                     'Autor: Prefix ' + value, 'Autor: ' + value + ' and another author', ''):
+            with self.subTest(line=line):
+                self.qgz.write_bytes(original)
+                self.edit_qgis(replace_header)
+                with zipfile.ZipFile(self.qgz) as archive:
+                    self.assertEqual(ET.fromstring(archive.read('project.qgs')).findtext('projectMetadata/author'), value)
+                result = rendered_matches(self.root)
+                self.assertEqual(result.status, 'failed')
+                self.assertIn('QGIS credit header author differs', result.detail)
+
     def test_translated_qgis_header_binds_identity_clock_and_links(self):
         original = self.qgz.read_bytes()
         def translate(tree):

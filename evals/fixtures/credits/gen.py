@@ -51,7 +51,13 @@ def qgis_credits(xml, payload):
         page.write_text(page.read_text().replace('href="mailto:examples@example.invalid"', 'href="mailto:wrong@example.invalid"'))
     elif mutation == 'tabpanel':
         page.write_text(page.read_text().replace('data-openmapstack-credits', 'data-openmapstack-credits role="tabpanel" hidden'))
-    elif mutation in {'qgis-time', 'qgis-identity', 'qgis-link'}:
+    elif mutation == 'tab-label':
+        body = page.read_text()
+        body = re.sub(r'(<section data-openmapstack-credits.*?</section>)',
+            r'<button id="credits-tab" role="tab" aria-controls="credits-panel"><span hidden>Credits</span></button>'
+            r'<section id="credits-panel" role="tabpanel" aria-labelledby="credits-tab" hidden>\1</section>', body, flags=re.S)
+        page.write_text(body)
+    elif mutation in {'qgis-time', 'qgis-identity', 'qgis-link', 'qgis-header-author'}:
         archive_path = path.parent / project['outputs']['qgis']['path']
         with zipfile.ZipFile(archive_path) as archive:
             members = [(info, archive.read(info)) for info in archive.infolist()]
@@ -64,6 +70,11 @@ def qgis_credits(xml, payload):
                         abstract.text = abstract.text.replace(credit_payload(project)['analysis_at'], '2000-01-01T00:00:00+00:00')
                     elif mutation == 'qgis-identity':
                         tree.find('projectMetadata/author').text = 'Vale autor'
+                    elif mutation == 'qgis-header-author':
+                        abstract = tree.find('projectMetadata/abstract')
+                        lines = abstract.text.splitlines()
+                        lines[2] = 'Autor: Wrong author (wrong@example.invalid)'
+                        abstract.text = '\n'.join(lines)
                     else:
                         tree.find('projectMetadata/links/link[@url="https://jaakla.github.io/openmapstack-skills/"]').set('url', 'https://wrong.invalid')
                     data = ET.tostring(tree)
@@ -74,7 +85,7 @@ def qgis_credits(xml, payload):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('destination', type=Path)
-    parser.add_argument('--break', dest='mutation', choices=['metadata', 'missing', 'stale', 'link', 'tabpanel', 'qgis-time', 'qgis-identity', 'qgis-link'])
+    parser.add_argument('--break', dest='mutation', choices=['metadata', 'missing', 'stale', 'link', 'tabpanel', 'tab-label', 'qgis-time', 'qgis-identity', 'qgis-link', 'qgis-header-author'])
     parser.add_argument('--legacy', action='store_true')
     parser.add_argument('--translated', action='store_true')
     args = parser.parse_args()

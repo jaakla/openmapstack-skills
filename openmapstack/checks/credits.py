@@ -65,7 +65,7 @@ class _HTML(HTMLParser):
         self.nodes = []
 
     def handle_starttag(self, tag, attrs):
-        node = {"tag": tag, "attrs": dict(attrs), "text": "", "parents": list(self.stack)}
+        node = {"tag": tag, "attrs": dict(attrs), "text": "", "own_text": "", "parents": list(self.stack)}
         self.nodes.append(node)
         if tag not in {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}:
             self.stack.append(node)
@@ -81,6 +81,8 @@ class _HTML(HTMLParser):
             return
         for node in self.stack:
             node["text"] += data
+        if self.stack:
+            self.stack[-1]["own_text"] += data
 
 
 def _reachable_panel(node: dict, nodes: list[dict], visiting: tuple[int, ...]) -> bool:
@@ -108,9 +110,14 @@ def _reachable_panel(node: dict, nodes: list[dict], visiting: tuple[int, ...]) -
                 or values.get("aria-selected", "false") != "false"):
             continue
         label_ids = values.get("aria-labelledby", "").split()
-        named = (tab["text"].strip() or values.get("aria-label", "").strip()
+        descendants = [n for n in nodes if n is tab or any(parent is tab for parent in n["parents"])]
+        # Implicit names use rendered content, not text/alt hidden inside the
+        # control. Explicit aria-labelledby references may name hidden nodes.
+        visible_content = [n for n in descendants if not _hidden(n, nodes, visiting)]
+        named = (any(n["own_text"].strip() or (n is not tab and n["attrs"].get("alt", "").strip()) for n in visible_content)
+                 or values.get("aria-label", "").strip()
                  or any(n["attrs"].get("id") in label_ids and n["text"].strip() for n in nodes)
-                 or any(any(parent is tab for parent in n["parents"]) and n["attrs"].get("alt", "").strip() for n in nodes))
+                 )
         if not named:
             continue
         if not _hidden(tab, nodes, visiting):
@@ -199,8 +206,13 @@ def _qgis_errors(path: Path, expected: dict) -> list[str]:
     errors = []
     if not header or toolkit["tool"] not in header[0]:
         errors.append("QGIS toolkit identity missing from the credit header")
-    if f"{author['name']} ({author['email']})" != node.findtext("author", ""):
+    author_value = f"{author['name']} ({author['email']})"
+    if author_value != node.findtext("author", ""):
         errors.append("QGIS author differs from the manifest")
+    # The translated label is free; the entire author value must match in both
+    # the abstract header and native field. Provenance elsewhere cannot supply it.
+    if len(header) < 3 or not re.fullmatch(r"(?:[^\n]+?:\s*)?" + re.escape(author_value) + r"\.?", header[2].strip()):
+        errors.append("QGIS credit header author differs from the manifest")
     times = re.findall(r"(?<![\w])\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})(?![\w:+-])", header[1] if len(header) > 1 else "")
     try:
         if len(times) != 1 or credits.instant(times[0]) != credits.instant(expected["analysis_at"]):

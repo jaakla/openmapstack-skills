@@ -1304,7 +1304,7 @@ unique ID and a visible, enabled, named `role="tab"` with a unique ID, reciproca
 `aria-controls` / `aria-labelledby` and an inactive selection state
 (`aria-selected="false"` when declared). Controls hidden
 inside their own panel, disabled/inert controls and ambiguous IDs do not establish
-access. These associations do not prove that a click handler works; browser QA
+access. Hidden descendants cannot supply an implicit tab label. These associations do not prove that a click handler works; browser QA
 must actually open the panel. Dynamic controls must preserve the block. For QGIS,
 `write_qgis_credits(qgz_path, payload)` adds desktop-visible author, abstract and
 metadata links while retaining findings/provenance and other archive members.
@@ -1312,7 +1312,9 @@ Its abstract starts with three logical credit lines: toolkit identity
 (`OpenMapStack`), the offset-bearing ISO analysis time, and author. The time line
 includes `[clock:runs.latest.completed_at]` or `[clock:project.updated_at]` to bind
 the source without depending on a translated label. Keep that marker when
-translating; the author metadata field and link URLs also remain bound to the
+translating; both the author metadata field and the third abstract line must
+contain the exact `name (email)` author value (the abstract may add a translated
+label followed by a colon and a final period). Link URLs remain bound to the
 manifest. Source provenance, including other timestamps, follows these lines.
 Earlier canonical helper headers without a marker remain supported; the old
 English pre-run fallback label is also accepted for compatibility.
