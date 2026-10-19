@@ -16,7 +16,8 @@ example = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(example)
 
 
-def generate(destination: Path, mutation: str | None = None, legacy: bool = False, translated: bool = False):
+def generate(destination: Path, mutation: str | None = None, legacy: bool = False, translated: bool = False,
+             nested_fields: bool = False, opacity_tab: bool = False):
     path = example.create(destination, ['dashboard', 'qgis'])
     if translated:
         pipeline = path.parent / 'pipeline.py'
@@ -31,6 +32,30 @@ def qgis_credits(xml, payload):
         'Analysis made:', 'Analüüs tehtud:').replace('Author:', 'Autor:')
 
 '''
+        original = pipeline.read_text()
+        marker = 'if __name__ == "__main__":'
+        assert marker in original
+        pipeline.write_text(original.replace(marker, wrapper + marker))
+    if nested_fields or opacity_tab:
+        pipeline = path.parent / 'pipeline.py'
+        # Controls render their nested fields/tab before canonical run hashing.
+        wrapper = '''
+_plain_html_credits = html_credits
+def html_credits(payload):
+    import re
+    body = _plain_html_credits(payload)
+'''
+        if nested_fields:
+            wrapper += '''
+    body = re.sub(r'(<(?:a|time) data-oms-credit="(?:author|toolkit|analysis)"[^>]*>)(.*?)(</(?:a|time)>)',
+        lambda m: m[1] + '<span>' + m[2] + '</span>' + m[3], body)
+'''
+        if opacity_tab:
+            wrapper += '''
+    body = ('<button id="credits-tab" role="tab" aria-controls="credits-panel"><span style="opacity:0.5">Credits</span></button>'
+            '<section id="credits-panel" role="tabpanel" aria-labelledby="credits-tab" hidden>' + body + '</section>')
+'''
+        wrapper += '    return body\n\n'
         original = pipeline.read_text()
         marker = 'if __name__ == "__main__":'
         assert marker in original
@@ -51,6 +76,10 @@ def qgis_credits(xml, payload):
         page.write_text(page.read_text().replace('href="mailto:examples@example.invalid"', 'href="mailto:wrong@example.invalid"'))
     elif mutation == 'tabpanel':
         page.write_text(page.read_text().replace('data-openmapstack-credits', 'data-openmapstack-credits role="tabpanel" hidden'))
+    elif mutation == 'hidden-fields':
+        page.write_text(page.read_text().replace('<span>', '<span hidden>'))
+    elif mutation == 'tab-opacity':
+        page.write_text(page.read_text().replace('style="opacity:0.5"', 'style="opacity:0"'))
     elif mutation == 'tab-label':
         body = page.read_text()
         body = re.sub(r'(<section data-openmapstack-credits.*?</section>)',
@@ -85,8 +114,10 @@ def qgis_credits(xml, payload):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('destination', type=Path)
-    parser.add_argument('--break', dest='mutation', choices=['metadata', 'missing', 'stale', 'link', 'tabpanel', 'tab-label', 'qgis-time', 'qgis-identity', 'qgis-link', 'qgis-header-author'])
+    parser.add_argument('--break', dest='mutation', choices=['metadata', 'missing', 'stale', 'link', 'tabpanel', 'tab-label', 'hidden-fields', 'tab-opacity', 'qgis-time', 'qgis-identity', 'qgis-link', 'qgis-header-author'])
     parser.add_argument('--legacy', action='store_true')
     parser.add_argument('--translated', action='store_true')
+    parser.add_argument('--nested-fields', action='store_true')
+    parser.add_argument('--opacity-tab', action='store_true')
     args = parser.parse_args()
-    generate(args.destination, args.mutation, args.legacy, args.translated)
+    generate(args.destination, args.mutation, args.legacy, args.translated, args.nested_fields, args.opacity_tab)

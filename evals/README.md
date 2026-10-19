@@ -89,8 +89,11 @@ healthy translated-QGIS control with truthful run evidence. Mutation `962`
 rejects an orphan hidden tabpanel; `963`–`965` independently corrupt translated
 QGIS time, native author identity and toolkit links. Mutation `966` independently
 changes the abstract's author line while keeping the native author intact;
-`967` rejects a tab whose only implicit label is hidden. All ten credits
-mutations (`958`–`967`) have healthy controls. Attribution prose remains an authoring
+`967` rejects a tab whose only implicit label is hidden. Mutation `968` hides
+author/toolkit/time text inside otherwise valid fields; `969` changes a reachable
+tab label from visible fractional opacity (`0.5`) to zero. Their healthy controls
+render the nested markup and fractional-opacity tab before canonical run hashing.
+All twelve credits mutations (`958`–`969`) have healthy controls. Attribution prose remains an authoring
 and visual-review requirement, not a multilingual meaning check.
 
 Every score type also publishes a `capability` block — assertions evaluated,

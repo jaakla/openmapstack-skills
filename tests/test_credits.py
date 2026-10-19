@@ -1,6 +1,7 @@
 """Credit checks inspect rendered fields, not a renderer's receipt."""
 import copy
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -127,6 +128,73 @@ class CreditsTests(unittest.TestCase):
             self.assertEqual(rendered_matches(self.root).status, "failed")
         self.qgz.write_bytes(b"broken zip")
         self.assertEqual(rendered_matches(self.root).status, "failed")
+
+    def test_credit_fields_use_visible_descendant_text(self):
+        self.project['project']['author']['url'] = 'https://example.invalid/author'
+        self.save()
+        credits.write_qgis_credits(self.qgz, credits.credit_payload(self.project))
+        body = credits.html_credits(credits.credit_payload(self.project))
+        for role in ('author', 'toolkit', 'analysis', 'author-url'):
+            pattern = r'(<(?:a|time) data-oms-credit="' + role + r'"[^>]*>)(.*?)(</(?:a|time)>)'
+            for hidden in ('hidden', 'aria-hidden="true"', 'inert', 'style="display:none"',
+                           'style="visibility:collapse"', 'style="opacity:0"'):
+                with self.subTest(role=role, hidden=hidden):
+                    # Visible nested markup and hidden decoration are healthy.
+                    self.html.write_text(re.sub(pattern,
+                        lambda m: m[1] + '<span ' + hidden + '>Decoration</span><b>' + m[2] + '</b>' + m[3], body))
+                    self.assertEqual(rendered_matches(self.root).status, 'passed')
+                    # Attributes/hrefs remain correct; only the field text disappears.
+                    self.html.write_text(re.sub(pattern,
+                        lambda m: m[1] + '<span ' + hidden + '><b>' + m[2] + '</b></span>' + m[3], body))
+                    result = rendered_matches(self.root)
+                    self.assertEqual((result.status, result.data['code']), ('failed', 'credits_rendered_mismatch'))
+        # Mixed direct/descendant text must retain its original order.
+        self.html.write_text(body.replace('>OpenMapStack</a>', '>Open<b>Map</b>Stack</a>'))
+        self.assertEqual(rendered_matches(self.root).status, 'passed')
+
+    def test_email_and_legacy_fallback_use_visible_text(self):
+        body = credits.html_credits(credits.credit_payload(self.project))
+        email = self.project['project']['author']['email']
+        body = body.replace(' (' + email + ')</a>', '</a>')
+        self.html.write_text(body.replace('</section>', '<span>' + email + '</span></section>'))
+        self.assertEqual(rendered_matches(self.root).status, 'passed')
+        self.html.write_text(body.replace('</section>', '<span hidden>' + email + '</span></section>'))
+        result = rendered_matches(self.root)
+        self.assertEqual(result.status, 'failed')
+        self.assertIn('author email missing from visible credits', result.detail)
+        self.project['runs']['latest'] = None
+        self.save()
+        credits.write_qgis_credits(self.qgz, credits.credit_payload(self.project))
+        body = credits.html_credits(credits.credit_payload(self.project)).replace(' data-oms-clock-source="project.updated_at"', '')
+        self.html.write_text(body)
+        self.assertEqual(rendered_matches(self.root).status, 'passed')
+        self.html.write_text(body.replace('no canonical run yet', '<span hidden>no canonical run yet</span>'))
+        self.assertEqual(rendered_matches(self.root).status, 'failed')
+
+    def test_inline_visibility_compares_properties_and_complete_values(self):
+        panel = '<section id="panel" role="tabpanel" aria-labelledby="tab" hidden>' + credits.html_credits(credits.credit_payload(self.project)) + '</section>'
+        tab = '<button id="tab" role="tab" aria-controls="panel"><span style="{}">Credits</span></button>'
+        visible = ('opacity:0.5', ' OPACITY : .5 ! IMPORTANT ', 'opacity:50%', 'opacity:1e-3',
+                   'opacity:0; opacity:.5', 'opacity:.5!important;opacity:0',
+                   '--opacity:0', '--hint:display:none', '--hint:visibility:hidden',
+                   'content:opacity:0', 'display:none-block', 'visibility:hidden-extra',
+                   'opacity:0oops', 'display:none; display:block', 'visibility:hidden;visibility:visible',
+                   "content:';display:none;opacity:0';opacity:.5",
+                   'background:url(data:image/svg+xml;display:none;opacity:0)',
+                   r"content:'escaped\';display:none;opacity:0';opacity:.5",
+                   '/* opacity:0; display:none */ opacity:.5')
+        hidden = ('opacity:0', ' OPACITY : 0.0 ! IMPORTANT ', 'opacity:0%', 'opacity:-0',
+                  'opacity:-.5', 'opacity:0e2', 'opacity:.5;opacity:0', 'opacity:0!important;opacity:.5',
+                  'display:none', ' DISPLAY : NONE ! important ', 'visibility:hidden',
+                  ' VISIBILITY : COLLAPSE !important ', 'display:none!important;display:block',
+                  'visibility:collapse!important;visibility:visible', 'opacity:/* zero */0')
+        hidden += ('display:none;display:none-block', 'visibility:hidden;visibility:hidden-extra',
+                   'opacity:0;opacity:0oops', 'display:none;display:invalid')
+        for status, styles in (('passed', visible), ('failed', hidden)):
+            for style in styles:
+                with self.subTest(style=style, status=status):
+                    self.html.write_text(tab.format(style) + panel)
+                    self.assertEqual(rendered_matches(self.root).status, status)
 
     def test_hidden_tabpanel_requires_a_visible_enabled_associated_tab(self):
         body = credits.html_credits(credits.credit_payload(self.project))

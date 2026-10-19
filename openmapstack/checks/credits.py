@@ -63,6 +63,7 @@ class _HTML(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.stack = []
         self.nodes = []
+        self.text_parts = []
 
     def handle_starttag(self, tag, attrs):
         node = {"tag": tag, "attrs": dict(attrs), "text": "", "own_text": "", "parents": list(self.stack)}
@@ -83,6 +84,73 @@ class _HTML(HTMLParser):
             node["text"] += data
         if self.stack:
             self.stack[-1]["own_text"] += data
+            self.text_parts.append((self.stack[-1], data))
+
+
+def _inline_hidden(style: str) -> bool:
+    """Inspect complete inline declarations, respecting order and !important.
+
+    This is a bounded inline check, not a stylesheet/computed-style engine.
+    In particular, values in custom properties or URLs are not declarations.
+    """
+    declarations = {}
+    style = re.sub(r"/\*.*?\*/", "", style, flags=re.S)
+    # Semicolons in strings/functions (e.g. content or data URLs) cannot start
+    # a display/visibility/opacity declaration.
+    parts, start, depth, quote_char, escaped = [], 0, 0, None, False
+    for index, char in enumerate(style):
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif quote_char:
+            if char == quote_char:
+                quote_char = None
+        elif char in {"'", '"'}:
+            quote_char = char
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth = max(0, depth - 1)
+        elif char == ";" and depth == 0:
+            parts.append(style[start:index])
+            start = index + 1
+    parts.append(style[start:])
+    for declaration in parts:
+        property_name, separator, value = declaration.partition(":")
+        property_name = property_name.strip().lower()
+        if not separator or property_name not in {"display", "visibility", "opacity"}:
+            continue
+        important = bool(re.search(r"!\s*important\s*$", value, re.I))
+        value = re.sub(r"!\s*important\s*$", "", value, flags=re.I).strip().lower()
+        if not value or "!" in value:
+            continue
+        if property_name == "opacity":
+            if not re.fullmatch(r"[+-]?(?:\d*\.\d+|\d+)(?:e[+-]?\d+)?%?", value):
+                continue
+            # Negative opacity is clamped to zero; positive fractions remain visible.
+            mantissa = value.rstrip("%").split("e")[0]
+            hidden = mantissa.startswith("-") or all(char in "0.+" for char in mantissa)
+        else:
+            # Invalid values do not override an earlier valid declaration.
+            global_values = {"inherit", "initial", "unset", "revert", "revert-layer"}
+            if property_name == "visibility":
+                valid = value in global_values | {"visible", "hidden", "collapse"}
+            else:
+                valid = value in global_values | {
+                    "none", "contents", "block", "inline", "run-in", "flow", "flow-root", "flex", "grid", "ruby",
+                    "inline-block", "inline-flex", "inline-grid", "inline-table", "table", "table-row-group",
+                    "table-header-group", "table-footer-group", "table-row", "table-cell", "table-column-group",
+                    "table-column", "table-caption", "ruby-base", "ruby-text", "ruby-base-container",
+                    "ruby-text-container", "list-item",
+                } or bool(re.fullmatch(r"(?:block|inline|run-in)\s+(?:flow|flow-root|table|flex|grid|ruby)", value))
+            if not valid:
+                continue
+            hidden = value in ({"none"} if property_name == "display" else {"hidden", "collapse"})
+        previous = declarations.get(property_name)
+        if previous is None or important or not previous[0]:
+            declarations[property_name] = (important, hidden)
+    return any(hidden for _, hidden in declarations.values())
 
 
 def _reachable_panel(node: dict, nodes: list[dict], visiting: tuple[int, ...]) -> bool:
@@ -135,11 +203,17 @@ def _hidden(node: dict, nodes: list[dict], visiting: tuple[int, ...] = ()) -> bo
             return True
         if "inert" in attrs:
             return True
-        style = re.sub(r"\s", "", attrs.get("style", "").lower())
-        if "hidden" in attrs or attrs.get("aria-hidden") == "true" or any(rule in style for rule in ["display:none", "visibility:hidden", "opacity:0"]):
+        if "hidden" in attrs or attrs.get("aria-hidden") == "true" or _inline_hidden(attrs.get("style", "")):
             if attrs.get("role") != "tabpanel" or not _reachable_panel(ancestor, nodes, visiting):
                 return True
     return False
+
+
+def _visible_text(node: dict, parser: _HTML) -> str:
+    # Preserve document order, including text on both sides of nested markup.
+    return "".join(text for owner, text in parser.text_parts
+                   if (owner is node or any(parent is node for parent in owner["parents"]))
+                   and not _hidden(owner, parser.nodes))
 
 
 def _html_errors(path: Path, expected: dict) -> list[str]:
@@ -155,6 +229,7 @@ def _html_errors(path: Path, expected: dict) -> list[str]:
         return values[0] if len(values) == 1 and not _hidden(values[0], parser.nodes) else None
 
     author, toolkit = expected["author"], expected["generated_with"]
+    block_text = _visible_text(block, parser)
     normalize = lambda text: " ".join(text.split())
     for role, href, labels in [
         ("toolkit", toolkit["url"], [toolkit["tool"], toolkit["tool"] + " toolkit"]),
@@ -162,17 +237,17 @@ def _html_errors(path: Path, expected: dict) -> list[str]:
          [author["name"], f"{author['name']} ({author['email']})"]),
     ]:
         node = field(role)
-        if node is None or node["tag"] != "a" or node["attrs"].get("href") != href or normalize(node["text"]) not in [normalize(label) for label in labels]:
+        if node is None or node["tag"] != "a" or node["attrs"].get("href") != href or normalize(_visible_text(node, parser)) not in [normalize(label) for label in labels]:
             errors.append(f"{role} credit or link differs from the manifest")
-    if author["email"] not in block["text"]:
+    if author["email"] not in block_text:
         errors.append("author email missing from visible credits")
     if author.get("url"):
         node = field("author-url")
-        if node is None or node["tag"] != "a" or node["attrs"].get("href") != author["url"] or not node["text"].strip():
+        if node is None or node["tag"] != "a" or node["attrs"].get("href") != author["url"] or not _visible_text(node, parser).strip():
             errors.append("author website credit/link differs from the manifest")
     node = field("analysis")
     try:
-        if node is None or node["tag"] != "time" or credits.instant(node["attrs"].get("datetime")) != credits.instant(expected["analysis_at"]) or credits.instant(node["text"].strip()) != credits.instant(expected["analysis_at"]):
+        if node is None or node["tag"] != "time" or credits.instant(node["attrs"].get("datetime")) != credits.instant(expected["analysis_at"]) or credits.instant(_visible_text(node, parser).strip()) != credits.instant(expected["analysis_at"]):
             raise ValueError("stale timestamp")
     except (TypeError, ValueError):
         errors.append("visible analysis timestamp/offset differs from the canonical completion time")
@@ -181,7 +256,7 @@ def _html_errors(path: Path, expected: dict) -> list[str]:
     # Old helper output had only an English fallback label. New renderers bind
     # the source independently so labels, including that explanation, translate.
     if (clock_source != expected_source if clock_source is not None else
-            ("no canonical run yet" in block["text"]) != expected["fallback"]):
+            ("no canonical run yet" in block_text) != expected["fallback"]):
         errors.append("pre-run timestamp fallback label differs")
     return errors
 
