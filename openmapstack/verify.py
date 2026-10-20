@@ -346,11 +346,6 @@ def verify_project(
 
     _run(runs, "credits.declaration_valid", credit_checks.declaration_valid, root)
     _run(runs, "credits.rendered_matches", credit_checks.rendered_matches, root)
-    credit_surfaces = runs[-1].result.data.get("surfaces", [])
-    for relative in credit_surfaces:
-        if Path(relative).suffix.lower() not in {".qgs", ".qgz"}:
-            _run(runs, "visual.credits_visible_in_browser." + relative,
-                 visual_checks.credits_visible_in_browser, root, dashboard=relative)
 
     if "findings" in manifest:
         from .checks.findings import artifact_matches

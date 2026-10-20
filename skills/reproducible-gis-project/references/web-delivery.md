@@ -464,8 +464,9 @@ then put the shared credits block first in provenance. Preserve it when tabs,
 filters or other controls update dynamic content. Static checks verify values
 and links and recognize simple hidden markers. Ambiguous inline CSS returns
 `not_testable`, never a visibility pass. Run `visual.credits_visible_in_browser`
+through explicit visual execution (e.g. eval case 031 with `--mode visual`)
 for computed styles and visible field text on desktop/mobile; it opens the
-associated credits tab. See the static/visual boundary in `project-spec.md`.
+associated credits tab. Ordinary `verify` does not run this browser assertion. See the static/visual boundary in `project-spec.md`.
 Browser QA must open provenance and confirm the block is visible,
 readable at narrow widths and navigable, and that its AI/free-toolkit attribution
 actually states the required meaning in the view's language. Field checks alone

@@ -64,6 +64,30 @@ class CreditsTests(unittest.TestCase):
         report.write_text("<html><body>Report without credits</body></html>")
         self.assertEqual(rendered_matches(self.root).status, "failed")
 
+    def test_credits_browser_assertion_requires_explicit_visual_execution(self):
+        from openmapstack.checks import passed
+        from tests.test_evals import eval_runner
+
+        with patch('openmapstack.checks.visual.credits_visible_in_browser',
+                   return_value=passed('explicit visual execution')) as browser_check:
+            for ambiguous in (False, True):
+                if ambiguous:
+                    self.html.write_text(self.html.read_text().replace(
+                        'data-openmapstack-credits', 'data-openmapstack-credits style="opacity:initial"'))
+                result = verify_project(self.path)
+                browser_check.assert_not_called()
+                self.assertFalse(any('credits_visible_in_browser' in check.name for check in result.checks))
+                static = next(c.result for c in result.checks if c.name == 'credits.rendered_matches')
+                self.assertEqual(static.status, 'not_testable' if ambiguous else 'passed')
+
+            case = Path(__file__).resolve().parents[1] / 'evals/cases/031-credits-visibility'
+            fixture = eval_runner.run_case(case, 'fixture')
+            self.assertEqual(fixture['status'], 'passed')
+            browser_check.assert_not_called()
+            visual = eval_runner.run_case(case, 'visual')
+            self.assertEqual(visual['status'], 'passed')
+            browser_check.assert_called_once()
+
     def test_missing_both_is_explicit_legacy_warning_but_partial_is_failed(self):
         self.project["project"].pop("author")
         self.save()

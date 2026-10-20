@@ -98,7 +98,9 @@ classifies only simple unique declarations; comments, strings, custom properties
 functions, repeated declarations and unsupported visibility values defer as
 `not_testable` to the browser. Visual case `031` checks computed-visible credits
 on desktop/mobile; mutation `970` hides nested field text with a stylesheet and
-has a healthy control. These scoped visual cases require Chromium, not PyQGIS.
+has a healthy control. These scoped visual cases require Chromium, not PyQGIS. The credits browser
+assertion runs only with explicit visual execution; ordinary `verify` and fixture
+mode do not schedule it or add a browser capability gap for it.
 Attribution prose remains an authoring
 and visual-review requirement, not a multilingual meaning check.
 

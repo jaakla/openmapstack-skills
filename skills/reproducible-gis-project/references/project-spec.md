@@ -1351,7 +1351,9 @@ Static HTML visibility recognizes only structural hidden markers and simple inli
 lists with one declaration per property. Comments, strings, custom properties,
 functions, repeated properties and unsupported visibility values return
 `not_testable`, pointing to `visual.credits_visible_in_browser`; they never count
-as a visibility pass. That browser assertion opens the credits panel on desktop
+as a visibility pass. Run that browser assertion through explicit visual execution
+(e.g. eval case 031 with `--mode visual`); ordinary `verify` does not schedule it
+or add a browser capability gap for it. It opens the credits panel on desktop
 and mobile and checks computed-visible block/field text against the manifest.
 Stylesheets and CSS cascade/inheritance belong to this visual check, not the
 static checker. Inspect attribution meaning in browser/native QA as well.
