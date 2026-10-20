@@ -141,6 +141,18 @@
       "status": "not_testable"
     },
     {
+      "check": "credits.declaration_valid",
+      "code": "credits_legacy_missing",
+      "message": "legacy v1 project has neither author nor generated_with; add both before new delivery",
+      "status": "warning"
+    },
+    {
+      "check": "credits.rendered_matches",
+      "code": "credits_legacy_missing",
+      "message": "legacy v1 project has neither author nor generated_with; add both before new delivery",
+      "status": "warning"
+    },
+    {
       "check": "presentation.layers_use_semantic_roles",
       "message": "all 2 layers declare a semantic_role",
       "status": "passed"
@@ -165,12 +177,12 @@
     "failed": 0,
     "not_testable": 1,
     "passed": 25,
-    "warning": 1
+    "warning": 3
   },
   "coverage": {
-    "applicable": 27,
-    "executed": 26,
-    "execution_rate": 0.9629629629629629,
+    "applicable": 29,
+    "executed": 28,
+    "execution_rate": 0.9655172413793104,
     "not_testable": 1
   },
   "project_file": "$PROJECT/project.yaml",

@@ -597,6 +597,8 @@ def valid_manifest() -> dict:
             "created_at": "2026-08-26T00:00:00Z",
             "updated_at": "2026-08-26T00:00:00Z",
             "status": "validated",
+            "author": {"name": "OpenMapStack example maintainers", "email": "examples@example.invalid"},
+            "generated_with": {"tool": "OpenMapStack", "url": "https://jaakla.github.io/openmapstack-skills/"},
         },
         "interpretation": {
             "objective": "Select a deterministic fixture parcel.",

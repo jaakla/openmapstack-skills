@@ -43,8 +43,8 @@ def export(root: Path, project: dict, database: Path) -> dict:
     return {'features': len(rows), 'area_m2': sum(r[1] for r in rows)}
 
 
-def finalize(project: dict, started: datetime.datetime, checks: list[dict]) -> None:
-    completed = datetime.datetime.now(datetime.timezone.utc).isoformat()
+def finalize(project: dict, started: datetime.datetime, checks: list[dict], *, completed_at: str | None = None) -> None:
+    completed = completed_at or datetime.datetime.now(datetime.timezone.utc).isoformat()
     status = 'failed' if any(c['status'] == 'failed' for c in checks) else 'passed'
     project['validation']['required'] = [c['id'] for c in checks]
     run_id = started.strftime('run-%Y%m%d-%H%M%S-%f')
@@ -94,11 +94,16 @@ def main() -> None:
             receipt['versions'][package] = importlib.metadata.version(package)
     def capture(name, function):
         result = function(); receipt['stages'][name] = result; return result
+    completed_at = None
+    def render():
+        nonlocal completed_at
+        completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        return delivery.render(ROOT, project, completed_at=completed_at)
     stages = {
         'load': lambda: capture('load', lambda: ingest.load(source, database, ROOT / 'work/dlt-state', owners['ingestion'])),
         'transform': lambda: capture('transform', lambda: analysis.transform(ROOT, database, owners['analysis'])),
         'export': lambda: capture('export', lambda: export(ROOT, project, database)),
-        'render': lambda: capture('render', lambda: delivery.render(ROOT, project))}
+        'render': lambda: capture('render', render)}
     if owners['orchestration'] == 'dagster':
         receipt['orchestration'] = orchestration.execute(stages, ROOT)
     else:
@@ -114,7 +119,7 @@ def main() -> None:
         checks.append({'id': 'delivery_' + target['id'], 'status': result.status, 'reason': result.detail})
     result = integration_matches(ROOT)
     checks.append({'id': 'integration_evidence', 'status': result.status, 'reason': result.detail})
-    finalize(project, started, checks)
+    finalize(project, started, checks, completed_at=completed_at)
     if any(c['status'] == 'failed' for c in checks):
         raise RuntimeError('validation failed')
 

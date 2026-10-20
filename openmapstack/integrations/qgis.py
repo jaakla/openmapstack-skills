@@ -15,9 +15,10 @@ from pathlib import Path
 
 from ..delivery import declaration_errors, metadata_json, targets
 from ..project import load_project, project_path
+from ..credits import credit_payload, declared, write_qgis_credits
 
 
-def generate(root: Path, project: dict, target_id: str) -> Path:
+def generate(root: Path, project: dict, target_id: str, *, completed_at: str | None = None) -> Path:
     errors = declaration_errors(project, root)
     if errors:
         raise ValueError("; ".join(errors))
@@ -106,6 +107,8 @@ def generate(root: Path, project: dict, target_id: str) -> Path:
         if not desktop.write():
             raise ValueError("QGIS could not write the selected archive")
         desktop.clear()
+        if declared(project):
+            write_qgis_credits(output, credit_payload(project, completed_at=completed_at))
         if not desktop.read(str(output)) or not desktop.crs().isValid():
             raise ValueError("saved QGIS project failed to reload with a valid CRS")
         if any(not layer.isValid() or not layer.crs().isValid() for layer in desktop.mapLayers().values()):
@@ -119,9 +122,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("project", type=Path)
     parser.add_argument("--target", default="qgis")
+    parser.add_argument("--completed-at", help="pipeline's shared offset-bearing analysis completion time")
     args = parser.parse_args()
     path, project = load_project(args.project)
-    print(generate(path.parent, project, args.target))
+    print(generate(path.parent, project, args.target, completed_at=args.completed_at))
 
 
 if __name__ == "__main__":

@@ -46,6 +46,10 @@ import duckdb
 import pyproj
 import yaml
 
+from openmapstack.findings import write_findings
+from openmapstack.credits import credit_payload, html_credits, write_qgis_credits
+from openmapstack.integrity import declared_output_paths
+
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "data" / "source"
 DERIVED = ROOT / "data" / "derived"
@@ -1309,8 +1313,47 @@ def _combined_hash(paths: list[Path]) -> str:
     return "sha256:" + digest.hexdigest()
 
 
-def finalize_run(report: dict, manifest: list[dict], started_at: str) -> None:
-    completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+def build_findings() -> list[dict]:
+    """Summarize exported accepted parcels; do not infer surveyed access."""
+    rows = [feature["properties"] for feature in json.loads((DERIVED / "final-candidates.json").read_text())["features"]]
+    counts = {key: sum(row["suitability_tier"] == label for row in rows)
+              for key, label in SUITABILITY_TIERS.items()}
+    candidates = ["candidate_parcels_geojson", "candidate_parcels_parquet", "candidate_parcels_gpkg"]
+    scenario_only = sum(row["dist_official_road_m"] > MAX_ROAD_DISTANCE_M
+                        and row["dist_scenario_road_m"] <= MAX_ROAD_DISTANCE_M for row in rows)
+    lost_kg = sum(row["isochrone_kg_baseline_min"] is not None
+                  and row["isochrone_kg_baseline_min"] <= CANONICAL_WALK_MINUTES
+                  and (row["isochrone_kg_effective_min"] is None
+                       or row["isochrone_kg_effective_min"] > CANONICAL_WALK_MINUTES) for row in rows)
+    return [{
+        "id": "screened_parcels_and_education_tiers",
+        "statement": (f"{len(rows)} parcels meet the accepted land-use, Tartu linn, minimum "
+                      f"{MIN_PARCEL_AREA_M2:,} m² area and maximum {MAX_ROAD_DISTANCE_M:,} m planar road-distance criteria. "
+                      f"At the {CANONICAL_WALK_MINUTES}-minute pedestrian contour threshold, "
+                      f"{counts['candidates_tier1']} intersect both school and kindergarten catchments (Tier 1), "
+                      f"{counts['candidates_tier2']} intersect one type (Tier 2), and "
+                      f"{counts['candidates_highway']} intersect neither (Tier 3)."),
+        "evidence": candidates + ["education_catchments_geojson"],
+        "limitations": ["Catchment membership means positive-area parcel intersection with a modelled contour, not a verified entrance or exact journey time. First intersecting sampled contours (15/20/25/30/40 minutes) are not continuous travel-time estimates. OSM completeness, snapping and unsurveyed entrances limit the result."],
+    }, {
+        "id": "hypothetical_road_dependency",
+        "statement": (f"{scenario_only} of the {len(rows)} accepted parcels are more than {MAX_ROAD_DISTANCE_M:,} m "
+                      f"from an official main road but within that distance of the hypothetical connector; "
+                      "their road-distance eligibility depends on OVERRIDE-002."),
+        "evidence": candidates + ["main_roads_geojson"],
+        "limitations": ["The connector is a user-supplied hypothetical scenario, not an official or approved road. It affects planar proximity only and is not inserted into the pedestrian routing graph. This count is restricted to accepted parcels, not a separate complete baseline run."],
+    }, {
+        "id": "kindergarten_scenario_effect",
+        "statement": (f"{lost_kg} accepted parcels intersect a baseline {CANONICAL_WALK_MINUTES}-minute kindergarten "
+                      "catchment but no effective kindergarten catchment at that threshold after the "
+                      "Ilmatsalu kindergarten is switched off in OVERRIDE-001."),
+        "evidence": candidates + ["education_pois_geojson", "education_catchment_variants_geojson"],
+        "limitations": ["Switching off the facility is a hypothetical analytical scenario, not a claim that it has closed. The municipal education source has no stated license. Replayed source snapshots establish these historical model results; present-day availability, access, legal development rights and source freshness are not verified."],
+    }]
+
+
+def finalize_run(report: dict, manifest: list[dict], started_at: str, *, findings: list[dict] | None = None, completed_at: str | None = None) -> None:
+    completed_at = completed_at or datetime.datetime.now(datetime.timezone.utc).isoformat()
     input_paths = [
         path
         for directory in (SOURCE, OVERRIDES)
@@ -1325,18 +1368,43 @@ def finalize_run(report: dict, manifest: list[dict], started_at: str) -> None:
         else:
             input_paths.append(path)
     input_paths = sorted(set(input_paths))
-    output_paths = [
-        DERIVED / "final-candidates.gpkg",
-        DERIVED / "final-candidates.parquet",
-        DERIVED / "final-candidates.json",
-        DERIVED / "education_catchments.json",
-        DERIVED / "education_catchment_variants.json",
-        DERIVED / "education_pois.json",
-        DERIVED / "main_roads.json",
-        DERIVED / "facility_isochrones.json",
-        VALIDATION / "routing-evidence.json",
-        ROOT / "project.qgz",
-    ]
+    for item in manifest:
+        source = PROJECT["sources"].get(item["key"])
+        if not source:
+            continue
+        source["access"]["retrieved_at"] = item["download_timestamp"]
+        source["access"]["downloaded_at"] = item["download_timestamp"]
+        if "file" in source["access"]:
+            source["access"]["file"]["row_count"] = item["rows"]
+            # Measured, not declared: a size left at whatever prose once said
+            # describes a file that is no longer there.
+            if item.get("size_bytes") is not None:
+                source["access"]["file"]["size_bytes"] = item["size_bytes"]
+        # Snapshot identity travels with the bytes for a mutable-URL source, so
+        # write back whatever the response actually reported.
+        if item.get("version"):
+            source.setdefault("version", {})["identifier"] = item["version"]
+        if item.get("published_at"):
+            source.setdefault("version", {})["published_at"] = item["published_at"]
+        if item.get("etag"):
+            source.setdefault("version", {})["etag"] = item["etag"]
+        completeness = item.get("completeness")
+        if completeness and item["key"] == "roads":
+            source["selection"]["completeness"] = {
+                key: completeness[key]
+                for key in ("matched", "returned", "page_size", "pages")
+            }
+        elif completeness:
+            source["selection"]["completeness"] = completeness
+    if findings is not None:
+        captures = sorted({item["download_timestamp"][:10] for item in manifest})
+        write_findings(ROOT, PROJECT, report=report,
+                       scope="Tartu linn land screening using pinned source snapshots captured " + ", ".join(captures),
+                       findings=findings)
+    output_paths = [ROOT / relative for relative in declared_output_paths(PROJECT)]
+    # Legacy companions remain attested alongside the newly declared findings.
+    output_paths.extend([VALIDATION / "routing-evidence.json", ROOT / "project.qgz"])
+    output_paths = sorted(set(output_paths))
     inputs_hash = _combined_hash(input_paths)
     outputs_hash = _combined_hash(output_paths)
     report["inputs_hash"] = inputs_hash
@@ -1367,34 +1435,6 @@ def finalize_run(report: dict, manifest: list[dict], started_at: str) -> None:
 
     PROJECT["project"]["updated_at"] = completed_at
     PROJECT["project"]["status"] = "validated" if report["status"] == "passed" else report["status"]
-    for item in manifest:
-        source = PROJECT["sources"].get(item["key"])
-        if not source:
-            continue
-        source["access"]["retrieved_at"] = item["download_timestamp"]
-        source["access"]["downloaded_at"] = item["download_timestamp"]
-        if "file" in source["access"]:
-            source["access"]["file"]["row_count"] = item["rows"]
-            # Measured, not declared: a size left at whatever prose once said
-            # describes a file that is no longer there.
-            if item.get("size_bytes") is not None:
-                source["access"]["file"]["size_bytes"] = item["size_bytes"]
-        # Snapshot identity travels with the bytes for a mutable-URL source, so
-        # write back whatever the response actually reported.
-        if item.get("version"):
-            source.setdefault("version", {})["identifier"] = item["version"]
-        if item.get("published_at"):
-            source.setdefault("version", {})["published_at"] = item["published_at"]
-        if item.get("etag"):
-            source.setdefault("version", {})["etag"] = item["etag"]
-        completeness = item.get("completeness")
-        if completeness and item["key"] == "roads":
-            source["selection"]["completeness"] = {
-                key: completeness[key]
-                for key in ("matched", "returned", "page_size", "pages")
-            }
-        elif completeness:
-            source["selection"]["completeness"] = completeness
     PROJECT["runs"]["latest"] = {
         "id": report["run_id"],
         "started_at": started_at,
@@ -1421,13 +1461,18 @@ def _poi_class_counts() -> dict[str, int]:
     return counts
 
 
-def write_qgis_project(con: duckdb.DuckDBPyConnection) -> Path:
+def write_qgis_project(con: duckdb.DuckDBPyConnection, *, completed_at: str | None = None) -> Path:
     """Invoke the optional desktop adapter for this combined worked example."""
     import qgis_delivery
-    return qgis_delivery.write_qgis_project(con, ROOT=ROOT, PROJECT=PROJECT,
+    path = qgis_delivery.write_qgis_project(con, ROOT=ROOT, PROJECT=PROJECT,
         ANALYSIS_CRS=ANALYSIS_CRS, STORAGE_CRS=STORAGE_CRS,
         SUITABILITY_TIERS=SUITABILITY_TIERS,
-        scenario_inactive_count=_poi_class_counts().get("scenario_inactive", 0))
+                                          scenario_inactive_count=_poi_class_counts().get("scenario_inactive", 0))
+    payload = credit_payload(PROJECT, completed_at=completed_at)
+    write_qgis_credits(path, payload)
+    if (ROOT / "project.qgs").is_file():
+        write_qgis_credits(ROOT / "project.qgs", payload)
+    return path
 
 
 # ------------------------------ STEP 9: dashboard ---------------------------
@@ -1634,6 +1679,7 @@ def render_dashboard(con: duckdb.DuckDBPyConnection, validation: dict, manifest:
         layer_groups.append({**group, **binding})
 
     view = {
+        "credits": credit_payload(PROJECT),
         "project": {
             "id": pr["id"],
             "title": pr["title"],
@@ -1708,6 +1754,7 @@ def render_dashboard(con: duckdb.DuckDBPyConnection, validation: dict, manifest:
     html = (ROOT / pres["dashboard"]["template"]).read_text(encoding="utf-8")
     for token, value in {
         "__TITLE__": pr["title"],
+        "__CREDITS__": html_credits(view["credits"]),
         "__VIEW__": embed(view, round_coords=False),
         "__CANDIDATES__": embed(final_gj),
         "__ROADS__": embed(roads_gj),
@@ -1755,9 +1802,10 @@ def main(argv: list[str] | None = None) -> None:
     con.load_extension("spatial")
 
     override_results = run_pipeline(con, cadastre_gpkg, roads_geojson, pois_geojson)
-    write_qgis_project(con)
+    completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    write_qgis_project(con, completed_at=completed_at)
     validation = write_validation(con, run_id, override_results)
-    finalize_run(validation, manifest, started_at)
+    finalize_run(validation, manifest, started_at, findings=build_findings(), completed_at=completed_at)
     render_dashboard(con, validation, manifest)
     log.info("E2E full run complete!")
 

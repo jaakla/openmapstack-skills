@@ -90,12 +90,15 @@ def export(root: Path, project: dict) -> dict:
     return {"notes": notes, "categories": sorted({r[2] for r in rows}), "row_count": len(rows)}
 
 
-def render(root: Path, project: dict, info: dict) -> None:
+def render(root: Path, project: dict, info: dict, *, completed_at: str | None = None) -> None:
+    from openmapstack.credits import credit_payload, html_credits
     work = root / "work"
     work.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="observable-", dir=work) as temporary:
         stage = Path(temporary) / "app"
         shutil.copytree(root / "observable", stage)
+        page = stage / "src/index.md"
+        page.write_text(page.read_text().replace("__CREDITS__", html_credits(credit_payload(project, completed_at=completed_at))))
         (stage / "metadata.json").write_text(delivery.metadata_json(root, project, project["delivery"]["targets"][0]))
         (stage / "src/provenance.json").write_text(json.dumps(info, ensure_ascii=False))
         for key in project["delivery"]["targets"][0]["inputs"]:
@@ -120,7 +123,8 @@ def main(root: Path | None = None) -> None:
     project = yaml.safe_load((root / "project.yaml").read_text())
     started = datetime.datetime.now(datetime.timezone.utc)
     info = export(root, project)
-    render(root, project, info)
+    completed = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    render(root, project, info, completed_at=completed)
     delivery.write_evidence(root, project)
     integration.write_evidence(root, project)
     result = evidence_matches(root, "observable")
@@ -132,7 +136,6 @@ def main(root: Path | None = None) -> None:
     checks = [{"id": name, "status": "passed"} for name in project["validation"]["required"]]
     inputs, outputs = declared_input_paths(root, project), declared_output_paths(project)
     hashes = {"inputs_hash": canonical_file_set_hash(root, inputs), "outputs_hash": canonical_file_set_hash(root, outputs)}
-    completed = datetime.datetime.now(datetime.timezone.utc).isoformat()
     run_id = started.strftime("run-%Y%m%d-%H%M%S-%f")
     latest = {"id": run_id, "status": "passed", "started_at": started.isoformat(), "completed_at": completed,
               **hashes, "record": {"path": f"runs/{run_id}.json"},

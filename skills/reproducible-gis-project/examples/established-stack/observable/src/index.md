@@ -44,10 +44,14 @@ table.append(tbody); display(table);
 
 <a href="areas.csv" download>Download accepted areas CSV</a>
 
+<section data-openmapstack-provenance>
+__CREDITS__
+<div id="provenance-notes"></div>
+</section>
+
 ```js
-const provenance = document.createElement("section");
-provenance.setAttribute("data-openmapstack-provenance", "");
+const provenance = document.getElementById("provenance-notes");
 const title = document.createElement("h2"); title.textContent = "Provenance and limitations"; provenance.append(title);
 for (const text of data.provenance) { const p = document.createElement("p"); p.textContent = text; provenance.append(p); }
-display(provenance);
+
 ```

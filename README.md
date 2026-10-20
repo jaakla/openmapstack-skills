@@ -455,11 +455,18 @@ Try the [offline example](examples/delivery-profiles/README.md);
 see [the findings contract](skills/open-map-stack/references/project-spec.md#findings)
 for the writer API and format. Embedded chat is a separate optional enhancement.
 
+Delivered project views credit the declared author, free OpenMapStack toolkit
+and canonical analysis time. `validate` and `verify` check the metadata and
+actual HTML/QGIS credit values and links. Existing v1 projects missing both
+identity fields receive an explicit legacy warning; declaring either requires
+the complete pair and rendered credits. See the [credits contract](skills/open-map-stack/references/project-spec.md#credits-header).
+
 See [the applicability reference](docs/verify-applicability.md) for the exact
 plan conditions, dependencies, current regression evidence, and deliberate
 exclusions. Explicit delivery targets add input-bound view evidence and web
 smoke checks; selected map-primary built-in dashboards also run existing visual
-checks. Legacy projects retain their previous plan. These checks establish
+checks. Legacy projects retain their previous delivery and rendering plan,
+with the explicit credits migration warning described above. These checks establish
 bounded properties, not every analytical or cartographic claim.
 
 Project-specific known answers can be declared under

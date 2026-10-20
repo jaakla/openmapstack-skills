@@ -11,7 +11,7 @@ project:
     email: examples@example.invalid
   generated_with:
     tool: OpenMapStack
-    url: https://github.com/jaakla/openmapstack-skills
+    url: https://jaakla.github.io/openmapstack-skills/
 interpretation:
   objective: Re-export the pinned city presentation snapshot.
   assumptions: []

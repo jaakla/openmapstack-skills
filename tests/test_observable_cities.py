@@ -170,6 +170,12 @@ class ObservableCityBrowserTests(unittest.TestCase):
                             page.get_by_role("button", name="Reset to snapshot").click()
                             page.wait_for_function("document.querySelector('#snapshot-status').textContent.startsWith('Accepted snapshot')")
                             self.assertEqual(page.locator("#snapshot-table tbody tr").count(), count)
+                            credits = page.locator("[data-openmapstack-credits]")
+                            self.assertEqual(credits.count(), 1)
+                            self.assertTrue(credits.is_visible())
+                            self.assertIn("OpenMapStack example maintainers", credits.inner_text())
+                            self.assertEqual(credits.locator('[data-oms-credit="author"]').get_attribute("href"),
+                                             "mailto:examples@example.invalid")
                             with page.expect_download() as pending:
                                 page.get_by_role("link", name="metrics CSV", exact=True).click()
                             self.assertEqual(Path(pending.value.path()).read_bytes(),

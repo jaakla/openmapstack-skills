@@ -128,6 +128,18 @@
       "status": "passed"
     },
     {
+      "check": "credits.declaration_valid",
+      "code": "credits_legacy_missing",
+      "message": "legacy v1 project has neither author nor generated_with; add both before new delivery",
+      "status": "warning"
+    },
+    {
+      "check": "credits.rendered_matches",
+      "code": "credits_legacy_missing",
+      "message": "legacy v1 project has neither author nor generated_with; add both before new delivery",
+      "status": "warning"
+    },
+    {
       "check": "presentation.layers_use_semantic_roles",
       "message": "all 1 layers declare a semantic_role",
       "status": "passed"
@@ -176,15 +188,15 @@
     "failed": 0,
     "not_testable": 0,
     "passed": 29,
-    "warning": 0
+    "warning": 2
   },
   "coverage": {
-    "applicable": 29,
-    "executed": 29,
+    "applicable": 31,
+    "executed": 31,
     "execution_rate": 1.0,
     "not_testable": 0
   },
   "project_file": "$PROJECT/project.yaml",
   "schema": "openmapstack-verify-result/v1",
-  "status": "passed"
+  "status": "warning"
 }

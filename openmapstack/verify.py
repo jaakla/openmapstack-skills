@@ -33,6 +33,7 @@ from .checks import metamorphic as metamorphic_checks
 from .checks import overrides as overrides_checks
 from .checks import presentation as presentation_checks
 from .checks import delivery as delivery_checks
+from .checks import credits as credit_checks
 from .checks import integration as integration_checks
 from .checks import visual as visual_checks
 from . import delivery
@@ -342,6 +343,9 @@ def verify_project(
     if "integrations" in manifest:
         _run(runs, "integration.bindings_valid", integration_checks.bindings_valid, root)
         _run(runs, "integration.evidence_matches", integration_checks.evidence_matches, root)
+
+    _run(runs, "credits.declaration_valid", credit_checks.declaration_valid, root)
+    _run(runs, "credits.rendered_matches", credit_checks.rendered_matches, root)
 
     if "findings" in manifest:
         from .checks.findings import artifact_matches

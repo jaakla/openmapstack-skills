@@ -16,7 +16,7 @@ project:
   updated_at: '2026-10-07T00:00:00Z'
   status: draft
   author: {name: OpenMapStack example maintainers, email: examples@example.invalid}
-  generated_with: {tool: OpenMapStack, url: 'https://github.com/jaakla/openmapstack-skills'}
+  generated_with: {tool: OpenMapStack, url: 'https://jaakla.github.io/openmapstack-skills/'}
 interpretation:
   objective: Demonstrate delivery selection on a deterministic synthetic analysis.
   assumptions:

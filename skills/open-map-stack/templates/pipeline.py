@@ -23,6 +23,7 @@ import yaml
 
 from openmapstack.delivery import metadata_json, write_evidence
 from openmapstack.findings import write_findings
+from openmapstack.credits import credit_payload, html_credits, write_qgis_credits
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "data" / "derived"
@@ -136,7 +137,7 @@ def _declared_inputs(project: dict) -> list[Path]:
     return sorted(paths)
 
 
-def finalize_run(report: dict, started_at: str) -> None:
+def finalize_run(report: dict, started_at: str, completed_at: str) -> None:
     """STEP 7 — Write the report and run record, then point project.yaml at them.
 
     The pipeline owns `runs.latest` and `project.status`; never patch them by
@@ -145,7 +146,7 @@ def finalize_run(report: dict, started_at: str) -> None:
     never wrote and fails.
     """
     project = yaml.safe_load((ROOT / "project.yaml").read_text())
-    completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    report.update(started_at=started_at, completed_at=completed_at)
     inputs = _declared_inputs(project)
     outputs = []
     for output in (project.get("outputs") or {}).values():
@@ -187,6 +188,7 @@ def finalize_run(report: dict, started_at: str) -> None:
 
 
 def main() -> None:
+    project = yaml.safe_load((ROOT / "project.yaml").read_text())
     OUT.mkdir(parents=True, exist_ok=True)
     RUNS.mkdir(parents=True, exist_ok=True)
     VALIDATION.mkdir(parents=True, exist_ok=True)
@@ -236,11 +238,17 @@ def main() -> None:
             {"id": "example_range_check", "status": "passed"},
         ],
     }
+    completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    credits = credit_payload(project, completed_at=completed_at)
     # Generate only delivery.targets: default dashboard; external targets are
     # explicit. Embed metadata_json(ROOT, project, target) in each web view's
     # <script id="openmapstack-view" type="application/json">. QGIS uses the
     # custom property openmapstack.delivery. Expose source provenance/warnings
     # visibly too; metadata is evidence, not a substitute for the visible view.
+    # Put html_credits(credits) first in each HTML provenance surface (static DOM,
+    # never only JSON). Add write_qgis_credits(qgz_path, credits) after QGIS writes.
+    # Keep the same completed_at for all views and finalize_run; render before
+    # hashing, and never embed an artifact's own hash in that artifact.
     # Once the declared analytical outputs and views exist:
     # write_evidence(ROOT, project)
     # Generate findings from the same accepted results, before final output hashes:
@@ -248,7 +256,7 @@ def main() -> None:
     #     findings=[{"id": "answer", "statement": answer_from_results,
     #                "evidence": ["example_output"]}])
     # STEP 7 — the pipeline, not a hand edit, records the run in project.yaml.
-    finalize_run(report, started.isoformat())
+    finalize_run(report, started.isoformat(), completed_at)
 
     log.info("pipeline complete -> %s", report["run_id"])
 
