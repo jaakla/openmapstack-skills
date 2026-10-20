@@ -462,7 +462,11 @@ Read `project-spec.md` section 3, Credits header. The HTML renderer must consume
 `project.author`, `project.generated_with` and the canonical completion time,
 then put the shared credits block first in provenance. Preserve it when tabs,
 filters or other controls update dynamic content. Static checks verify values
-and links; browser QA must open provenance and confirm the block is visible,
+and links and recognize simple hidden markers. Ambiguous inline CSS returns
+`not_testable`, never a visibility pass. Run `visual.credits_visible_in_browser`
+for computed styles and visible field text on desktop/mobile; it opens the
+associated credits tab. See the static/visual boundary in `project-spec.md`.
+Browser QA must open provenance and confirm the block is visible,
 readable at narrow widths and navigable, and that its AI/free-toolkit attribution
 actually states the required meaning in the view's language. Field checks alone
 do not certify that prose. Use the same run time as all other

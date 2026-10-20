@@ -5,6 +5,7 @@ remote endpoint availability and natural-language translation are not certified.
 """
 from __future__ import annotations
 
+from decimal import Decimal
 import re
 import xml.etree.ElementTree as ET
 import zipfile
@@ -12,7 +13,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import quote
 
-from . import AssertionResult, failed, load_project_yaml, passed, project_root, warning
+from . import AssertionResult, failed, load_project_yaml, passed, project_root, warning, not_testable
 from .. import credits
 from ..delivery import targets
 from ..project import get_in, project_path
@@ -87,70 +88,38 @@ class _HTML(HTMLParser):
             self.text_parts.append((self.stack[-1], data))
 
 
-def _inline_hidden(style: str) -> bool:
-    """Inspect complete inline declarations, respecting order and !important.
+class _AmbiguousStyle(Exception):
+    """Inline CSS outside the deliberately small static visibility contract."""
 
-    This is a bounded inline check, not a stylesheet/computed-style engine.
-    In particular, values in custom properties or URLs are not declarations.
-    """
-    declarations = {}
-    style = re.sub(r"/\*.*?\*/", "", style, flags=re.S)
-    # Semicolons in strings/functions (e.g. content or data URLs) cannot start
-    # a display/visibility/opacity declaration.
-    parts, start, depth, quote_char, escaped = [], 0, 0, None, False
-    for index, char in enumerate(style):
-        if escaped:
-            escaped = False
-        elif char == "\\":
-            escaped = True
-        elif quote_char:
-            if char == quote_char:
-                quote_char = None
-        elif char in {"'", '"'}:
-            quote_char = char
-        elif char == "(":
-            depth += 1
-        elif char == ")":
-            depth = max(0, depth - 1)
-        elif char == ";" and depth == 0:
-            parts.append(style[start:index])
-            start = index + 1
-    parts.append(style[start:])
-    for declaration in parts:
-        property_name, separator, value = declaration.partition(":")
-        property_name = property_name.strip().lower()
-        if not separator or property_name not in {"display", "visibility", "opacity"}:
+
+def _inline_hidden(style: str) -> bool:
+    """Recognize simple declarations only; leave CSS interpretation to Chromium."""
+    if not style:
+        return False
+    if re.search(r"[\"'()/{}\\]|--", style):
+        raise _AmbiguousStyle("comments, strings, functions or custom properties")
+    seen, hidden = set(), False
+    for declaration in style.split(";"):
+        if not declaration.strip():
             continue
-        important = bool(re.search(r"!\s*important\s*$", value, re.I))
-        value = re.sub(r"!\s*important\s*$", "", value, flags=re.I).strip().lower()
-        if not value or "!" in value:
-            continue
-        if property_name == "opacity":
-            if not re.fullmatch(r"[+-]?(?:\d*\.\d+|\d+)(?:e[+-]?\d+)?%?", value):
-                continue
-            # Negative opacity is clamped to zero; positive fractions remain visible.
-            mantissa = value.rstrip("%").split("e")[0]
-            hidden = mantissa.startswith("-") or all(char in "0.+" for char in mantissa)
-        else:
-            # Invalid values do not override an earlier valid declaration.
-            global_values = {"inherit", "initial", "unset", "revert", "revert-layer"}
-            if property_name == "visibility":
-                valid = value in global_values | {"visible", "hidden", "collapse"}
-            else:
-                valid = value in global_values | {
-                    "none", "contents", "block", "inline", "run-in", "flow", "flow-root", "flex", "grid", "ruby",
-                    "inline-block", "inline-flex", "inline-grid", "inline-table", "table", "table-row-group",
-                    "table-header-group", "table-footer-group", "table-row", "table-cell", "table-column-group",
-                    "table-column", "table-caption", "ruby-base", "ruby-text", "ruby-base-container",
-                    "ruby-text-container", "list-item",
-                } or bool(re.fullmatch(r"(?:block|inline|run-in)\s+(?:flow|flow-root|table|flex|grid|ruby)", value))
-            if not valid:
-                continue
-            hidden = value in ({"none"} if property_name == "display" else {"hidden", "collapse"})
-        previous = declarations.get(property_name)
-        if previous is None or important or not previous[0]:
-            declarations[property_name] = (important, hidden)
-    return any(hidden for _, hidden in declarations.values())
+        match = re.fullmatch(r"\s*([a-zA-Z][\w-]*)\s*:\s*([^:;!]+?)(?:\s*!\s*important)?\s*", declaration, re.I)
+        if not match:
+            raise _AmbiguousStyle("not a simple declaration list")
+        name, value = match[1].lower(), match[2].strip().lower()
+        if name in seen:
+            raise _AmbiguousStyle("repeated declaration: " + name)
+        seen.add(name)
+        if name == "opacity":
+            if not re.fullmatch(r"[+-]?(?:\d*\.\d+|\d+)", value) or Decimal(value) < 0:
+                raise _AmbiguousStyle("opacity requires a simple nonnegative number")
+            hidden |= Decimal(value) == 0
+        elif name in {"display", "visibility"}:
+            allowed = ({"none", "block", "inline", "inline-block", "flex", "grid", "contents"}
+                       if name == "display" else {"visible", "hidden", "collapse"})
+            if value not in allowed:
+                raise _AmbiguousStyle("unsupported " + name + " value")
+            hidden |= value in {"none", "hidden", "collapse"}
+    return hidden
 
 
 def _reachable_panel(node: dict, nodes: list[dict], visiting: tuple[int, ...]) -> bool:
@@ -203,7 +172,8 @@ def _hidden(node: dict, nodes: list[dict], visiting: tuple[int, ...] = ()) -> bo
             return True
         if "inert" in attrs:
             return True
-        if "hidden" in attrs or attrs.get("aria-hidden") == "true" or _inline_hidden(attrs.get("style", "")):
+        inline_hidden = _inline_hidden(attrs.get("style") or "")
+        if "hidden" in attrs or attrs.get("aria-hidden") == "true" or inline_hidden:
             if attrs.get("role") != "tabpanel" or not _reachable_panel(ancestor, nodes, visiting):
                 return True
     return False
@@ -220,9 +190,16 @@ def _html_errors(path: Path, expected: dict) -> list[str]:
     parser = _HTML()
     parser.feed(path.read_text(encoding="utf-8"))
     blocks = [node for node in parser.nodes if "data-openmapstack-credits" in node["attrs"]]
-    if len(blocks) != 1 or _hidden(blocks[0], parser.nodes):
+    if len(blocks) != 1:
         return ["view must expose exactly one non-hidden credits block"]
     block = blocks[0]
+    # Even empty descendants can affect layout; unsupported styles never earn
+    # a static visibility pass merely because they contain no text.
+    for node in parser.nodes:
+        if node is block or any(parent is block for parent in node["parents"]):
+            _inline_hidden(node["attrs"].get("style") or "")
+    if _hidden(block, parser.nodes):
+        return ["view must expose exactly one non-hidden credits block"]
     errors = []
     def field(role):
         values = [node for node in parser.nodes if node["attrs"].get("data-oms-credit") == role and any(parent is block for parent in node["parents"])]
@@ -319,7 +296,7 @@ def rendered_matches(workspace: Path, project_dir: str = ".") -> AssertionResult
         surfaces = _surfaces(root, project)
     except (ValueError, TypeError, KeyError) as exc:
         return failed(str(exc), code="credits_declaration_invalid")
-    errors = []
+    errors, uncertain = [], []
     for relative, kind in surfaces.items():
         path = project_path(root, relative)
         if path is None or not path.is_file():
@@ -327,9 +304,15 @@ def rendered_matches(workspace: Path, project_dir: str = ".") -> AssertionResult
             continue
         try:
             problems = _qgis_errors(path, expected) if kind == "qgis" else _html_errors(path, expected)
+        except _AmbiguousStyle as exc:
+            uncertain.append(f"{relative}: {exc}")
+            continue
         except (OSError, UnicodeError, ValueError, ET.ParseError, zipfile.BadZipFile) as exc:
             problems = [f"cannot inspect credits: {exc}"]
         errors.extend(f"{relative}: {problem}" for problem in problems)
     if errors:
         return failed("; ".join(errors), code="credits_rendered_mismatch", errors=errors)
+    if uncertain:
+        return not_testable("ambiguous inline credits visibility; run visual.credits_visible_in_browser: "
+                            + "; ".join(uncertain), code="credits_visibility_ambiguous", surfaces=list(surfaces))
     return passed(f"credits match in {len(surfaces)} delivery surface(s)", surfaces=list(surfaces))

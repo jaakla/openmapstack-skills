@@ -93,7 +93,13 @@ changes the abstract's author line while keeping the native author intact;
 author/toolkit/time text inside otherwise valid fields; `969` changes a reachable
 tab label from visible fractional opacity (`0.5`) to zero. Their healthy controls
 render the nested markup and fractional-opacity tab before canonical run hashing.
-All twelve credits mutations (`958`–`969`) have healthy controls. Attribution prose remains an authoring
+All twelve credits mutations (`958`–`969`) have healthy controls. Static visibility
+classifies only simple unique declarations; comments, strings, custom properties,
+functions, repeated declarations and unsupported visibility values defer as
+`not_testable` to the browser. Visual case `031` checks computed-visible credits
+on desktop/mobile; mutation `970` hides nested field text with a stylesheet and
+has a healthy control. These scoped visual cases require Chromium, not PyQGIS.
+Attribution prose remains an authoring
 and visual-review requirement, not a multilingual meaning check.
 
 Every score type also publishes a `capability` block — assertions evaluated,

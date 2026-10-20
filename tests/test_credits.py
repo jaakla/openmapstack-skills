@@ -1,5 +1,6 @@
 """Credit checks inspect rendered fields, not a renderer's receipt."""
 import copy
+import html
 import json
 import re
 import subprocess
@@ -8,6 +9,7 @@ import tempfile
 import unittest
 import xml.etree.ElementTree as ET
 import zipfile
+from unittest.mock import patch
 from pathlib import Path
 
 import yaml
@@ -171,29 +173,50 @@ class CreditsTests(unittest.TestCase):
         self.html.write_text(body.replace('no canonical run yet', '<span hidden>no canonical run yet</span>'))
         self.assertEqual(rendered_matches(self.root).status, 'failed')
 
+    def test_ambiguous_styles_on_block_field_and_empty_descendant_defer(self):
+        body = credits.html_credits(credits.credit_payload(self.project))
+        for style in ('--a:"/*";opacity:0;--b:"*/"', 'opacity:0;opacity:initial',
+                      'display:none;display:flow-root list-item'):
+            attr = ' style="' + html.escape(style, quote=True) + '"'
+            for markup in (body.replace('data-openmapstack-credits', 'data-openmapstack-credits'+attr),
+                           body.replace('data-oms-credit="author"', 'data-oms-credit="author"'+attr),
+                           body.replace('</section>', '<span'+attr+'></span></section>')):
+                with self.subTest(style=style, markup=markup):
+                    self.html.write_text(markup)
+                    self.assertEqual(rendered_matches(self.root).status, 'not_testable')
+        checks = {c.id: c for c in validate_project(self.path).checks}
+        self.assertEqual(checks['credits.rendered'].status, 'not_testable')
+
+    def test_browser_capability_gap_is_not_a_pass(self):
+        from openmapstack.checks.visual import credits_visible_in_browser
+        with patch('openmapstack.checks.visual._playwright', side_effect=ImportError('not installed')):
+            result = credits_visible_in_browser(self.root)
+        self.assertEqual((result.status, result.data['code']), ('not_testable', 'browser_unavailable'))
+
     def test_inline_visibility_compares_properties_and_complete_values(self):
         panel = '<section id="panel" role="tabpanel" aria-labelledby="tab" hidden>' + credits.html_credits(credits.credit_payload(self.project)) + '</section>'
         tab = '<button id="tab" role="tab" aria-controls="panel"><span style="{}">Credits</span></button>'
-        visible = ('opacity:0.5', ' OPACITY : .5 ! IMPORTANT ', 'opacity:50%', 'opacity:1e-3',
-                   'opacity:0; opacity:.5', 'opacity:.5!important;opacity:0',
-                   '--opacity:0', '--hint:display:none', '--hint:visibility:hidden',
-                   'content:opacity:0', 'display:none-block', 'visibility:hidden-extra',
-                   'opacity:0oops', 'display:none; display:block', 'visibility:hidden;visibility:visible',
-                   "content:';display:none;opacity:0';opacity:.5",
-                   'background:url(data:image/svg+xml;display:none;opacity:0)',
-                   r"content:'escaped\';display:none;opacity:0';opacity:.5",
-                   '/* opacity:0; display:none */ opacity:.5')
-        hidden = ('opacity:0', ' OPACITY : 0.0 ! IMPORTANT ', 'opacity:0%', 'opacity:-0',
-                  'opacity:-.5', 'opacity:0e2', 'opacity:.5;opacity:0', 'opacity:0!important;opacity:.5',
-                  'display:none', ' DISPLAY : NONE ! important ', 'visibility:hidden',
-                  ' VISIBILITY : COLLAPSE !important ', 'display:none!important;display:block',
-                  'visibility:collapse!important;visibility:visible', 'opacity:/* zero */0')
-        hidden += ('display:none;display:none-block', 'visibility:hidden;visibility:hidden-extra',
-                   'opacity:0;opacity:0oops', 'display:none;display:invalid')
+        visible = ('opacity:0.5', ' OPACITY : .5 ! IMPORTANT ', 'opacity:1',
+                   'display:block; visibility:visible', 'color:red;opacity:.5')
+        hidden = ('opacity:0', ' OPACITY : 0.0 ! IMPORTANT ', 'display:none',
+                  ' DISPLAY : NONE ! important ', 'visibility:hidden',
+                  ' VISIBILITY : COLLAPSE !important ')
+        ambiguous = ('--a:"/*";opacity:0;--b:"*/"', 'opacity:0;opacity:initial',
+                     'display:none;display:flow-root list-item', 'opacity:initial', 'opacity:unset',
+                     'visibility:revert', 'display:inherit', '--hint:display:none',
+                     'opacity:var(--amount)', '/* opacity:0 */ opacity:.5',
+                     "content:'hello'", 'color:red;color:blue', 'opacity:-.5',
+                     'display:none-block', 'opacity:50%')
+        for style in ambiguous:
+            with self.subTest(ambiguous=style):
+                self.html.write_text(tab.format(html.escape(style, quote=True)) + panel)
+                result = rendered_matches(self.root)
+                self.assertEqual((result.status, result.data['code']), ('not_testable', 'credits_visibility_ambiguous'))
+                self.assertIn('visual.credits_visible_in_browser', result.detail)
         for status, styles in (('passed', visible), ('failed', hidden)):
             for style in styles:
                 with self.subTest(style=style, status=status):
-                    self.html.write_text(tab.format(style) + panel)
+                    self.html.write_text(tab.format(html.escape(style, quote=True)) + panel)
                     self.assertEqual(rendered_matches(self.root).status, status)
 
     def test_hidden_tabpanel_requires_a_visible_enabled_associated_tab(self):

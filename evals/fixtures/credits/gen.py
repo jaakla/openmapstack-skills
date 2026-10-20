@@ -76,6 +76,8 @@ def html_credits(payload):
         page.write_text(page.read_text().replace('href="mailto:examples@example.invalid"', 'href="mailto:wrong@example.invalid"'))
     elif mutation == 'tabpanel':
         page.write_text(page.read_text().replace('data-openmapstack-credits', 'data-openmapstack-credits role="tabpanel" hidden'))
+    elif mutation == 'css-fields':
+        page.write_text('<style>[data-oms-credit=toolkit] span { opacity:0 }</style>' + page.read_text())
     elif mutation == 'hidden-fields':
         page.write_text(page.read_text().replace('<span>', '<span hidden>'))
     elif mutation == 'tab-opacity':
@@ -114,7 +116,7 @@ def html_credits(payload):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('destination', type=Path)
-    parser.add_argument('--break', dest='mutation', choices=['metadata', 'missing', 'stale', 'link', 'tabpanel', 'tab-label', 'hidden-fields', 'tab-opacity', 'qgis-time', 'qgis-identity', 'qgis-link', 'qgis-header-author'])
+    parser.add_argument('--break', dest='mutation', choices=['metadata', 'missing', 'stale', 'link', 'tabpanel', 'tab-label', 'hidden-fields', 'tab-opacity', 'css-fields', 'qgis-time', 'qgis-identity', 'qgis-link', 'qgis-header-author'])
     parser.add_argument('--legacy', action='store_true')
     parser.add_argument('--translated', action='store_true')
     parser.add_argument('--nested-fields', action='store_true')
