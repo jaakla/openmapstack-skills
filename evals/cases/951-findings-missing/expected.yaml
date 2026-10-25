@@ -1,0 +1,20 @@
+id: 951-findings-missing
+case_type: mutation
+modes:
+- fixture
+score_types:
+  fixture: mutation_tests
+project_dir: project
+hard_gate: true
+mutation:
+  control_generator: '{python} {evals_dir}/fixtures/focused-findings/gen.py {project_dir}'
+fixture:
+  generator: '{python} {evals_dir}/fixtures/focused-findings/gen.py {project_dir}
+    --break missing'
+  source_baseline:
+  - source: ../../fixtures/delivery/parcels.geojson
+    destination: data/source/parcels.geojson
+assertions:
+- assert: findings.artifact_matches
+  expect: failed
+  expect_code: findings_inconsistent

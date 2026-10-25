@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -16,6 +17,7 @@ import xml.etree.ElementTree as ET
 from contextlib import redirect_stdout, nullcontext
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+from urllib.parse import unquote, urlsplit
 
 import yaml
 
@@ -82,6 +84,31 @@ class DeliveryTests(unittest.TestCase):
                 self.assertEqual(any("qgis" in c.name for c in plan.checks), "qgis" in kinds)
                 if "dashboard" not in kinds:
                     self.assertFalse(any("dashboard" in c.name for c in plan.checks))
+
+    def test_qgis_only_exposes_findings_after_project_relocation(self):
+        for relative in ("findings.md", "reports/analysis & findings.md"):
+            with self.subTest(path=relative), tempfile.TemporaryDirectory() as source, tempfile.TemporaryDirectory() as moved:
+                root = Path(source)
+                path = example.create(root, ["qgis"])
+                project = yaml.safe_load(path.read_text())
+                project["outputs"]["findings"]["path"] = relative
+                path.write_text(yaml.safe_dump(project, sort_keys=False))
+                subprocess.run([sys.executable, str(root / "pipeline.py")], check=True, capture_output=True)
+                self.assertFalse((root / "dashboard.html").exists())
+                self.assertEqual(validate_project(path).status, "passed")
+                relocated = Path(moved) / "project"
+                shutil.copytree(root, relocated)
+                with zipfile.ZipFile(relocated / "project.qgz") as archive:
+                    metadata = ET.fromstring(archive.read("project.qgs")).find("projectMetadata")
+                link = metadata.find("links/link[@name='Findings']")
+                self.assertIsNotNone(link)
+                url = urlsplit(link.get("url"))
+                self.assertEqual((url.scheme, url.netloc), ("", ""))
+                self.assertEqual(link.get("mimeType"), "text/markdown")
+                target = relocated / unquote(url.path)
+                self.assertEqual(target, relocated / relative)
+                self.assertIn("large", target.read_text())
+                self.assertIn(f"Findings: {relative} (relative to this QGIS project)", metadata.findtext("abstract"))
 
     def test_unknown_targets_malformed_selection_and_unsafe_bindings_fail(self):
         self.build()
