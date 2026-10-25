@@ -57,6 +57,12 @@ jobs:
 
   fixture-evals:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Evidence gathering only: 1.5.3 first provides ST_SymDifference.
+        # Keep the declared dependency floor and diagnostic older legs above.
+        duckdb: ["1.5.3", "2.0.0"]
     # Deterministic fixture evals only: no LLM account required. Spatial is
     # prepared explicitly, then the acceptance suite is repeated inside the
     # same image with its runtime network namespace disabled.
@@ -69,7 +75,7 @@ jobs:
 
       - name: Install eval dependencies and project CLI
         run: |
-          pip install -r evals/requirements.txt "duckdb==2.0.*"
+          pip install -r evals/requirements.txt "duckdb==${{ matrix.duckdb }}"
           pip install "playwright>=1.40"
           pip install .
 
@@ -117,7 +123,7 @@ jobs:
         run: python evals/run.py --mode fixture --json eval-results.json
 
       - name: Build prepared offline eval image
-        run: docker build -f evals/Dockerfile.offline -t openmapstack-evals-offline .
+        run: docker build --build-arg "DUCKDB_VERSION=${{ matrix.duckdb }}" -f evals/Dockerfile.offline -t openmapstack-evals-offline .
 
       - name: Prove fixture suite with runtime network disabled
         run: |
@@ -135,13 +141,13 @@ jobs:
         uses: ./.github/actions/eval-report
         with:
           results: eval-results.json
-          artifact-name: allure-fixture-${{ github.run_id }}-${{ github.run_attempt }}
+          artifact-name: allure-fixture-${{ matrix.duckdb }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload eval and coverage results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: eval-results
+          name: eval-results-${{ matrix.duckdb }}
           path: |
             eval-results.json
             evals/results/offline-eval-results.json
