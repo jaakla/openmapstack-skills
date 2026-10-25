@@ -23,6 +23,9 @@ class FakeConnection:
             self.load_fails = False
         return self
 
+    def fetchone(self):
+        return ('geometry_always_xy',)
+
     def close(self) -> None:
         self.closed = True
 
@@ -44,7 +47,8 @@ class ControlledSpatialTests(unittest.TestCase):
         with patch.dict("sys.modules", {"duckdb": duckdb}):
             result = spatial.connect_spatial()
         self.assertIs(result, connection)
-        self.assertEqual(connection.commands, ["LOAD spatial"])
+        self.assertEqual(connection.commands[0], "LOAD spatial")
+        self.assertEqual(connection.commands[-1], "SET geometry_always_xy = true")
 
     def test_missing_extension_never_installs_during_grading(self) -> None:
         connection = FakeConnection(load_fails=True)
@@ -63,8 +67,30 @@ class ControlledSpatialTests(unittest.TestCase):
         self.assertIs(result, connection)
         self.assertEqual(
             connection.commands,
-            ["LOAD spatial", "INSTALL spatial", "LOAD spatial"],
+            ["LOAD spatial", "INSTALL spatial", "LOAD spatial",
+             "SELECT name FROM duckdb_settings() WHERE name = 'geometry_always_xy'",
+             "SET geometry_always_xy = true"],
         )
+
+    def test_pre_15_catalog_does_not_receive_unknown_setting(self):
+        connection = FakeConnection()
+        with patch.object(connection, 'fetchone', return_value=None):
+            spatial.configure_spatial_axes(connection)
+        self.assertFalse(any(command.startswith('SET ') for command in connection.commands))
+
+    def test_setting_failure_is_not_hidden_as_missing_extension(self):
+        connection = FakeConnection()
+        original = connection.execute
+        def execute(command):
+            if command.startswith('SET '):
+                raise RuntimeError('configuration failed')
+            return original(command)
+        with patch.object(connection, 'execute', side_effect=execute), patch.dict(
+            'sys.modules', {'duckdb': FakeDuckdb(connection)}
+        ), self.assertRaisesRegex(RuntimeError, 'configuration failed'):
+            spatial.connect_spatial(install=True)
+        self.assertTrue(connection.closed)
+        self.assertNotIn('INSTALL spatial', connection.commands)
 
     def test_configured_extension_directory_is_passed_to_duckdb(self) -> None:
         connection = FakeConnection()

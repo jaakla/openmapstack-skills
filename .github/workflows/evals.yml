@@ -26,6 +26,35 @@ jobs:
           : "${OMS_TYLERTOO:?installer must configure the executable}"
           python -m unittest tests.test_tylertoo -v
 
+  duckdb-compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Oldest supported release, first connection-setting release, and 2.x.
+        duckdb: ["1.2.0", "1.5.0", "2.0.0"]
+    env:
+      OPENMAPSTACK_SPATIAL_EXTENSION_DIR: /tmp/openmapstack-duckdb-extensions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install selected DuckDB and test dependencies
+        env:
+          DUCKDB_VERSION: ${{ matrix.duckdb }}
+        run: |
+          pip install -r evals/requirements.txt "duckdb==${DUCKDB_VERSION}" pyproj
+          pip install .
+      - run: python evals/prepare_spatial.py
+      - name: Check portable setup, coordinates, GDAL exports and template
+        run: |
+          python -m unittest -v tests.evals.test_spatial tests.evals.test_duckdb_axis_order tests.test_duckdb_pipelines tests.test_template_pipeline
+          python evals/run.py --mode fixture --case 005-reproducible-rerun --case 970-duckdb-axis-setting-missing --case 971-duckdb-axis-setting-wrong
+      - name: Check CRS-metadata APIs and NYC on modern releases
+        if: matrix.duckdb != '1.2.0'
+        run: python -m unittest -v tests.evals.test_live_output_contract tests.test_nyc_dashboard
+
   fixture-evals:
     runs-on: ubuntu-latest
     # Deterministic fixture evals only: no LLM account required. Spatial is
@@ -40,7 +69,7 @@ jobs:
 
       - name: Install eval dependencies and project CLI
         run: |
-          pip install -r evals/requirements.txt
+          pip install -r evals/requirements.txt "duckdb==2.0.*"
           pip install "playwright>=1.40"
           pip install .
 

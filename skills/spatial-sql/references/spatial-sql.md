@@ -105,6 +105,25 @@ Source: [PostGIS geography documentation](https://postgis.net/docs/using_postgis
 
 ### DuckDB Spatial
 
+After loading Spatial, explicitly configure axis order on **each connection**
+before reprojection or GDAL I/O, including `COPY … (FORMAT GDAL, … SRS …)`:
+
+```sql
+LOAD spatial;
+SET geometry_always_xy = true;
+```
+
+Normally use `true`: GIS `[x, y]`, or `[longitude, latitude]` for geographic
+coordinates. Use `false` only for an intentional, documented authority-axis
+workflow with independent coordinate checks. Do not depend on a version's
+default, or assume the per-call `always_xy` argument configures GDAL exports.
+For runtimes that also support older DuckDB releases without this setting,
+probe `duckdb_settings()` after loading Spatial (the packaged Python helper is
+`openmapstack.checks.spatial.configure_spatial_axes(connection)`). Keep
+`always_xy := true` on every `ST_Transform` for those releases. Verify an
+asymmetric known point against its source before delivery; a swapped point
+must fail that assertion. See [DuckDB's axis-order migration](https://duckdb.org/2026/03/09/announcing-duckdb-150#breaking-change-flipping-of-axis-order).
+
 For Overture and other GeoParquet datasets with a `bbox` struct, use bbox overlap for predicate pushdown:
 
 ```sql

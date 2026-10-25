@@ -410,6 +410,13 @@ openmapstack verify path/to/project.yaml --json --output validation/verify-repor
 openmapstack verify path/to/project.yaml --strict    # warnings and not-testable also return 1
 ```
 
+DuckDB Python pipelines also receive a static axis-order check. Missing
+`geometry_always_xy` setup before reprojection or GDAL export produces a
+warning; ambiguous code is `not_testable`. The shared Spatial setup uses GIS
+x/y order where the setting exists and retains compatibility with DuckDB 1.2;
+older runtimes need `always_xy := true` on transforms. See the
+[spatial SQL setup](skills/open-map-stack/references/spatial-sql.md#duckdb-spatial).
+
 These checks require no repository-owned golden answer, so they work on data
 neither this repository nor the model has seen. They establish bounded
 structural, provenance, artifact, and reproducibility predicates; they do not

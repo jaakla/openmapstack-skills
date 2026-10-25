@@ -72,6 +72,19 @@ class VerifyPlanTests(unittest.TestCase):
         self.assertIsNotNone(_status_of(result, "provenance.every_source_pinned"))
         self.assertIsNotNone(_status_of(result, "rerun.no_chat_dependency"))
 
+    def test_axis_order_warning_is_planned_for_duckdb_python_pipelines(self):
+        workspace = make_workspace()
+        project = minimal_project()
+        project['runtime']['implementation'].update(preferred_engine='duckdb-spatial', pipeline='analysis.py')
+        (workspace / 'analysis.py').write_text('import duckdb\nc = duckdb.connect()\nc.execute("SELECT ST_Transform(g,a,b)")')
+        write_project(workspace, project)
+        result = verify_project(workspace / 'project.yaml')
+        self.assertEqual(_status_of(result, 'project.duckdb_axis_order_explicit'), 'warning')
+        project['runtime']['implementation']['preferred_engine'] = 'python'
+        write_project(workspace, project)
+        result = verify_project(workspace / 'project.yaml')
+        self.assertIsNone(_status_of(result, 'project.duckdb_axis_order_explicit'))
+
     def test_declared_outputs_drive_the_geodata_plan(self) -> None:
         # The plan is derived from the manifest, so a project cannot opt out
         # of a check by omitting it: a declared output is a checked output.

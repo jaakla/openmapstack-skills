@@ -284,3 +284,33 @@ def parameters_match_steps(workspace: Path, project_dir: str = ".") -> Assertion
     return passed(
         f"{len(parameters)} runtime parameter(s) declared; {bound} bound to a processing step agree with it"
     )
+
+
+def duckdb_axis_order_explicit(
+    workspace: Path, project_dir: str = ".", pipeline_path: str = "pipeline.py"
+) -> AssertionResult:
+    """Warn about literal DuckDB transforms/GDAL exports lacking explicit axes.
+
+    A pass covers straight-line declarations on the same connection only;
+    dynamic SQL, conditional setup and cross-function flow are not testable.
+    This does not establish that a chosen axis order matches the real data.
+    """
+    from ._axis_order import inspect_python
+
+    target = project_root(workspace, project_dir) / pipeline_path
+    if target.suffix != '.py':
+        return not_testable('only Python DuckDB pipelines can be inspected', code='axis_order_ambiguous')
+    try:
+        checked, missing, ambiguous = inspect_python(target.read_text(encoding='utf-8'))
+    except (OSError, UnicodeError, SyntaxError) as exc:
+        return not_testable(f'could not inspect {pipeline_path}: {exc}', code='axis_order_unreadable')
+    if missing:
+        return warning(
+            'DuckDB reprojection/GDAL I/O lacks explicit geometry_always_xy setup; '
+            'normally configure true after LOAD spatial on each connection',
+            code='duckdb_axis_order_missing', path=pipeline_path, lines=missing)
+    if ambiguous or not checked:
+        return not_testable('axis-order setup cannot be established statically',
+                            code='axis_order_ambiguous', path=pipeline_path, lines=ambiguous)
+    return passed('explicit axis-order setup precedes the inspected DuckDB operations',
+                  path=pipeline_path, lines=checked)

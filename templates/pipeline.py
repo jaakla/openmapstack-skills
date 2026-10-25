@@ -21,6 +21,8 @@ from pathlib import Path
 import duckdb
 import yaml
 
+from openmapstack.checks.spatial import connect_spatial
+
 from openmapstack.delivery import metadata_json, write_evidence
 from openmapstack.findings import write_findings
 from openmapstack.credits import credit_payload, html_credits, write_qgis_credits
@@ -187,6 +189,13 @@ def finalize_run(report: dict, started_at: str, completed_at: str) -> None:
     (ROOT / "project.yaml").write_text(yaml.safe_dump(project, sort_keys=False, allow_unicode=True, width=100))
 
 
+def _connect_spatial():
+    con = connect_spatial(install=True)
+    if con is None:
+        raise RuntimeError("DuckDB Spatial could not be loaded")
+    return con
+
+
 def main() -> None:
     project = yaml.safe_load((ROOT / "project.yaml").read_text())
     OUT.mkdir(parents=True, exist_ok=True)
@@ -194,9 +203,7 @@ def main() -> None:
     VALIDATION.mkdir(parents=True, exist_ok=True)
     started = datetime.datetime.now(datetime.timezone.utc)
 
-    con = duckdb.connect()
-    con.install_extension("spatial")
-    con.load_extension("spatial")
+    con = _connect_spatial()
 
     # STEP 2 — Reproject to L-EST97 before metric calcs.
     # (EPSG:4326 MUST NOT be used for metric work.)

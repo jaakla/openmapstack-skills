@@ -46,6 +46,8 @@ import duckdb
 import pyproj
 import yaml
 
+from openmapstack.checks.spatial import connect_spatial
+
 from openmapstack.findings import write_findings
 from openmapstack.credits import credit_payload, html_credits, write_qgis_credits
 from openmapstack.integrity import declared_output_paths
@@ -701,6 +703,22 @@ def load_cadastre(con: duckdb.DuckDBPyConnection, path: Path) -> None:
             raise
 
 
+def load_roads(con, roads_geojson: Path) -> None:
+    # Read the FeatureCollection envelope explicitly: automatic GeoJSON
+    # detection can unwrap features and infer GEOMETRY instead of JSON.
+    con.execute(f"""
+        CREATE OR REPLACE TABLE official_roads AS
+        SELECT ST_GeomFromGeoJSON(f.geometry) AS geometry,
+               f.properties.nimetus AS name,
+               f.properties.tyyp_tekst AS road_class
+        FROM (
+            SELECT unnest(features) as f FROM read_json_auto('{roads_geojson}', format='unstructured',
+                columns={{features: 'STRUCT(geometry JSON, properties STRUCT(nimetus VARCHAR, tyyp_tekst VARCHAR))[]'}})
+        )
+        WHERE f.properties.tyyp_tekst IN ('Põhimaantee', 'Tugimaantee')
+    """)
+
+
 def run_pipeline(
     con: duckdb.DuckDBPyConnection, cadastre_gpkg: Path, roads_geojson: Path, pois_geojson: Path
 ) -> list[dict]:
@@ -722,16 +740,7 @@ def run_pipeline(
     """)
 
     # STEP 3 — Load completeness-verified official main roads.
-    con.execute(f"""
-        CREATE OR REPLACE TABLE official_roads AS
-        SELECT ST_GeomFromGeoJSON(f.geometry) AS geometry,
-               f.properties.nimetus AS name,
-               f.properties.tyyp_tekst AS road_class
-        FROM (
-            SELECT unnest(features) as f FROM read_json_auto('{roads_geojson}')
-        )
-        WHERE f.properties.tyyp_tekst IN ('Põhimaantee', 'Tugimaantee')
-    """)
+    load_roads(con, roads_geojson)
 
     # STEP 4 — Load the hypothetical connector into a separate scenario table.
     con.execute("CREATE OR REPLACE TABLE scenario_roads (geometry GEOMETRY, name VARCHAR, road_class VARCHAR)")
@@ -1786,6 +1795,13 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _connect_spatial():
+    con = connect_spatial(install=True, config={"threads": 1, "memory_limit": "512MB"})
+    if con is None:
+        raise RuntimeError("DuckDB Spatial could not be loaded")
+    return con
+
+
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
     started_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -1797,9 +1813,7 @@ def main(argv: list[str] | None = None) -> None:
         refresh=args.refresh
     )
 
-    con = duckdb.connect(config={"threads": 1, "memory_limit": "512MB"})
-    con.install_extension("spatial")
-    con.load_extension("spatial")
+    con = _connect_spatial()
 
     override_results = run_pipeline(con, cadastre_gpkg, roads_geojson, pois_geojson)
     completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
