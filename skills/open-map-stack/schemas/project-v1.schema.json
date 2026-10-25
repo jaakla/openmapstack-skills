@@ -490,6 +490,21 @@
         "question": {"type": "string", "minLength": 1},
         "created_at": {"type": "string", "minLength": 1},
         "updated_at": {"type": "string", "minLength": 1},
+        "author": {
+          "type": "object", "required": ["name", "email"],
+          "properties": {
+            "name": {"type": "string", "minLength": 1, "pattern": "\\S"},
+            "email": {"type": "string", "minLength": 1},
+            "url": {"type": "string", "minLength": 1}
+          }
+        },
+        "generated_with": {
+          "type": "object", "required": ["tool", "url"],
+          "properties": {
+            "tool": {"const": "OpenMapStack"},
+            "url": {"type": "string", "minLength": 1}
+          }
+        },
         "status": {"enum": ["draft", "in_progress", "validated", "warning", "failed"]},
         "aoi": {
           "type": "object",

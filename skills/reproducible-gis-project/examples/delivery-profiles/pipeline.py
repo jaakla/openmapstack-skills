@@ -21,6 +21,7 @@ import yaml
 
 from openmapstack.delivery import metadata_json, targets, write_evidence
 from openmapstack.findings import write_findings
+from openmapstack.credits import credit_payload, html_credits, qgis_credits
 from openmapstack.integrity import canonical_file_set_hash, declared_input_paths, declared_output_paths, file_inventory
 from openmapstack.checks.delivery import evidence_matches
 
@@ -59,8 +60,8 @@ def main() -> None:
         limitations = " ".join(a["statement"] + " " + a["rationale"] for a in project["interpretation"]["assumptions"])
         warnings = " ".join(w["statement"] for w in project.get("warnings") or [])
         provenance = f"{providers}; synthetic-v1; CC0; EPSG:3301. {limitations} {warnings}"
-        credits = (f'Generated with AI using the free OpenMapStack toolkit. Analysis made: {completed}. '
-                   f'Author: {project["project"]["author"]["name"]} ({project["project"]["author"]["email"]}).')
+        credit_values = credit_payload(project, completed_at=completed)
+        credits = html_credits(credit_values)
         if target["kind"] == "qgis":
             # Contract fixture: complete CRS and portable source, not a claim of
             # native QGIS runtime success. That is checked independently.
@@ -68,7 +69,7 @@ def main() -> None:
             findings_path = ROOT / project["outputs"][project["findings"]["output"]]["path"]
             findings_relative = Path(os.path.relpath(findings_path, path.parent)).as_posix()
             findings_url = quote(findings_relative, safe="/.-_")
-            abstract = credits + " " + provenance + f" Findings: {findings_relative} (relative to this QGIS project)."
+            abstract = provenance + f" Findings: {findings_relative} (relative to this QGIS project)."
             xml = f'''<qgis version="3.40.0"><projectCrs>{crs}</projectCrs>
 <properties><SpatialRefSys><ProjectionsEnabled type="int">1</ProjectionsEnabled></SpatialRefSys></properties>
 <customproperties><property key="openmapstack.delivery" value="{html.escape(metadata, quote=True)}"/></customproperties>
@@ -79,6 +80,7 @@ def main() -> None:
 <datasource>./data/derived/candidates.geojson</datasource><provider>ogr</provider><srs>{crs}</srs>
 <renderer-v2 type="singleSymbol"><symbols><symbol name="0" type="fill"><layer class="SimpleFill"><Option type="Map"><Option name="color" value="42,117,166,255" type="QString"/></Option></layer></symbol></symbols></renderer-v2>
 </maplayer></projectlayers></qgis>'''
+            xml = qgis_credits(xml, credit_values)
             with zipfile.ZipFile(path, "w") as archive:
                 info = zipfile.ZipInfo("project.qgs", date_time=(2026, 10, 7, 0, 0, 0))
                 archive.writestr(info, xml)
@@ -90,9 +92,7 @@ def main() -> None:
 <body><h1>Synthetic parcel selection</h1><p>Minimum area: {minimum} m². This is a contract demonstration.</p>
 <table><thead><tr><th>Parcel</th><th>Area (m²)</th></tr></thead><tbody>{rows}</tbody></table>
 <a href="data/derived/areas.csv">Download CSV</a> · <a href="findings.md">Read findings</a>
-<section data-openmapstack-provenance><h2>Provenance and limitations</h2>
-<p>Generated with AI using the free <a href="{html.escape(project["project"]["generated_with"]["url"], quote=True)}">OpenMapStack toolkit</a>.</p>
-<p>Analysis made: {completed}</p><p>Author: <a href="mailto:{html.escape(project["project"]["author"]["email"], quote=True)}">{html.escape(project["project"]["author"]["name"])}</a></p>
+<section data-openmapstack-provenance>{credits}<h2>Provenance and limitations</h2>
 <p>{html.escape(provenance)}</p></section>
 <script id="openmapstack-view" type="application/json">{metadata}</script></body></html>''')
         if target.get("mode") == "hosted":

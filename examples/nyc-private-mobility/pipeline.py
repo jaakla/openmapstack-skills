@@ -38,6 +38,8 @@ from pathlib import Path
 import yaml
 
 from openmapstack.checks.spatial import connect_spatial
+from openmapstack.findings import write_findings
+from openmapstack.credits import credit_payload, html_credits, qgis_credits
 from openmapstack.integrity import (
     canonical_file_set_hash,
     declared_input_paths,
@@ -704,6 +706,10 @@ def write_run_evidence(manifest: dict, checks: list[dict], snapshots: dict[str, 
     if not (ROOT / source_manifest_path).is_file():
         raise ValueError("Missing pinned source manifest; capture and pin the source snapshots before analysis")
 
+    report = {"run_id": run_id, "status": status, "checks": checks}
+    write_findings(ROOT, manifest, report=report,
+                   scope="pinned tenant-alpha synthetic business snapshots on the NYC H3 resolution-8 study grid",
+                   findings=build_findings(manifest))
     input_paths = declared_input_paths(ROOT, manifest)
     output_paths = declared_output_paths(manifest)
     inputs_hash = canonical_file_set_hash(ROOT, input_paths)
@@ -770,9 +776,43 @@ def write_run_evidence(manifest: dict, checks: list[dict], snapshots: dict[str, 
 # -- dashboard ----------------------------------------------------------------
 
 
+def build_findings(manifest: dict) -> list[dict]:
+    """Describe this execution's exported results, including an empty shortlist."""
+    zones = [f["properties"] for f in json.loads((DERIVED / "zone-metrics.geojson").read_text())["features"]]
+    candidates = [f["properties"] for f in json.loads((DERIVED / "hub-candidates.geojson").read_text())["features"]]
+    candidates.sort(key=lambda row: (-row["final_score"], row["zone_id"]))
+    limits = manifest["scoring"]["eligibility"]
+    result = [{
+        "id": "eligible_hub_cells",
+        "statement": (f"{len(candidates)} of {len(zones)} studied H3 cells meet all screening thresholds: "
+                      f"at least {limits['trips_total_min']} trips, at least {limits['hub_distance_m_min']} m "
+                      f"from an existing hub, and at most {limits['fleet_present_max']} latest observed vehicles."),
+        "evidence": ["hub_candidates_geojson", "hub_candidates_parquet", "zone_metrics_geojson"],
+        "limitations": ["Synthetic business records; these are screening cells, not verified sites or investment recommendations. Hub distances are centroid-to-hub straight-line distances in EPSG:32618, not driving distances."],
+    }]
+    if candidates:
+        top = candidates[0]
+        result.append({
+            "id": "highest_scoring_cell",
+            "statement": (f"The highest-scoring eligible cell is {top['h3_cell']} ({top['borough']}), "
+                          f"with a score of {top['final_score']:.2f}/100, {top['trips_total']} trips, "
+                          f"{top['hub_distance_m']} m to the nearest hub and {top['fleet_present']} latest observed vehicles."),
+            "evidence": ["hub_candidates_geojson", "hub_candidates_parquet"],
+            "limitations": ["The score is the declared weighted demo model, not a probability of success. A latest observation does not establish current vehicle availability."],
+        })
+    result.append({
+        "id": "demand_within_study_grid",
+        "statement": f"The studied grid contains {sum(row['trips_total'] or 0 for row in zones)} captured trip events across {len(zones)} cells.",
+        "evidence": ["zone_metrics_geojson", "zone_metrics_parquet"],
+        "limitations": ["Counts cover the pinned reader-visible business snapshots within this grid, not all NYC travel demand. Historical 2016 TLC pickup coordinates place some synthetic fleet points; they are not live tracking. Warehouse permission enforcement and present-day market suitability are not verified by this replay."],
+    })
+    return result
+
+
 def dashboard_payload(manifest: dict, checks: list[dict], status: str, run_id: str, fleet_summary: dict) -> dict:
     return {
         "title": manifest["project"]["title"], "run_id": run_id, "status": status,
+        "credits": credit_payload(manifest),
         "zones": json.loads((DERIVED / "zone-metrics.geojson").read_text()),
         "hubs": json.loads((DERIVED / "existing-hubs.geojson").read_text()),
         "fleet_points": json.loads((DERIVED / "fleet-positions.geojson").read_text()),
@@ -792,12 +832,14 @@ def dashboard_payload(manifest: dict, checks: list[dict], status: str, run_id: s
 
 
 def write_dashboard(manifest: dict, checks: list[dict], status: str, run_id: str, fleet_summary: dict) -> None:
-    payload = json.dumps(dashboard_payload(manifest, checks, status, run_id, fleet_summary),
+    data = dashboard_payload(manifest, checks, status, run_id, fleet_summary)
+    payload = json.dumps(data,
                          ensure_ascii=False, allow_nan=False, separators=(",", ":"))
     payload = payload.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
     template = (ROOT / "dashboard-template.html").read_text(encoding="utf-8")
     rendered = template.replace("__TITLE__", html.escape(manifest["project"]["title"]))
     rendered = rendered.replace("__DATA__", payload)
+    rendered = rendered.replace("__CREDITS__", html_credits(data["credits"]))
     (ROOT / "dashboard.html").write_text(rendered, encoding="utf-8")
     log("wrote dashboard.html")
 
@@ -1129,7 +1171,7 @@ def _canonical_xml(xml: str) -> str:
     return QGIS_DOCTYPE + ET.tostring(root, encoding="unicode") + "\n"
 
 
-def write_qgis_project(manifest: dict) -> None:
+def write_qgis_project(manifest: dict, *, completed_at: str | None = None) -> None:
     """Write project.qgs and project.qgz, preferring QGIS's own writer.
 
     Generated rather than hand-authored so the datasources cannot drift from
@@ -1143,6 +1185,23 @@ def write_qgis_project(manifest: dict) -> None:
         xml, authored_by = _build_qgis_xml_with_qgis(manifest), "qgis"
     else:
         xml, authored_by = _build_qgis_xml(manifest), "deterministic-builder"
+    if "findings" in manifest:
+        document = ET.fromstring(xml)
+        metadata = document.find("projectMetadata")
+        if metadata is None:
+            metadata = ET.SubElement(document, "projectMetadata")
+        abstract = metadata.find("abstract")
+        if abstract is None:
+            abstract = ET.SubElement(metadata, "abstract")
+        abstract.text = (abstract.text or "") + " Findings: findings.md (relative to this QGIS project). Synthetic snapshot screening; not live tracking or verified sites."
+        links = metadata.find("links")
+        if links is None:
+            links = ET.SubElement(metadata, "links")
+        ET.SubElement(links, "link", name="Findings", type="WWW:LINK", url="findings.md",
+                      description="Pipeline-generated findings, relative to this QGIS project",
+                      format="Markdown", mimeType="text/markdown")
+        xml = ET.tostring(document, encoding="unicode")
+    xml = qgis_credits(xml, credit_payload(manifest, completed_at=completed_at))
     xml = _strip_volatile(xml)
     (ROOT / "project.qgs").write_text(xml, encoding="utf-8")
     # A fixed timestamp keeps the archive byte-identical across reruns, which
@@ -1218,12 +1277,13 @@ def main() -> int:
         candidates.sort(key=lambda item: (-item["final_score"], item["zone_id"]))
         write_outputs(duck, metrics, candidates)
         fleet_summary = write_hub_context(duck, snapshots)
-        write_qgis_project(manifest)
         checks = run_checks(duck, snapshots, metrics, candidates, manifest["scoring"]["eligibility"])
+        # One analysis completion instant feeds both views and run evidence.
+        completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        write_qgis_project(manifest, completed_at=completed_at)
         checks.append(validate_qgis_project(manifest))
     finally:
         duck.close()
-    completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
     status, run_id = write_run_evidence(manifest, checks, snapshots, started_at, completed_at)
     write_dashboard(manifest, checks, status, run_id, fleet_summary)
     for check in checks:

@@ -9,6 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 from openmapstack.delivery import metadata_json, targets
+from openmapstack.credits import credit_payload, html_credits
 
 
 def provenance(project: dict) -> list[str]:
@@ -20,7 +21,7 @@ def provenance(project: dict) -> list[str]:
         *[w['statement'] for w in project.get('warnings', [])]]
 
 
-def render(root: Path, project: dict) -> list[dict]:
+def render(root: Path, project: dict, *, completed_at: str | None = None) -> list[dict]:
     # Views consume declared, already-validated artifacts, never operational DB
     # state. The bounded exploratory threshold is a subset of accepted features.
     with (root / project['outputs']['areas']['path']).open(newline='') as stream:
@@ -30,6 +31,8 @@ def render(root: Path, project: dict) -> list[dict]:
                       'feature_count': int(row['feature_count']), 'area_m2': float(row['area_m2'])}
                      for row in csv.DictReader(stream)]
     payload = {'features': features, 'scenarios': scenarios, 'provenance': provenance(project)}
+    credit_values = credit_payload(project, completed_at=completed_at)
+    credits = html_credits(credit_values)
     results = []
     for target in targets(project):
         path = root / project['outputs'][target['output']]['path']
@@ -42,12 +45,14 @@ def render(root: Path, project: dict) -> list[dict]:
                 f'<body><h1>Synthetic spatial analysis</h1><p>Accepted canonical result: {scenarios[0]["feature_count"]} features; {scenarios[0]["area_m2"]:,.0f} m²</p>'
                 f'<table><thead><tr><th>Feature</th><th>Area (m²)</th></tr></thead><tbody>{rows}</tbody></table>'
                 f'<a href="data/derived/areas.csv" download>Download accepted areas CSV</a>'
-                f'<section data-openmapstack-provenance><h2>Provenance and limitations</h2>{notes}</section>'
+                f'<section data-openmapstack-provenance>{credits}<h2>Provenance and limitations</h2>{notes}</section>'
                 f'<script id="openmapstack-view" type="application/json">{metadata_json(root, project, target)}</script></body></html>')
             results.append({'owner': 'dashboard', 'output': target['output']})
         elif target['kind'] == 'observable':
             stage = root / 'work/observable-app'
             shutil.copytree(root / 'observable', stage)
+            page = stage / 'src/index.md'
+            page.write_text(page.read_text().replace('__CREDITS__', credits))
             (stage / 'metadata.json').write_text(metadata_json(root, project, target))
             (stage / 'src/data.json').write_text(json.dumps(payload, sort_keys=True))
             shutil.copyfile(root / 'data/derived/areas.csv', stage / 'src/areas.csv')
@@ -65,7 +70,8 @@ def render(root: Path, project: dict) -> list[dict]:
                             'node': subprocess.check_output(['node', '--version'], text=True).strip(), 'published': False})
         elif target['kind'] == 'qgis':
             executable = os.environ.get('OMS_QGIS_PYTHON', sys.executable)
-            completed = subprocess.run([executable, '-m', 'openmapstack.integrations.qgis', str(root / 'project.yaml'), '--target', target['id']],
+            completed = subprocess.run([executable, '-m', 'openmapstack.integrations.qgis', str(root / 'project.yaml'), '--target', target['id'],
+                                        '--completed-at', credit_values['analysis_at']],
                 env={**os.environ, 'QT_QPA_PLATFORM': 'offscreen'}, text=True, capture_output=True)
             (root / 'work/qgis-console.txt').write_text(completed.stdout + completed.stderr)
             if completed.returncode:

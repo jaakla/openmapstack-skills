@@ -154,6 +154,7 @@ class _Validator:
         self._overrides()
         self._processing_and_outputs()
         self._delivery()
+        self._credits()
         self._integrations()
         self._presentation()
         self._views()
@@ -511,6 +512,14 @@ class _Validator:
             for target in delivery.targets(self.project):
                 evidence = delivery_checks.evidence_matches(self.root, target["id"])
                 self.add(f"delivery.{target['id']}.evidence", evidence.status, evidence.detail, **evidence.data)
+
+    def _credits(self) -> None:
+        from .checks import credits as credit_checks
+        result = credit_checks.declaration_valid(self.root)
+        self.add("credits.declaration", result.status, result.detail, **result.data)
+        if self.artifacts and result.status == "passed":
+            result = credit_checks.rendered_matches(self.root)
+            self.add("credits.rendered", result.status, result.detail, **result.data)
 
     def _findings(self) -> None:
         if "findings" not in self.project:
@@ -1132,7 +1141,10 @@ class _Validator:
         # preflight result a warning; full validation enforces the status.
         non_passed = [
             check for check in self.checks
-            if check.status == "warning" or (self.artifacts and check.status == "not_testable")
+            if (check.status == "warning" or (self.artifacts and check.status == "not_testable"))
+            # This migration advisory does not refute a previously validated
+            # legacy run. Every other warning/not-testable rule is unchanged.
+            and not (check.id == "credits.declaration" and check.details.get("code") == "credits_legacy_missing")
         ]
         if project_status == "validated" and non_passed:
             self.add(

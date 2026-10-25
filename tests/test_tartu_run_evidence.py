@@ -84,3 +84,24 @@ class TartuRunEvidenceTests(unittest.TestCase):
         self.assertNotEqual(rebuilt["inputs_hash"], original["inputs_hash"])
         self.assertEqual(rebuilt["outputs_hash"], original["outputs_hash"])
         self.assertEqual(self.run_check().status, "passed")
+
+    def test_findings_and_all_table_downloads_enter_the_final_inventory(self):
+        from openmapstack.findings import artifact_errors
+        from openmapstack.integrity import sha256_file
+
+        self.pipeline.PROJECT["outputs"]["summary"] = {
+            "path": "data/derived/summary.csv", "kind": "table", "format": "CSV",
+            "generated_by": "render_findings", "downloads": ["csv", "json"],
+        }
+        for extension in ("csv", "json"):
+            (self.root / f"data/derived/summary.{extension}").write_text("synthetic table " + extension)
+        report = {"run_id": "run-20261008-000000", "status": "warning", "checks": []}
+        items = [{"id": "summary", "statement": "Synthetic finalizer test, not a factual result.", "evidence": ["summary"]}]
+        self.pipeline.finalize_run(report, [], "2026-10-08T00:00:00+00:00", findings=items)
+        record = json.loads((self.root / "runs/run-20261008-000000.json").read_text())
+        inventory = {item["path"]: item["sha256"] for item in record["outputs"]}
+        self.assertEqual(inventory["findings.md"], sha256_file(self.root / "findings.md"))
+        self.assertIn("data/derived/summary.json", inventory)
+        self.assertEqual(artifact_errors(self.root, self.pipeline.PROJECT), [])
+        (self.root / "data/derived/summary.json").write_text("mutated secondary download")
+        self.assertIn("hash differs", "; ".join(artifact_errors(self.root, self.pipeline.PROJECT)))

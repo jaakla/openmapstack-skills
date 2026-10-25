@@ -21,9 +21,11 @@ WARN expectation.d1-count [data/derived/district-counts.geojson]: expectation 'd
 PASS geodata.crs_not_used_for_metrics: analysis_crs EPSG:3301 is valid for 0 metric operation(s); storage/load/reprojection steps were excluded
 PASS geodata.geometry_all_valid [data/derived/district-counts.geojson]: data/derived/district-counts.geojson: all 2 features have valid geometry
 N/A  geodata.dataset_crs_is [data/derived/district-counts.geojson]: output 'district_counts' declares no EPSG code in its format string, so its real CRS cannot be cross-checked
+WARN credits.declaration_valid: legacy v1 project has neither author nor generated_with; add both before new delivery
+WARN credits.rendered_matches: legacy v1 project has neither author nor generated_with; add both before new delivery
 PASS presentation.layers_use_semantic_roles: all 2 layers declare a semantic_role
 PASS presentation.controls_match_pipeline: 0 filter control(s) and 0 scenario control(s) consistent
 PASS presentation.edit_targets_reference_real_sources: no edit targets declared (vacuously true)
 PASS rerun.no_chat_dependency: canonical project dependencies contain no chat/transcript references
-WARNING: $PROJECT/project.yaml (25 passed, 1 warnings, 1 not testable, 0 failed; 26/27 applicable checks executed)
+WARNING: $PROJECT/project.yaml (25 passed, 3 warnings, 1 not testable, 0 failed; 28/29 applicable checks executed)
   NOTE  some checks could not run here; install openmapstack[geo] for geodata checks, openmapstack[visual] plus `python -m playwright install chromium` for browser checks, QGIS for the .qgz checks

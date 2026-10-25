@@ -1,0 +1,15 @@
+id: 031-credits-visibility
+case_type: positive
+modes: [fixture, visual]
+score_types:
+  fixture: contract_ci
+  visual: integration_visual
+project_dir: project
+hard_gate: true
+fixture:
+  generator: '{python} {evals_dir}/fixtures/credits/gen.py {project_dir}'
+assertions:
+- assert: credits.rendered_matches
+  modes: [fixture]
+- assert: visual.credits_visible_in_browser
+  modes: [visual]

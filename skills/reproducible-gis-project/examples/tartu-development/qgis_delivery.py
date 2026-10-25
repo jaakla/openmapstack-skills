@@ -363,6 +363,7 @@ def _pyqgis_payload(tree: list[dict], PROJECT: dict, ANALYSIS_CRS: int) -> str:
     payload = {
         "title": PROJECT["project"]["title"],
         "crs": f"EPSG:{ANALYSIS_CRS}",
+        "findings": "findings.md" if "findings" in PROJECT else None,
         "groups": [
             {
                 "title": group["title"],
@@ -389,7 +390,7 @@ from qgis.core import (
     QgsApplication, QgsProject, QgsVectorLayer, QgsRasterLayer,
     QgsCoordinateReferenceSystem, QgsCategorizedSymbolRenderer,
     QgsRendererCategory, QgsFillSymbol, QgsLineSymbol, QgsMarkerSymbol,
-    QgsSingleSymbolRenderer,
+    QgsSingleSymbolRenderer, QgsAbstractMetadataBase,
 )
 
 PLAN = json.loads(r"""__PAYLOAD__""")
@@ -419,6 +420,14 @@ qgs.initQgis()
 project = QgsProject.instance()
 project.clear()
 project.setTitle(PLAN["title"])
+if PLAN.get("findings"):
+    metadata = project.metadata()
+    metadata.setAbstract("Findings: findings.md (relative to this QGIS project). Snapshot screening with hypothetical scenarios; modelled access is not surveyed entrance access.")
+    link = QgsAbstractMetadataBase.Link()
+    link.name, link.type, link.url = "Findings", "WWW:LINK", PLAN["findings"]
+    link.description, link.format, link.mimeType = "Pipeline-generated findings, relative to this QGIS project", "Markdown", "text/markdown"
+    metadata.setLinks([link])
+    project.setMetadata(metadata)
 project.setCrs(QgsCoordinateReferenceSystem(PLAN["crs"]))
 root = project.layerTreeRoot()
 root.clear()
@@ -593,6 +602,7 @@ def _qgs_document(tree: list[dict], PROJECT: dict, ANALYSIS_CRS: int) -> str:
 <qgis projectname="{project_id}" version="3.44.3">
   <homePath path=""/>
   <title>{title}</title>
+{findings_metadata}
   <autotransaction active="0"/>
   <evaluateDefaultValues active="0"/>
   <trust active="0"/>
@@ -637,6 +647,7 @@ def _qgs_document(tree: list[dict], PROJECT: dict, ANALYSIS_CRS: int) -> str:
 </qgis>""".format(
         project_id=_xml_text(PROJECT["project"]["id"]),
         title=_xml_text(PROJECT["project"]["title"]),
+        findings_metadata=('<projectMetadata><title>' + _xml_text(PROJECT["project"]["title"]) + '</title><abstract>Findings: findings.md (relative to this QGIS project). Snapshot screening with hypothetical scenarios; modelled access is not surveyed entrance access.</abstract><links><link name="Findings" type="WWW:LINK" url="findings.md" description="Pipeline-generated findings, relative to this QGIS project" format="Markdown" mimeType="text/markdown"/></links></projectMetadata>' if "findings" in PROJECT else ''),
         project_crs=_spatialrefsys_xml(ANALYSIS_CRS, "    "),
         tree=tree_xml,
         layers=layers_xml,

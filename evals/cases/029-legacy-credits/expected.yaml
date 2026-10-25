@@ -1,0 +1,20 @@
+id: 029-legacy-credits
+case_type: positive
+modes:
+- fixture
+score_types:
+  fixture: contract_ci
+project_dir: project
+hard_gate: true
+fixture:
+  generator: '{python} {evals_dir}/fixtures/credits/gen.py {project_dir} --legacy'
+  source_baseline:
+  - source: ../../fixtures/delivery/parcels.geojson
+    destination: data/source/parcels.geojson
+assertions:
+- assert: credits.declaration_valid
+  expect: warning
+  expect_code: credits_legacy_missing
+- assert: credits.rendered_matches
+  expect: warning
+  expect_code: credits_legacy_missing

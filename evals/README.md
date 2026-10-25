@@ -80,6 +80,30 @@ a changed or missing secondary download while leaving the primary CSV intact. Ev
 mutation has a healthy control. These are deterministic artifact checks,
 not live-agent evidence that changed guidance produces correct findings.
 
+Cases `028-delivery-credits` and `029-legacy-credits` exercise complete HTML/QGIS
+credits and the explicit legacy warning. Mutations `958`–`961` reject partial
+metadata, missing credits, stale analysis time and a broken author link. Every
+mutation has a healthy control. They prove deterministic declaration/rendering
+checks, not live-agent adherence or remote URL availability. Case `030` is a
+healthy translated-QGIS control with truthful run evidence. Mutation `962`
+rejects an orphan hidden tabpanel; `963`–`965` independently corrupt translated
+QGIS time, native author identity and toolkit links. Mutation `966` independently
+changes the abstract's author line while keeping the native author intact;
+`967` rejects a tab whose only implicit label is hidden. Mutation `968` hides
+author/toolkit/time text inside otherwise valid fields; `969` changes a reachable
+tab label from visible fractional opacity (`0.5`) to zero. Their healthy controls
+render the nested markup and fractional-opacity tab before canonical run hashing.
+All twelve credits mutations (`958`–`969`) have healthy controls. Static visibility
+classifies only simple unique declarations; comments, strings, custom properties,
+functions, repeated declarations and unsupported visibility values defer as
+`not_testable` to the browser. Visual case `031` checks computed-visible credits
+on desktop/mobile; mutation `970` hides nested field text with a stylesheet and
+has a healthy control. These scoped visual cases require Chromium, not PyQGIS. The credits browser
+assertion runs only with explicit visual execution; ordinary `verify` and fixture
+mode do not schedule it or add a browser capability gap for it.
+Attribution prose remains an authoring
+and visual-review requirement, not a multilingual meaning check.
+
 Every score type also publishes a `capability` block — assertions evaluated,
 how many were `not_testable`, and how many soft gates went unmet — and the
 runner says so on the same screen as the pass rate. A rate produced by an

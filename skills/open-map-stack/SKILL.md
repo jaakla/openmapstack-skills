@@ -59,6 +59,9 @@ hand edit: a rerun writes a new run record, so a hand-patched pointer breaks it.
 validation capability is `not_testable`, never an implicit pass. Generate durable
 Markdown findings from pipeline results. Follow the referenced workflow's
 presentation obligations for the selected targets.
+Declare the real author and toolkit; render linked credits with the canonical
+run time in every delivered view (see the workflow's credits requirement).
+Review the required attribution prose too; field checks cannot certify its meaning.
 Record `delivery.schema: openmapstack-delivery/v1` for new projects, defaulting
 to the built-in dashboard. Respect explicit external-only or combined delivery;
 QGIS and Observable are optional targets. Existing manifests without `delivery`

@@ -1,5 +1,5 @@
 {
-  "run_id": "run-20261009-090336",
+  "run_id": "run-20261016-195411",
   "schema": "openmapstack-project/v1",
   "status": "warning",
   "checks": [
@@ -98,8 +98,8 @@
     {
       "id": "manifest_graph_resolves",
       "status": "passed",
-      "steps_checked": 10,
-      "symbols_resolved": 15,
+      "steps_checked": 11,
+      "symbols_resolved": 16,
       "errors": []
     },
     {
@@ -216,6 +216,6 @@
       "detail": "1 scenario road geometry loaded from data/overrides/planned-road.geojson"
     }
   ],
-  "inputs_hash": "sha256:b3661890364f321d9cf0e5b18700fe9c5f99ee9da0d5a45564ed44e29767ee05",
-  "outputs_hash": "sha256:282abf6cf522e94a1bb9518201dcfae0f8d3f28835115bb4e91ec87eb1402913"
+  "inputs_hash": "sha256:c4d022b589f1c0201ff329aaaf8f392553ca2ba0f713bfbb97154566f51204ea",
+  "outputs_hash": "sha256:e653b5b750c6e44c91beaa531a025965ed570117527c6aa9d4db1297292d2a2c"
 }

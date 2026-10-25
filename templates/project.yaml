@@ -46,7 +46,7 @@ project:
     # url: https://...       # optional author link
   generated_with:            # keep as is; shown in the credits header
     tool: OpenMapStack
-    url: https://github.com/jaakla/openmapstack-skills
+    url: https://jaakla.github.io/openmapstack-skills/
 
 interpretation:
   objective: >-

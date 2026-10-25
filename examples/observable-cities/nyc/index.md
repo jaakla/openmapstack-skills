@@ -50,6 +50,11 @@ display(table("nyc", visible));
 
 Download the full recorded snapshot: <a href="features.geojson" download>cell GeoJSON</a>, <a href="metrics.csv" download>metrics CSV</a>, <a href="context.geojson" download>existing hubs</a>, <a href="points.geojson" download>synthetic fleet points</a>.
 
+<section data-openmapstack-provenance>
+__CREDITS__
+<div id="provenance-notes"></div>
+</section>
+
 ```js
-display(provenance(info));
+document.getElementById("provenance-notes").replaceChildren(provenance(info));
 ```

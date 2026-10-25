@@ -54,6 +54,8 @@ from pathlib import Path
 import duckdb
 import yaml
 
+from openmapstack.credits import credit_payload, html_credits, qgis_credits
+
 HERE = Path(__file__).resolve().parent
 FIXTURES = HERE.parent / "mini-tartu"
 # Pinned, vendored map library. See vendor/*/PROVENANCE.md: a CDN-loaded
@@ -375,6 +377,8 @@ def build(
     project = {
         "schema": "openmapstack-project/v1",
         "project": {
+            "author": {"name": "OpenMapStack example maintainers", "email": "examples@example.invalid"},
+            "generated_with": {"tool": "OpenMapStack", "url": "https://jaakla.github.io/openmapstack-skills/"},
             "id": output_dir.name,
             "title": "Eval fixture: mini-Tartu candidate parcels",
             "question": "Which large parcels near the test main road qualify as development candidates?",
@@ -698,6 +702,7 @@ def build(
         )
     else:
         qgs_xml = _build_qgs_xml(output_dir, project, break_mode)
+    qgs_xml = qgis_credits(qgs_xml, credit_payload(project))
     qgz_path = output_dir / "project.qgz"
     with zipfile.ZipFile(qgz_path, "w") as zf:
         zf.writestr("project.qgs", qgs_xml)
@@ -1112,7 +1117,7 @@ label { display: block; font-size: 13px; margin: 4px 0; }
  <section data-testid="legend" class="panel"><h2>Legend</h2>
   {''.join(f'<div><span class="legend-swatch" style="background:rgb({_esc(entry["color"].rsplit(",", 1)[0])})"></span>{_esc(entry["title"])} <em>({entry["group"]})</em></div>' for entry in layers)}
  </section>
- <section data-testid="provenance" class="panel"><h2>Provenance</h2>
+ <section data-testid="provenance" class="panel">{html_credits(credit_payload(project))}<h2>Provenance</h2>
   {''.join(f'<div style="font-size:12px;margin-bottom:6px"><b>{_esc(s["key"])}</b> — {_esc(s["provider"])}; license: {_esc(s["license"])}; version: {_esc(s["version"])}; retrieved: {_esc(s["retrieved_at"])}</div>' for s in view["sources"])}
  </section>
  {warnings_html}

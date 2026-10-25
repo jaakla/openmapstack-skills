@@ -1343,3 +1343,92 @@ def _viewport(size: str) -> dict[str, int]:
     if not match:
         raise ValueError(f"invalid viewport size {size!r}; expected WxH")
     return {"width": int(match.group(1)), "height": int(match.group(2))}
+
+
+_CREDIT_TEXT_JS = """element => {
+  const visible = e => {
+    if (['hidden', 'collapse'].includes(getComputedStyle(e).visibility)) return false;
+    for (let p = e; p; p = p.parentElement) {
+      const s = getComputedStyle(p);
+      if (s.display === 'none' || Number(s.opacity) === 0) return false;
+    }
+    return true;
+  };
+  if (!visible(element)) return '';
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  let text = '', node;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement.closest('script,style,template,noscript') || !visible(node.parentElement)) continue;
+    const range = document.createRange(); range.selectNodeContents(node);
+    if ([...range.getClientRects()].some(r => r.width > 0 && r.height > 0)) text += node.textContent;
+  }
+  return text.replace(/\\s+/g, ' ').trim();
+}"""
+
+
+def credits_visible_in_browser(
+    workspace: Path, project_dir: str = ".", dashboard: str = "dashboard.html",
+    desktop_size: str = "1280x900", mobile_size: str = "390x844",
+) -> AssertionResult:
+    """Open credits on desktop/mobile and bind computed-visible text to metadata.
+
+    Stylesheets, inheritance, opacity and hidden descendants are resolved by
+    Chromium, never by the static credits checker. Browser dependencies are lazy.
+    """
+    from urllib.parse import quote
+    from . import credits as credit_checks
+    from .. import credits
+    from ..project import project_path
+
+    declaration = credit_checks.declaration_valid(workspace, project_dir)
+    if declaration.status != "passed":
+        return declaration
+    root = project_root(workspace, project_dir)
+    path = project_path(root, dashboard)
+    if path is None or not path.is_file():
+        return failed("credits dashboard missing or unsafe", code="file_missing")
+    expected = credits.credit_payload(load_project_yaml(workspace, project_dir))
+    author, toolkit = expected['author'], expected['generated_with']
+    normalize = lambda text: ' '.join(text.split())
+    opened = False
+    try:
+        with _playwright()() as runtime:
+            browser = runtime.chromium.launch()
+            for size in (desktop_size, mobile_size):
+                page = browser.new_page(viewport=_viewport(size))
+                page.goto(path.as_uri(), wait_until="domcontentloaded")
+                opened = True
+                blocks = page.query_selector_all('[data-openmapstack-credits]')
+                if len(blocks) != 1 or not _reveal(page, blocks[0]):
+                    return failed(f"{size}: credits block is absent, hidden or unreachable", code="credits_not_visible")
+                block = blocks[0]
+                text = block.evaluate(_CREDIT_TEXT_JS)
+                fields = [
+                    ('toolkit', [toolkit['tool'], toolkit['tool'] + ' toolkit'], toolkit['url']),
+                    ('author', [author['name'], f"{author['name']} ({author['email']})"],
+                     'mailto:' + quote(author['email'], safe='@+.-_')),
+                    ('analysis', None, None),
+                ]
+                if author.get('url'):
+                    fields.append(('author-url', None, author['url']))
+                for role, labels, href in fields:
+                    nodes = block.query_selector_all(f'[data-oms-credit="{role}"]')
+                    value = nodes[0].evaluate(_CREDIT_TEXT_JS) if len(nodes) == 1 else ''
+                    if role == 'analysis':
+                        try:
+                            if credits.instant(value) != credits.instant(expected['analysis_at']):
+                                value = ''
+                        except ValueError:
+                            value = ''
+                    if (not value or labels and value not in [normalize(label) for label in labels]
+                            or href and nodes[0].get_attribute('href') != href):
+                        return failed(f"{size}: {role} credits text/link is not computed-visible or differs", code="credits_not_visible")
+                if author['email'] not in text:
+                    return failed(f"{size}: author email is not computed-visible", code="credits_not_visible")
+                page.close()
+            browser.close()
+        return passed("credits block and fields are computed-visible on desktop and mobile")
+    except Exception as exc:  # Browser absence is a capability gap, never a pass.
+        if opened:
+            return failed(f"credits browser inspection failed: {exc}", code="browser_check_error")
+        return not_testable(f"credits browser unavailable: {exc}", code="browser_unavailable")

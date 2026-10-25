@@ -49,7 +49,9 @@ def _finalize(workspace: Path, status: str = "warning") -> dict:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     report = {"run_id": RUN_ID, "status": status, "checks": [{"id": "geometry_valid", "status": status}]}
-    module.finalize_run(report, datetime.datetime(2026, 9, 25, 12, tzinfo=datetime.timezone.utc).isoformat())
+    started_at = datetime.datetime(2026, 9, 25, 12, tzinfo=datetime.timezone.utc).isoformat()
+    completed_at = "2026-09-25T12:00:01+00:00"
+    module.finalize_run(report, started_at, completed_at)
     return yaml.safe_load((workspace / "project.yaml").read_text())
 
 
@@ -63,6 +65,9 @@ class TemplatePipelineOwnsRunPointerTests(unittest.TestCase):
         record = json.loads(record_path.read_text())
         report = json.loads((workspace / "validation" / "latest-report.json").read_text())
         self.assertEqual((latest["id"], record["run_id"], report["run_id"]), (RUN_ID, RUN_ID, RUN_ID))
+        self.assertEqual(latest["completed_at"], "2026-09-25T12:00:01+00:00")
+        self.assertEqual(record["completed_at"], latest["completed_at"])
+        self.assertEqual(report["completed_at"], latest["completed_at"])
 
     def test_recorded_hashes_are_the_canonical_file_set_hashes(self) -> None:
         workspace = _workspace()

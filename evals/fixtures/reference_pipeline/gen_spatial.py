@@ -74,6 +74,8 @@ def _project(output_dir: Path, *, title: str, question: str, sources: dict,
     return {
         "schema": "openmapstack-project/v1",
         "project": {
+            "author": {"name": "OpenMapStack example maintainers", "email": "examples@example.invalid"},
+            "generated_with": {"tool": "OpenMapStack", "url": "https://jaakla.github.io/openmapstack-skills/"},
             "id": output_dir.name,
             "title": title,
             "question": question,

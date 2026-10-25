@@ -1,0 +1,20 @@
+id: 969-credits-tab-opacity
+case_type: mutation
+modes:
+- fixture
+score_types:
+  fixture: mutation_tests
+project_dir: project
+hard_gate: true
+mutation:
+  control_generator: '{python} {evals_dir}/fixtures/credits/gen.py {project_dir} --opacity-tab'
+fixture:
+  generator: '{python} {evals_dir}/fixtures/credits/gen.py {project_dir} --opacity-tab
+    --break tab-opacity'
+  source_baseline:
+  - source: ../../fixtures/delivery/parcels.geojson
+    destination: data/source/parcels.geojson
+assertions:
+- assert: credits.rendered_matches
+  expect: failed
+  expect_code: credits_rendered_mismatch
