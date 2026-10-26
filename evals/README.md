@@ -307,6 +307,19 @@ pip install "playwright>=1.40" && python3 -m playwright install chromium
 python3 evals/run.py --mode visual
 ```
 
+For the mobile-control regression, run only the affected reference case and
+its overflow mutation (sequentially, one browser case at a time):
+
+```bash
+python3 evals/run.py --mode visual --case 001-basic-spatial-analysis \
+  --case 972-dashboard-mobile-controls-overflow
+```
+
+Case 972 restores the fixture's desktop sidebar at phone width; the unchanged
+layout assertion must pass on its healthy control and fail on the overflow.
+Manual `eval-visual` dispatch accepts the same space-separated ids in `cases`;
+scheduled runs continue to execute every visual case.
+
 An assertion whose dependency is missing reports `not_testable` — never a
 silent pass. Assertions scoped `modes: [visual]` are hard gates, because
 visual mode *is* the environment that has PyQGIS and a browser: soft-gating

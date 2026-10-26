@@ -993,7 +993,9 @@ def _build_dashboard_html(output_dir: Path, project: dict, break_mode: str | Non
     declared layers as GeoJSON overlays. No generated timestamps, so the
     file is byte-identical across reruns. Break mode
     ``dashboard_no_basemap`` reproduces the most common agent failure the
-    skill warns about: an analysis overlay with no background map."""
+    skill warns about: an analysis overlay with no background map.
+    ``dashboard_mobile_controls_overflow`` restores the broken desktop-only
+    sidebar layout on phones, so the real attribution control overflows."""
     layers = _project_layers(output_dir, project)
     groups = project["presentation"]["map"]["layer_groups"]
     scenarios = project["presentation"]["controls"]["scenarios"]
@@ -1091,13 +1093,28 @@ def _build_dashboard_html(output_dir: Path, project: dict, break_mode: str | Non
     style = """
 body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
 #sidebar { width: 340px; overflow-y: auto; padding: 12px; background: #f4f6f9; box-sizing: border-box; }
-#mapwrap { flex: 1; position: relative; }
+#mapwrap { flex: 1; min-width: 0; min-height: 0; position: relative; }
 #map { position: absolute; inset: 0; }
 .panel { background: #fff; border: 1px solid #dde2ea; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
 .panel h2 { font-size: 13px; margin: 0 0 8px; }
 li { margin-bottom: 6px; font-size: 12px; }
 label { display: block; font-size: 13px; margin: 4px 0; }
 .legend-swatch { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+@media (max-width: 720px) {
+  body { flex-direction: column; }
+  #mapwrap { order: -1; flex: 0 0 50%; }
+  #sidebar { width: 100%; flex: 1; min-height: 0; }
+}
+"""
+    if break_mode == "dashboard_mobile_controls_overflow":
+        # Reproduce the original 50px map at a 390px viewport. The assertion
+        # must detect real control bounds, even when MapLibre clips the paint.
+        style += """
+@media (max-width: 720px) {
+  body { flex-direction: row; }
+  #sidebar { width: 340px; flex: 0 0 340px; }
+  #mapwrap { order: 0; flex: 1; }
+}
 """
 
     return f'''<!DOCTYPE html>
