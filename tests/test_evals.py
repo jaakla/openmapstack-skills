@@ -117,6 +117,33 @@ class _RunnerHarness(unittest.TestCase):
 
 
 class EvalRunnerTests(_RunnerHarness):
+    def test_atomic_summaries_keep_normal_artifact_permissions(self):
+        previous_umask = os.umask(0o022)
+        self.addCleanup(os.umask, previous_umask)
+        summary = eval_runner.build_summary([], {'mode': 'fixture'})
+        # The Docker producer and host artifact uploader have different UIDs.
+        # A private tempfile's 0600 mode must not become the published mode.
+        for mask, expected_mode in ((0o022, 0o644), (0o077, 0o600)):
+            os.umask(mask)
+            output = self.root / f'offline-eval-results-{mask}.json'
+            with self.subTest(umask=oct(mask)):
+                for _ in range(2):
+                    eval_runner._write_summary(summary, str(output), announce=False)
+                    for path in (output, self.results_dir / 'latest.json'):
+                        self.assertEqual(path.stat().st_mode & 0o777, expected_mode)
+                        self.assertEqual(json.loads(path.read_text()), summary)
+
+    def test_failed_atomic_publish_keeps_the_previous_summary(self):
+        output = self.root / 'checkpoint.json'
+        original = eval_runner.build_summary([], {'mode': 'live', 'checkpoint': True})
+        eval_runner._write_summary(original, str(output), announce=False)
+        replacement = eval_runner.build_summary([], {'mode': 'live'})
+        with patch.object(Path, 'replace', side_effect=OSError('interrupted publish')):
+            with self.assertRaisesRegex(OSError, 'interrupted publish'):
+                eval_runner._write_summary(replacement, str(output), announce=False)
+        self.assertEqual(json.loads(output.read_text()), original)
+        self.assertEqual(json.loads((self.results_dir / 'latest.json').read_text()), original)
+
     def test_fixture_mode_is_default_and_passes(self) -> None:
         self.write_case()
         exit_code, stdout, _ = self.call_main([])

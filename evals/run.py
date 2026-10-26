@@ -1781,15 +1781,14 @@ def _write_summary(summary: dict[str, Any], json_path: str | None, *, announce: 
 
     def write_atomic(path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        # A CI deadline must not truncate the previous completed checkpoint.
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
-                                         prefix=f".{path.name}.", suffix=".tmp", delete=False) as stream:
-            temporary = Path(stream.name)
-            stream.write(payload)
-        try:
+        # Stage privately, but publish with normal output-file permissions
+        # (0666 filtered by umask). NamedTemporaryFile's 0600 survives rename
+        # and makes root-produced Docker results unreadable to the uploader.
+        # A CI deadline must still leave the previous checkpoint intact.
+        with tempfile.TemporaryDirectory(dir=path.parent, prefix=f".{path.name}.") as directory:
+            temporary = Path(directory) / path.name
+            temporary.write_text(payload, encoding="utf-8")
             temporary.replace(path)
-        finally:
-            temporary.unlink(missing_ok=True)
 
     if json_path:
         out_path = Path(json_path)
