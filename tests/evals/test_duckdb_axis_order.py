@@ -1,5 +1,4 @@
-"""Static setup evidence and real asymmetric-point mutation regressions."""
-from pathlib import Path
+"""Warning-only static diagnostics and real coordinate-order guarantees."""
 import unittest
 
 from openmapstack.checks import project
@@ -13,7 +12,7 @@ class StaticAxisOrderTests(unittest.TestCase):
         (workspace / 'pipeline.py').write_text(body)
         return project.duckdb_axis_order_explicit(workspace)
 
-    def test_explicit_setting_precedes_each_sensitive_operation(self):
+    def test_setup_evidence_defers_and_obvious_omission_warns(self):
         for operation in ("SELECT ST_Transform(g, 'EPSG:4326', 'EPSG:3857')",
                           "COPY t TO 'out.gpkg' (FORMAT GDAL, DRIVER 'GPKG', SRS 'EPSG:4326')"):
             for setup in ("con.execute('SET geometry_always_xy = true')",
@@ -22,20 +21,33 @@ class StaticAxisOrderTests(unittest.TestCase):
                 prefix = ('import duckdb\nfrom openmapstack.checks.spatial import configure_spatial_axes\n'
                           'con = duckdb.connect()\n')
                 with self.subTest(operation=operation, setup=setup):
-                    self.assertEqual(self.check(prefix + setup + '\ncon.execute(' + repr(operation) + ')').status, 'passed')
+                    result = self.check(prefix + setup + '\ncon.execute(' + repr(operation) + ')')
+                    self.assertEqual(result.status, 'not_testable')
+                    self.assertIn('static analysis cannot prove axis order', result.detail)
+                    self.assertIn('runtime coordinate-order assertion is the guarantee', result.detail)
                     self.assertEqual(self.check(prefix + 'con.execute(' + repr(operation) + ')').status, 'warning')
 
-    def test_helper_connection_alias_is_recognized(self):
+    def test_helper_connection_alias_is_only_evidence_not_proof(self):
         result = self.check("from openmapstack.checks.spatial import require_spatial as connect\nc = connect()\nc.sql(\"SELECT ST_Transform(g, 'a', 'b')\")")
-        self.assertEqual(result.status, 'passed')
+        self.assertEqual(result.status, 'not_testable')
 
-    def test_other_connection_late_setting_comments_and_per_call_axes_do_not_hide_missing_setup(self):
+    def test_only_syntactic_setup_evidence_suppresses_omission_warning(self):
         base = 'import duckdb\nc = duckdb.connect()\nother = duckdb.connect()\n'
         op = 'c.execute("SELECT ST_Transform(g, a, b, always_xy := true)")\n'
-        for setup in ('# SET geometry_always_xy = true\n', '"SET geometry_always_xy = true"\n',
-                      'other.execute("SET geometry_always_xy = true")\n'):
+        for setup in ('# SET geometry_always_xy = true\n', '"SET geometry_always_xy = true"\n'):
             self.assertEqual(self.check(base + setup + op).status, 'warning')
-        self.assertEqual(self.check(base + op + 'c.execute("SET geometry_always_xy = true")').status, 'warning')
+        # Presence is not a claim about connection identity or execution order.
+        self.assertEqual(self.check(base + 'other.execute("SET geometry_always_xy = true")\n' + op).status,
+                         'not_testable')
+        self.assertEqual(self.check(base + op + 'c.execute("SET geometry_always_xy = true")').status,
+                         'not_testable')
+
+    def test_nested_queries_without_any_setup_evidence_warn(self):
+        for query in ('print(c.execute("SELECT ST_Transform(g,a,b)").fetchone())',
+                      'consume(value=c.sql("COPY t TO x (FORMAT GDAL)"))',
+                      'def run(c):\n return c.execute("SELECT ST_Transform(g,a,b)")'):
+            with self.subTest(query=query):
+                self.assertEqual(self.check('import duckdb\n' + query).status, 'warning')
 
     def test_ambiguous_flow_never_passes(self):
         for source in (
@@ -44,7 +56,6 @@ class StaticAxisOrderTests(unittest.TestCase):
             'def run(c):\n c.execute("SELECT ST_Transform(g, a, b)")',
             'import duckdb\nc = duckdb.connect()\nc.execute("-- SET geometry_always_xy = true\\nSELECT ST_Transform(g,a,b)")',
             'import duckdb\nc = duckdb.connect()\n# ST_Transform(g,a,b)',
-            'import duckdb\ndef run(c):\n return c.execute("SELECT ST_Transform(g,a,b)")',
         ):
             with self.subTest(source=source):
                 self.assertEqual(self.check(source).status, 'not_testable')
@@ -95,15 +106,53 @@ class StaticAxisOrderTests(unittest.TestCase):
     def test_unreadable_and_non_python_are_not_testable(self):
         workspace = make_workspace()
         for path in ('absent.py', 'pipeline.sql'):
-            self.assertEqual(project.duckdb_axis_order_explicit(workspace, pipeline_path=path).status, 'not_testable')
+            result = project.duckdb_axis_order_explicit(workspace, pipeline_path=path)
+            self.assertEqual(result.status, 'not_testable')
+            self.assertIn('runtime coordinate-order assertion is the guarantee', result.detail)
         self.assertEqual(self.check('invalid syntax!').status, 'not_testable')
+
+    def test_all_adversarial_cases_never_pass(self):
+        prefix = ('import duckdb\n'
+                  'from openmapstack.checks.spatial import configure_spatial_axes, require_spatial\n')
+        query = 'c.execute("SELECT ST_Transform(g,a,b)")\n'
+        cases = {
+            'nested call': 'c = require_spatial()\nprint(' + query.strip() + ')\n',
+            'import shadowing': ('from unrelated import configure_spatial_axes\n'
+                                 'c = duckdb.connect()\nconfigure_spatial_axes(c)\n' + query),
+            'connection alias': ('c = require_spatial()\nraw = c\n'
+                                 'raw.execute("RESET geometry_always_xy")\n' + query),
+            'f-string SQL': 'c = require_spatial()\nc.execute(f"SELECT ST_Transform(g,{src},{dst})")\n',
+            'locally shadowed helper': ('def run():\n'
+                                        ' def configure_spatial_axes(c): pass\n'
+                                        ' c = duckdb.connect()\n configure_spatial_axes(c)\n '
+                                        + query),
+            'aliased execute RESET': ('def reset(conn):\n execute = conn.execute\n'
+                                      ' execute("RESET geometry_always_xy")\n'
+                                      'c = require_spatial()\nreset(c)\n' + query),
+        }
+        for name, body in cases.items():
+            with self.subTest(case=name):
+                self.assertNotEqual(self.check(prefix + body).status, 'passed')
 
 
 class DuckDBAxisMutationTests(unittest.TestCase):
-    def test_missing_setup_warns_and_wrong_setting_fails_coordinates_with_healthy_twins(self):
-        for case in ('970-duckdb-axis-setting-missing', '971-duckdb-axis-setting-wrong'):
-            with self.subTest(case=case):
-                result = eval_runner.run_case(EVALS_DIR / 'cases' / case, 'fixture')
-                self.assertEqual(result['status'], 'passed', result)
-                self.assertTrue(result['mutation_analysis']['healthy_control_passed'])
-                self.assertTrue(result['mutation_analysis']['isolated'])
+    def test_warning_diagnostic_does_not_grade_static_deferral_as_passed(self):
+        result = eval_runner.run_case(EVALS_DIR / 'cases' / '970-duckdb-axis-setting-missing', 'fixture')
+        self.assertEqual(result['status'], 'passed', result)  # Diagnostic expectations matched.
+        self.assertEqual(result['score_type'], 'contract_ci')
+        self.assertIsNone(result['mutation_analysis'])
+        self.assertEqual([a['actual_status'] for a in result['assertions']], ['warning', 'not_testable'])
+        capability = eval_runner.rollup_capability([result])
+        self.assertEqual(capability['assertions_not_testable'], 1)
+        self.assertFalse(capability['fully_exercised'])
+        dimensions = eval_runner.rollup_dimensions([result])
+        self.assertEqual(sum(d['passed'] for d in dimensions.values()), 1)
+        self.assertEqual(sum(d.get('not_testable', 0) for d in dimensions.values()), 1)
+
+    def test_wrong_setting_fails_runtime_coordinates_with_a_passing_healthy_twin(self):
+        result = eval_runner.run_case(EVALS_DIR / 'cases' / '971-duckdb-axis-setting-wrong', 'fixture')
+        self.assertEqual(result['status'], 'passed', result)
+        self.assertTrue(result['mutation_analysis']['healthy_control_passed'])
+        self.assertTrue(result['mutation_analysis']['isolated'])
+        self.assertEqual(result['assertions'][0]['actual_status'], 'failed')
+        self.assertEqual(result['mutation_analysis']['control']['assertions'][0]['actual_status'], 'passed')

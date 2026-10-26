@@ -1196,6 +1196,25 @@ class CapabilityRollupTests(unittest.TestCase):
     def _case(assertions: list[dict[str, Any]], status: str = "passed") -> dict[str, Any]:
         return {"status": status, "assertions": assertions}
 
+    def test_expected_and_unexpected_deferrals_never_count_as_passed_dimensions(self) -> None:
+        from openmapstack.checks import not_testable
+
+        for expect in ('not_testable', 'passed'):
+            with self.subTest(expect=expect), patch.object(
+                eval_runner, '_resolve_assertion',
+                return_value=('project', lambda workspace: not_testable('runtime evidence required')),
+            ):
+                assertions, dimensions = eval_runner._evaluate_assertions(
+                    {'case_type': 'positive'}, Path('.'),
+                    [{'assert': 'project.duckdb_axis_order_explicit', 'expect': expect}], {}, None)
+                result = {**self._case(assertions), 'dimension_totals': dimensions}
+                self.assertEqual(assertions[0]['matched_expectation'], expect == 'not_testable')
+                counts = eval_runner.rollup_dimensions([result])[eval_runner.DIMENSIONS['project']]
+                self.assertEqual(counts, {'passed': 0, 'failed': 0, 'not_testable': 1})
+                capability = eval_runner.rollup_capability([result])
+                self.assertEqual(capability['assertions_not_testable'], 1)
+                self.assertFalse(capability['fully_exercised'])
+
     def test_full_fidelity_run_is_marked_as_such(self) -> None:
         rollup = eval_runner.rollup_capability([
             self._case([

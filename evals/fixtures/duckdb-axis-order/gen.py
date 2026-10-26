@@ -33,7 +33,11 @@ row = con.execute("SELECT ST_AsGeoJSON(ST_Transform(ST_Point(2755558.1473003766,
 Path(__file__).with_name('point.json').write_text(json.dumps({'point': json.loads(row[0])}))
 con.execute(EXPORT_SQL)
 con.close()
-'''.replace('SETUP', setup).replace('EXPORT_SQL', repr(export_sql))
-(args.output / 'pipeline.py').write_text(script)
+'''.replace('EXPORT_SQL', repr(export_sql))
+(args.output / 'pipeline.py').write_text(script.replace('SETUP', setup))
+if args.defect == 'missing':
+    # Static setup presence is an inconclusive diagnostic control, never a
+    # passing mutation control. Case 971 owns the real coordinate guarantee.
+    (args.output / 'configured.py').write_text(script.replace('SETUP', 'configure_spatial_axes(con)'))
 if args.defect != 'missing':
     subprocess.run([sys.executable, str((args.output / 'pipeline.py').resolve())], check=True)

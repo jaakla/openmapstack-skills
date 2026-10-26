@@ -66,7 +66,7 @@ checker where applicable.
 | `project.parses` | always | manifest is readable YAML | none; malformed/missing manifest fails | cases 001, 007, 070–073 |
 | `project.conforms_to_schema` | always | instance conforms to packaged v1 schema | none | broad contract suite; mutations 901–921 |
 | `project.graph_resolves` | always | processing symbols form a resolvable graph | none | 003, 903 |
-| `project.duckdb_axis_order_explicit` | Python pipeline with preferred engine `duckdb` or `duckdb-spatial` | explicit connection axes precede literal transforms/GDAL exports; missing setup warns | dynamic SQL, conditional or cross-function flow, unreadable code: `not_testable`; does not certify coordinate correctness | 970, 971 |
+| `project.duckdb_axis_order_explicit` | Python pipeline with preferred engine `duckdb` or `duckdb-spatial` | warning for literal transforms/GDAL exports with no explicit setup evidence | all other outcomes are `not_testable`, never `passed`: static analysis cannot prove axis order; the runtime coordinate-order assertion is the guarantee | 970-duckdb-axis-setting-missing (diagnostic), 971-duckdb-axis-setting-wrong (runtime mutation) |
 | `project.one_canonical_pipeline` | always | one executable entrypoint is declared | missing declaration is a failure | 005 |
 | `project.assumptions_have_rationale` | always | assumptions are explicit and reasoned | none | 001, 070–073 |
 | `project.status_agrees_with_validation_report` | always | project status does not launder report state | missing report is `not_testable` | 004 |

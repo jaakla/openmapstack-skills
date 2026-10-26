@@ -103,8 +103,8 @@ class VerifyResult:
         checks, for example, are absent when no QGIS project is declared.
         Every added check is therefore applicable. A ``not_testable`` result
         means that applicable check could not execute its predicate because
-        an environmental dependency, supported artifact, or required
-        addressing information was unavailable.
+        an environmental dependency, supported artifact, required addressing
+        information, or runtime evidence beyond static analysis was unavailable.
         """
         applicable = len(self.checks)
         not_testable_count = self.counts["not_testable"]
