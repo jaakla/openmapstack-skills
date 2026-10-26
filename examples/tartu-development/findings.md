@@ -5,8 +5,8 @@ question: Identify potentially developable parcels meeting accessibility, educat
   catchment (25-minute walking distance to city-owned kindergarten and school), and
   land-use criteria in Tartu, and show them on an interactive map with education POIs
   and catchment areas.
-run_id: run-20261016-195411
-scope: Tartu linn land screening using pinned source snapshots captured 2026-09-28
+run_id: run-20261025-162537
+scope: Tartu linn land screening using pinned source snapshots captured 2026-10-25
 validation:
   status: warning
   checks:
@@ -47,7 +47,7 @@ validation:
   - id: education_access_method
     status: passed
 validation_report: validation/latest-report.json
-context_sha256: sha256:21a7135a8da30ee683e7d7a6721108ae2cfb0ab2b189cca920614c9c57b46f62
+context_sha256: sha256:3c41d699d705b3e8885740c9be9b3194aa0bafba88bbb27e77bd2ff1ebd60847
 assumptions:
 - id: A1
   statement: '"Near a main road" is interpreted as <= 2000 m planar distance to a
@@ -151,7 +151,7 @@ evidence:
       generated_by: multi_criteria_accessibility
     files:
     - path: data/derived/final-candidates.json
-      sha256: sha256:246f0eeeecc4f6c6d60dcaf38de44b8b0f23e82fa5e96bb92c13eb42dea9edfc
+      sha256: sha256:152b1650ac5bfe19a3b5e388ad34c317e4b241c6b2c2a996d55e39f262c3929b
   candidate_parcels_parquet:
     definition:
       path: data/derived/final-candidates.parquet
@@ -159,7 +159,7 @@ evidence:
       generated_by: multi_criteria_accessibility
     files:
     - path: data/derived/final-candidates.parquet
-      sha256: sha256:eea06509038a248c7ca27727240c6439b002aaa1b6e426a5341c987170d73a65
+      sha256: sha256:a91d3049c7e6a318b3a6ecae6e5c95f7278d402eccdb777bff8841ec1c1d438d
   candidate_parcels_gpkg:
     definition:
       path: data/derived/final-candidates.gpkg
@@ -167,7 +167,7 @@ evidence:
       generated_by: multi_criteria_accessibility
     files:
     - path: data/derived/final-candidates.gpkg
-      sha256: sha256:41412c75c945cb468a59b49ddf84f9ff4e5062a39380266f8cb4bf33b79d630c
+      sha256: sha256:267112bfe36dde8aa09517886bd086864b4f1531184903bb9cc823ef6a0b34ad
   education_catchments_geojson:
     definition:
       path: data/derived/education_catchments.json
@@ -183,7 +183,7 @@ evidence:
       generated_by: load_roads
     files:
     - path: data/derived/main_roads.json
-      sha256: sha256:0e7a2948a1bf918b6d610376a3af0b8aaae815e399ae67f184b6d0a2da1ad895
+      sha256: sha256:34da08901c1384b6872ccae7b096b300f640c9a60270df2da060cbfdcff36d8f
   education_pois_geojson:
     definition:
       path: data/derived/education_pois.json
@@ -208,7 +208,7 @@ evidence:
 
 Identify potentially developable parcels meeting accessibility, education catchment (25-minute walking distance to city-owned kindergarten and school), and land-use criteria in Tartu, and show them on an interactive map with education POIs and catchment areas.
 
-Scope: Tartu linn land screening using pinned source snapshots captured 2026-09-28. Run: `run-20261016-195411`. Validation: **warning**.
+Scope: Tartu linn land screening using pinned source snapshots captured 2026-10-25. Run: `run-20261025-162537`. Validation: **warning**.
 
 ## screened_parcels_and_education_tiers
 

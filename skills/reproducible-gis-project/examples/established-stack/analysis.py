@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 import re
 
+from openmapstack.checks.spatial import configure_spatial_axes
+
 
 def load_spatial(con) -> None:
     # Offline runners pre-install the extension here instead of downloading it.
@@ -23,6 +25,7 @@ def load_spatial(con) -> None:
         con.execute('LOAD spatial')
     except Exception:
         con.execute('INSTALL spatial; LOAD spatial')
+    configure_spatial_axes(con)
 
 
 def model_plan(root: Path) -> list[tuple[str, list[str]]]:

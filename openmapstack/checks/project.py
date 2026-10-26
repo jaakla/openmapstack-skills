@@ -284,3 +284,32 @@ def parameters_match_steps(workspace: Path, project_dir: str = ".") -> Assertion
     return passed(
         f"{len(parameters)} runtime parameter(s) declared; {bound} bound to a processing step agree with it"
     )
+
+
+def duckdb_axis_order_explicit(
+    workspace: Path, project_dir: str = ".", pipeline_path: str = "pipeline.py"
+) -> AssertionResult:
+    """Warn about literal DuckDB transforms/GDAL exports lacking explicit axes.
+
+    This static advisory never returns passed. Setup evidence cannot prove
+    connection state or that the selected axes match the actual coordinates.
+    """
+    from ._axis_order import inspect_python
+
+    unproven = ('static analysis cannot prove axis order; '
+                'the runtime coordinate-order assertion is the guarantee')
+    target = project_root(workspace, project_dir) / pipeline_path
+    if target.suffix != '.py':
+        return not_testable(f'only Python DuckDB pipelines can be inspected; {unproven}',
+                            code='axis_order_ambiguous')
+    try:
+        missing = inspect_python(target.read_text(encoding='utf-8'))
+    except (OSError, UnicodeError, SyntaxError) as exc:
+        return not_testable(f'could not inspect {pipeline_path}: {exc}; {unproven}',
+                            code='axis_order_unreadable')
+    if missing:
+        return warning(
+            'DuckDB reprojection/GDAL I/O has no explicit geometry_always_xy setup evidence; '
+            'normally configure true after LOAD spatial on each connection',
+            code='duckdb_axis_order_missing', path=pipeline_path, lines=missing)
+    return not_testable(unproven, code='axis_order_ambiguous', path=pipeline_path)

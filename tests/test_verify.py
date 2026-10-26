@@ -72,6 +72,39 @@ class VerifyPlanTests(unittest.TestCase):
         self.assertIsNotNone(_status_of(result, "provenance.every_source_pinned"))
         self.assertIsNotNone(_status_of(result, "rerun.no_chat_dependency"))
 
+    def test_axis_order_warning_is_planned_for_duckdb_python_pipelines(self):
+        workspace = make_workspace()
+        project = minimal_project()
+        project['runtime']['implementation'].update(preferred_engine='duckdb-spatial', pipeline='analysis.py')
+        (workspace / 'analysis.py').write_text('import duckdb\nc = duckdb.connect()\nc.execute("SELECT ST_Transform(g,a,b)")')
+        write_project(workspace, project)
+        result = verify_project(workspace / 'project.yaml')
+        self.assertEqual(_status_of(result, 'project.duckdb_axis_order_explicit'), 'warning')
+        (workspace / 'analysis.py').write_text(
+            'from openmapstack.checks.spatial import require_spatial\n'
+            'c = require_spatial()\nc.execute("SELECT ST_Transform(g,a,b)")')
+        result = verify_project(workspace / 'project.yaml')
+        axis = next(run for run in result.checks if run.name == 'project.duckdb_axis_order_explicit')
+        self.assertEqual(axis.result.status, 'not_testable')
+        self.assertNotEqual(result.status, 'passed')
+        self.assertEqual(result.coverage['executed'], sum(
+            run.result.status != 'not_testable' for run in result.checks))
+        summary = VerifyResult(workspace / 'project.yaml', [CheckRun('project.parses', passed()), axis])
+        payload = summary.to_dict()
+        self.assertEqual(payload['status'], 'warning')
+        self.assertEqual(payload['counts'], {'passed': 1, 'warning': 0, 'not_testable': 1, 'failed': 0})
+        self.assertEqual(payload['coverage'],
+                         {'applicable': 2, 'executed': 1, 'not_testable': 1, 'execution_rate': 0.5})
+        stdout = io.StringIO()
+        with patch('openmapstack.cli.verify_project', return_value=summary), redirect_stdout(stdout):
+            self.assertEqual(main(['verify', str(workspace / 'project.yaml'), '--strict']), 1)
+        self.assertIn('1 passed, 0 warnings, 1 not testable, 0 failed', stdout.getvalue())
+        self.assertIn('1/2 applicable checks executed', stdout.getvalue())
+        project['runtime']['implementation']['preferred_engine'] = 'python'
+        write_project(workspace, project)
+        result = verify_project(workspace / 'project.yaml')
+        self.assertIsNone(_status_of(result, 'project.duckdb_axis_order_explicit'))
+
     def test_declared_outputs_drive_the_geodata_plan(self) -> None:
         # The plan is derived from the manifest, so a project cannot opt out
         # of a check by omitting it: a declared output is a checked output.

@@ -17,7 +17,7 @@ dependencies = ["jsonschema>=4,<5", "PyYAML>=6,<7", "packaging>=23"]
 [project.optional-dependencies]
 # Geodata checks: geometry validity, CRS read from real coordinates,
 # validation-evidence recomputation, clean-rerun output equality.
-geo = ["duckdb>=1.2"]
+geo = ["duckdb>=1.5.3"]
 # Dashboard checks in a real browser. PyQGIS has no PyPI distribution, so
 # the QGIS checks depend on a system install and degrade to not_testable.
 visual = ["playwright>=1.40"]
@@ -28,7 +28,7 @@ postgis = ["psycopg[binary]>=3.1"]
 # written as GeoParquet through DuckDB, so [geo] is needed to materialise.
 bigquery = ["google-cloud-bigquery>=3.11"]
 # MotherDuck speaks the DuckDB protocol; the extension is loaded at runtime.
-motherduck = ["duckdb>=1.2"]
+motherduck = ["duckdb>=1.5.3"]
 all = ["openmapstack[geo,visual,postgis,bigquery,motherduck]"]
 
 [project.scripts]

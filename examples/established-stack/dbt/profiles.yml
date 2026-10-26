@@ -7,3 +7,5 @@ spatial_example:
       schema: analysis
       threads: 1
       extensions: [spatial]
+      settings:
+        geometry_always_xy: true

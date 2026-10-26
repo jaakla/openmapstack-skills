@@ -54,6 +54,8 @@ from pathlib import Path
 import duckdb
 import yaml
 
+from openmapstack.checks.spatial import configure_spatial_axes
+
 from openmapstack.credits import credit_payload, html_credits, qgis_credits
 
 HERE = Path(__file__).resolve().parent
@@ -82,6 +84,7 @@ def _connect_spatial():
         raise RuntimeError(
             "DuckDB Spatial is not preinstalled; prepare it before running this pipeline"
         ) from exc
+    configure_spatial_axes(connection)
     return connection
 
 

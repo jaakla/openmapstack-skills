@@ -29,6 +29,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from ..checks.spatial import configure_spatial_axes
 from . import (
     ConnectorError,
     ConnectorLimits,
@@ -146,6 +147,12 @@ class MotherDuckConnector:
             connection.execute("LOAD spatial")
         except Exception:  # noqa: BLE001 - geometry columns then read as their raw type
             self._note("DuckDB Spatial is not loaded; geometry columns are reported as their stored type")
+        else:
+            try:
+                configure_spatial_axes(connection)
+            except Exception:
+                connection.close()
+                raise
         target = _escape(f"md:{self._database}")
         try:
             connection.execute(f"ATTACH '{target}' AS {ALIAS} (READ_ONLY)")

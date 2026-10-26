@@ -103,8 +103,8 @@ class VerifyResult:
         checks, for example, are absent when no QGIS project is declared.
         Every added check is therefore applicable. A ``not_testable`` result
         means that applicable check could not execute its predicate because
-        an environmental dependency, supported artifact, or required
-        addressing information was unavailable.
+        an environmental dependency, supported artifact, required addressing
+        information, or runtime evidence beyond static analysis was unavailable.
         """
         applicable = len(self.checks)
         not_testable_count = self.counts["not_testable"]
@@ -224,6 +224,12 @@ def verify_project(
     _run(runs, "project.conforms_to_schema", project_checks.conforms_to_schema, root)
     _run(runs, "project.graph_resolves", project_checks.graph_resolves, root)
     _run(runs, "project.one_canonical_pipeline", project_checks.one_canonical_pipeline, root)
+    implementation = get_in(manifest, "runtime", "implementation") or {}
+    entrypoint = implementation.get("pipeline", "pipeline.py")
+    if (implementation.get("preferred_engine") in ("duckdb", "duckdb-spatial")
+            and isinstance(entrypoint, str) and entrypoint.endswith(".py")):
+        _run(runs, "project.duckdb_axis_order_explicit", project_checks.duckdb_axis_order_explicit,
+             root, pipeline_path=entrypoint)
     _run(runs, "project.assumptions_have_rationale", project_checks.assumptions_have_rationale, root)
     _run(
         runs,

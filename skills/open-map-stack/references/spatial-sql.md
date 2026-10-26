@@ -105,6 +105,32 @@ Source: [PostGIS geography documentation](https://postgis.net/docs/using_postgis
 
 ### DuckDB Spatial
 
+OpenMapStack requires `duckdb>=1.5.3`: the first release combining
+`geometry_always_xy` with `ST_SymDifference`. Older versions can export
+CRS-less GeoJSON, so they cannot satisfy the complete project checks.
+
+After loading Spatial, explicitly configure axis order on **each connection**
+before reprojection or GDAL I/O, including `COPY … (FORMAT GDAL, … SRS …)`:
+
+```sql
+LOAD spatial;
+SET geometry_always_xy = true;
+```
+
+Normally use `true`: GIS `[x, y]`, or `[longitude, latitude]` for geographic
+coordinates. Use `false` only for an intentional, documented authority-axis
+workflow with independent coordinate checks. Do not depend on a version's
+default, or assume the per-call `always_xy` argument configures GDAL exports.
+The packaged Python helper is
+`openmapstack.checks.spatial.configure_spatial_axes(connection)`. Keep explicit
+`always_xy := true` on transforms when it makes the x/y contract clearer.
+Verify an asymmetric known point against its source before delivery; a
+swapped point must fail that assertion. The static
+`project.duckdb_axis_order_explicit` check warns when sensitive literal SQL has
+no explicit setup evidence; otherwise it returns `not_testable`, never `passed`.
+Static analysis cannot prove axis order: the independent runtime coordinate-order
+assertion is the guarantee. See [DuckDB's axis-order migration](https://duckdb.org/2026/03/09/announcing-duckdb-150#breaking-change-flipping-of-axis-order).
+
 For Overture and other GeoParquet datasets with a `bbox` struct, use bbox overlap for predicate pushdown:
 
 ```sql

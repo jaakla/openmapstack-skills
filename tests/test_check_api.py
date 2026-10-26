@@ -73,6 +73,16 @@ class CatalogueTests(unittest.TestCase):
 
 
 class RunCheckTests(unittest.TestCase):
+    def test_axis_order_setup_is_not_a_pass_in_the_public_api(self) -> None:
+        workspace = make_workspace()
+        (workspace / 'pipeline.py').write_text(
+            'from openmapstack.checks.spatial import require_spatial\n'
+            'c = require_spatial()\nc.execute("SELECT ST_Transform(g,a,b)")')
+        record = api.run_check('project.duckdb_axis_order_explicit', workspace)
+        self.assertEqual((record['status'], record['code']), ('not_testable', 'axis_order_ambiguous'))
+        self.assertIn('runtime coordinate-order assertion is the guarantee', record['detail'])
+        self.assertEqual(validation_errors(record, _schema('check-result-v1.schema.json')), [])
+
     def test_result_validates_and_carries_stable_codes(self) -> None:
         workspace = make_workspace()
         project = minimal_project()

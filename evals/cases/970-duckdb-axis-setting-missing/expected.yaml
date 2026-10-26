@@ -1,0 +1,22 @@
+id: 970-duckdb-axis-setting-missing
+case_type: positive
+modes:
+- fixture
+score_types:
+  fixture: contract_ci
+project_dir: project
+hard_gate: true
+fixture:
+  generator: '{python} {evals_dir}/fixtures/duckdb-axis-order/gen.py {project_dir}
+    --break missing'
+assertions:
+- assert: project.duckdb_axis_order_explicit
+  args:
+    pipeline_path: pipeline.py
+  expect: warning
+  expect_code: duckdb_axis_order_missing
+- assert: project.duckdb_axis_order_explicit
+  args:
+    pipeline_path: configured.py
+  expect: not_testable
+  expect_code: axis_order_ambiguous

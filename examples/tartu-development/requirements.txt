@@ -1,4 +1,4 @@
-duckdb==1.5.5
+duckdb==2.0.0
 PyYAML==6.0.3
 pyproj==3.7.2
 pyvalhalla==3.9.0
