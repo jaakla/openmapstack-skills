@@ -7,12 +7,29 @@ imported by `--mode live` runs, never by fixture CI.
 
 from __future__ import annotations
 
+import os
+import re
 import shutil
 import subprocess
 import time
 from pathlib import Path
 
-from .base import AgentAdapter, AgentRunResult, parse_json_lines
+from .base import AgentAdapter, AgentRunResult, http_provider_failure, parse_json_lines
+
+
+def _provider_failure(events: list[dict]) -> dict | None:
+    for event in reversed(events):
+        if event.get("type") not in {"turn.failed", "error"}:
+            continue
+        error = event.get("error") or event
+        message = error.get("message") if isinstance(error, dict) else error
+        if not isinstance(message, str):
+            continue
+        match = re.search(r"\b(?:HTTP|status(?: code)?)[\s:]+(\d{3})\b", message, re.IGNORECASE)
+        failure = http_provider_failure(int(match[1]) if match else None, message)
+        if failure:
+            return failure
+    return None
 
 
 def _codex_observability(events: list[dict]) -> tuple[dict, str | None, bool]:
@@ -116,6 +133,9 @@ class CodexAdapter(AgentAdapter):
             stdout = ""
             stderr = f"{type(exc).__name__}: {exc}"
         duration = time.monotonic() - start
+        secret = os.environ.get("OPENAI_API_KEY")
+        if secret:
+            stdout, stderr = stdout.replace(secret, "<REDACTED>"), stderr.replace(secret, "<REDACTED>")
         events, unparsed_lines = parse_json_lines(stdout)
         usage, final_message, completed = _codex_observability(events)
         success = success and completed and bool(model) and bool(version)
@@ -141,6 +161,7 @@ class CodexAdapter(AgentAdapter):
             usage=usage,
             cost_usd=None,
             final_message=final_message,
+            failure=_provider_failure(events) if not success else None,
             permissions={
                 "sandbox": "workspace-write",
                 "session_persistence": False,

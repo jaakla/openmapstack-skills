@@ -26,7 +26,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from .base import AgentAdapter, AgentRunResult
+from .base import AgentAdapter, AgentRunResult, http_provider_failure
 
 MAX_TURNS = 64
 MAX_TOOL_OUTPUT_CHARS = 20_000
@@ -257,6 +257,7 @@ class OpenaiCompatibleAdapter(AgentAdapter):
         timed_out = False
         final_message: str | None = None
         error_text: str | None = None
+        failure = None
         turns = 0
 
         while turns < MAX_TURNS:
@@ -280,6 +281,8 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 except Exception:  # noqa: BLE001 - diagnostic best effort
                     pass
                 error_text = f"HTTP {exc.code} from {base_url}/chat/completions: {_truncate(body, 2000) or exc.reason}"
+                error_text = error_text.replace(api_key, "<REDACTED>")
+                failure = http_provider_failure(exc.code, error_text)
                 break
             except Exception as exc:  # noqa: BLE001 - transport errors end the run
                 error_text = f"{type(exc).__name__}: {exc}"
@@ -387,6 +390,7 @@ class OpenaiCompatibleAdapter(AgentAdapter):
             usage=usage,
             cost_usd=cost_usd,
             final_message=final_message,
+            failure=failure,
             permissions={
                 "sandbox": "workspace-write",
                 "network": True,

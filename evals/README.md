@@ -356,6 +356,10 @@ description. CI's `--allow-missing` emits a broken run-setup record when an
 earlier step failed before producing JSON; normal local use rejects missing
 or invalid input.
 
+Generated-project ZIP attachments omit virtual environments (`.venv`/`venv`)
+and symlinks, without dereferencing them; the trial description lists omissions.
+Other retained evidence still uses strict artifact-root containment checks.
+
 Each case/trial/arm/model is a separate Allure result. Repetitions are **not
 retries**. Select the score-type suite before interpreting results: the Allure
 overview is a navigation summary, not a combined correctness score. The v2
@@ -540,8 +544,9 @@ case that expects assertion status `failed`.
 
 Live adapters can report an optional normalized `agent_run.failure` containing
 `category`, `scope` (`provider` or `trial`), `retryable`, and a redacted `message`.
-The Claude adapter recognizes terminal API quota/credit exhaustion and
-authentication/permission failures. A non-retryable failure with provider scope
+The adapters recognize terminal API quota/credit exhaustion and
+authentication/permission failures from provider errors (not quoted task output).
+A non-retryable failure with provider scope
 stops further invocations of that adapter across cases, repetitions, and arms;
 other adapters remain eligible. Ordinary task failures, per-trial budgets,
 timeouts, and temporary provider errors do not trigger this stop.
@@ -835,7 +840,28 @@ secrets; they must never block ordinary PRs when a third-party model or data
 endpoint is unavailable. The scheduled workflow installs and verifies the
 selected agent CLI before invoking the benchmark; its job remains non-blocking,
 but the uploaded JSON preserves setup failures instead of treating them as
-passes. The visual integration (`.github/workflows/eval-visual.yml`) is
+passes. An offline configuration gate (`python -m evals.ci_preflight`) checks
+the selected provider's credential, endpoint where applicable, and exact model.
+Missing settings produce a run-level `run_skipped: true` result with a
+`skip_reason`, zero executed/graded/passed trials, and a skipped Allure preflight
+record and job summary. No agent or expensive runtime setup starts. Credentials
+that are present but rejected (401), and exhausted quotas, remain setup errors
+(Allure `broken`), grouped as provider setup failures separately from grading
+failures. Later affected trials are not attempted. Each configured leg enables
+and probes Bubblewrap before any adapter runs. The job timeout is 90 minutes;
+the benchmark step is capped at 35 minutes to leave time for report uploads.
+There is no `continue-on-error` masking provider failures.
+
+This offline smoke path uses an empty environment and no provider calls:
+
+```bash
+env -i PATH="$PATH" python -m evals.ci_preflight --agent openai_compatible \
+  --json /tmp/benchmark-not-run.json
+python evals/report.py /tmp/benchmark-not-run.json \
+  --output /tmp/benchmark-not-run-allure
+```
+
+The visual integration (`.github/workflows/eval-visual.yml`) is
 likewise scheduled/manual only: it runs `--mode visual` inside the
 `qgis/qgis:3.44-trixie` container with Playwright Chromium and uploads the
 rendered snapshots as evidence.

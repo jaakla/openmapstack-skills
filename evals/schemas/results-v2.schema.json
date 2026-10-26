@@ -7,6 +7,17 @@
     "run_setup_failed", "setup_errors", "score_types", "agent_benchmark",
     "mutation_score", "results"
   ],
+  "allOf": [{
+    "if": {"properties": {"run_skipped": {"const": true}}, "required": ["run_skipped"]},
+    "then": {
+      "required": ["skip_reason"],
+      "properties": {
+        "results": {"maxItems": 0},
+        "run_setup_failed": {"const": false},
+        "outcomes": {"properties": {"passed": {"const": 0}}}
+      }
+    }
+  }],
   "properties": {
     "schema": {"const": "openmapstack-eval-results/v2"},
     "run_config": {"type": "object"},
@@ -19,6 +30,8 @@
     },
     "outcomes": {"type": "object"},
     "run_setup_failed": {"type": "boolean"},
+    "run_skipped": {"type": "boolean"},
+    "skip_reason": {"type": "string", "minLength": 1},
     "run_incomplete": {"type": "boolean"},
     "setup_errors": {"type": "array"},
     "score_types": {"type": "object"},

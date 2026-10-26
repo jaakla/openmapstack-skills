@@ -14,7 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "evals"))
 
 from adapters.claude_code import ClaudeCodeAdapter, _provider_failure  # noqa: E402
-from adapters.codex import CodexAdapter  # noqa: E402
+from adapters.codex import CodexAdapter, _provider_failure as codex_provider_failure  # noqa: E402
 from adapters.openai_compatible import OpenaiCompatibleAdapter  # noqa: E402
 
 
@@ -98,6 +98,33 @@ class AdapterContractTests(unittest.TestCase):
 
         self.assertFalse(result.success)
         self.assertIn("without a turn.completed event", result.stderr)
+
+    def test_codex_classifies_only_provider_error_events(self):
+        for message, expected in (
+            ('unexpected status 401 Unauthorized: Invalid API key', 'authentication'),
+            ('HTTP 403 Forbidden', 'permission_denied'),
+            ('You have hit your usage limit. Try again later.', 'quota_exhausted'),
+            ('HTTP 429 insufficient_quota', 'quota_exhausted'),
+            ('HTTP 429 Too many requests', None),
+            ('HTTP 500 Internal Server Error', None),
+            ('command exited with code 401', None),
+        ):
+            with self.subTest(message=message):
+                failure = codex_provider_failure([{'type': 'turn.failed', 'error': {'message': message}}])
+                self.assertEqual(failure['category'] if failure else None, expected)
+                self.assertIsNone(codex_provider_failure([{'type': 'item.completed', 'item': {'type': 'agent_message', 'text': message}}]))
+
+    def test_codex_retains_redacted_auth_diagnosis(self):
+        stream = json.dumps({'type': 'turn.failed', 'error': {'message': 'unexpected status 401 Unauthorized: fake-secret'}})
+        def run(command, **kwargs):
+            return subprocess.CompletedProcess(command, 0 if command[-1] == '--version' else 1,
+                                               'codex test' if command[-1] == '--version' else stream, '')
+        with patch('adapters.codex.shutil.which', return_value='/bin/codex'), patch('subprocess.run', side_effect=run), patch.dict(os.environ, {'OPENAI_API_KEY': 'fake-secret'}):
+            result = CodexAdapter().run('build it', self.workspace, model='test')
+        self.assertFalse(result.success)
+        self.assertEqual(result.failure['category'], 'authentication')
+        self.assertFalse(result.failure['retryable'])
+        self.assertNotIn('fake-secret', json.dumps(result.normalized()))
 
     def test_claude_normalizes_stream_result_cost_usage_and_actual_model(self) -> None:
         stream = "\n".join(
@@ -404,6 +431,23 @@ class AdapterContractTests(unittest.TestCase):
         self.assertFalse(result.success)
         self.assertIsNone(result.returncode)
         self.assertIn("HTTP 401", result.stderr)
+        self.assertEqual(result.failure['category'], 'authentication')
+
+    def test_openai_compatible_quota_is_terminal_but_rate_limit_is_local(self):
+        import io
+        import urllib.error
+        for body, expected in ((b'{"error":{"code":"insufficient_quota"}}', 'quota_exhausted'),
+                               (b'{"error":{"code":"rate_limit_exceeded"}}', None)):
+            with self.subTest(body=body), patch.dict(os.environ, {
+                'OPENAI_COMPATIBLE_BASE_URL': 'https://example.invalid/v1',
+                'OPENAI_COMPATIBLE_API_KEY': 'fake-secret', 'OPENAI_COMPATIBLE_MODEL': 'test',
+            }):
+                adapter = OpenaiCompatibleAdapter()
+                error = urllib.error.HTTPError('https://example.invalid', 429, 'Too Many Requests', {}, io.BytesIO(body))
+                with patch.object(adapter, '_post_chat', side_effect=error):
+                    result = adapter.run('build it', self.workspace)
+            self.assertFalse(result.success)
+            self.assertEqual(result.failure['category'] if result.failure else None, expected)
 
     def test_timeout_retains_partial_structured_events(self) -> None:
         partial = json.dumps({"type": "turn.started"}) + "\n"
