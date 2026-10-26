@@ -6,7 +6,7 @@ project:
     fleet and hub coverage and account demand, and show ranked candidate zones on an interactive map while
     respecting all database access restrictions.
   created_at: '2026-09-17T00:00:00Z'
-  updated_at: '2026-10-16T19:54:11.446916+00:00'
+  updated_at: '2026-10-25T16:28:40.047100+00:00'
   status: validated
   author:
     name: OpenMapStack example maintainers
@@ -574,14 +574,14 @@ validation:
     expression: trips_total >= 30 AND hub_distance_m >= 1500 AND fleet_present <= 6
 runs:
   latest:
-    id: run-20261016-195411
-    started_at: '2026-10-16T19:54:10.872660+00:00'
-    completed_at: '2026-10-16T19:54:11.446916+00:00'
+    id: run-20261025-162840
+    started_at: '2026-10-25T16:28:39.537138+00:00'
+    completed_at: '2026-10-25T16:28:40.047100+00:00'
     status: passed
-    inputs_hash: sha256:63b50048cbc8dcc2c95acf994a30e8ed09451c08bf62ecc65bca186b1e1c1737
-    outputs_hash: sha256:b08561cbc56bab5af393c41200d0b3cfacff6ab568dcb40724cde56032f31296
+    inputs_hash: sha256:ec3abcfe87d171dc4b01fadb60a93203112f07bab96198accd40728a45e49018
+    outputs_hash: sha256:57dcbbbbc86af22c0aef88672c407a58b6b6288c5b7f33f44bc57318037870a6
     record:
-      path: runs/run-20261016-195411.json
+      path: runs/run-20261025-162840.json
     validation_report:
       path: validation/latest-report.json
 runtime:

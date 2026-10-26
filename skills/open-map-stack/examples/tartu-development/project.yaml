@@ -6,7 +6,7 @@ project:
     walking distance to city-owned kindergarten and school), and land-use criteria in Tartu, and show
     them on an interactive map with education POIs and catchment areas.
   created_at: 2026-08-25 08:15:03+03:00
-  updated_at: '2026-10-16T19:55:28.194085+00:00'
+  updated_at: '2026-10-25T16:27:06.058779+00:00'
   status: warning
   aoi:
     bbox:
@@ -54,23 +54,23 @@ sources:
     portal_page: https://geoportaal.maaruum.ee/eng/spatial-data/cadastral-data-p310.html
     access:
       method: http(s) bulk download
-      downloaded_at: '2026-09-28T20:55:21.976024+00:00'
-      retrieved_at: '2026-09-28T20:55:21.976024+00:00'
+      downloaded_at: '2026-10-25T16:21:15.222056+00:00'
+      retrieved_at: '2026-10-25T16:21:15.222056+00:00'
       file:
         archive_name: Tartu_maakond_KATASTER_GPKG.zip
         extracted_file: Tartu_maakond_KATASTER_GPKG.gpkg
         table_name: Tartu maakond
         format: GeoPackage (GPKG/SQLite)
-        size_bytes: 55791616
-        row_count: 79182
+        size_bytes: 55861248
+        row_count: 79230
         column_count: 32
       request_spec: 'Direct county GPKG zip download from Maa- ja Ruumiamet S3 storage: https://s3.pilw.io/rp-kemit-kataster/ANDMED/Tartu_maakond_KATASTER_GPKG.zip
         extracted to data/source/Tartu_maakond_KATASTER_GPKG.gpkg containing layer ''Tartu maakond'' (79,082
         parcels in EPSG:3301).'
     version:
-      published_at: '2026-09-28'
-      identifier: Tartu_maakond_KATASTER_GPKG (daily snapshot 2026-09-28)
-      etag: 2e36bb4d8b2a94996ee668c378f475ed-4
+      published_at: '2026-10-24'
+      identifier: Tartu_maakond_KATASTER_GPKG (daily snapshot 2026-10-24)
+      etag: 822f80101a9c931493b2d1aba7f8411f-4
     selection:
       municipality: Tartu linn
       filter: pindala >= 20000 AND siht1 IN ('MAATULUNDUSMAA', 'TOOTMISMAA', 'ARIMAA')
@@ -127,8 +127,8 @@ sources:
     portal_page: https://geoportaal.maaruum.ee/est/ruumiandmed/eesti-topograafia-andmekogu/laadi-etak-andmed-alla-p609.html
     access:
       method: WFS 2.0.0 (GetFeature)
-      downloaded_at: '2026-09-28T20:55:37.511054+00:00'
-      retrieved_at: '2026-09-28T20:55:37.511054+00:00'
+      downloaded_at: '2026-10-25T16:21:28.926339+00:00'
+      retrieved_at: '2026-10-25T16:21:28.926339+00:00'
       file:
         name: etak_main_roads.geojson
         layer_name: etak:e_501_tee_j
@@ -182,8 +182,8 @@ sources:
     portal_page: https://geohub.tartulv.ee/
     access:
       method: ArcGIS REST FeatureServer / GeoJSON
-      downloaded_at: '2026-09-28T20:55:42.406623+00:00'
-      retrieved_at: '2026-09-28T20:55:42.406623+00:00'
+      downloaded_at: '2026-10-25T16:21:33.244600+00:00'
+      retrieved_at: '2026-10-25T16:21:33.244600+00:00'
       file:
         name: tartu_municipal_education.geojson
         table_name: education_pois
@@ -234,8 +234,8 @@ sources:
     portal_page: https://download.geofabrik.de/europe/estonia.html
     access:
       method: http(s) bulk download
-      retrieved_at: '2026-09-28T20:56:04.044855+00:00'
-      downloaded_at: '2026-09-28T20:56:04.044855+00:00'
+      retrieved_at: '2026-10-25T16:21:38.418287+00:00'
+      downloaded_at: '2026-10-25T16:21:38.418287+00:00'
     version:
       identifier: estonia-260901.osm.pbf
       published_at: '2026-09-04'
@@ -779,7 +779,7 @@ runtime:
     - requirements.txt
   environment:
     python: '3.12'
-    duckdb: 1.5.5
+    duckdb: 2.0.0
     gdal: DuckDB spatial extension
     proj: pyproj 3.7.2
     qgis: 3.44.3 Docker opt-in; deterministic XML builder by default
@@ -787,14 +787,14 @@ runtime:
     osmium: 4.3.1
 runs:
   latest:
-    id: run-20261016-195411
-    started_at: '2026-10-16T19:54:11.811454+00:00'
-    completed_at: '2026-10-16T19:55:28.194085+00:00'
+    id: run-20261025-162537
+    started_at: '2026-10-25T16:25:37.029770+00:00'
+    completed_at: '2026-10-25T16:27:06.058779+00:00'
     status: warning
-    inputs_hash: sha256:c4d022b589f1c0201ff329aaaf8f392553ca2ba0f713bfbb97154566f51204ea
-    outputs_hash: sha256:e653b5b750c6e44c91beaa531a025965ed570117527c6aa9d4db1297292d2a2c
+    inputs_hash: sha256:a625676238cd55796c162642a2c94cf9f855ba4bcde090e6699b53cbb5215262
+    outputs_hash: sha256:b11a31288e0e6999de697c8b3fabcef1ec1166fd8e6d71fdd7ce061ab0061e29
     record:
-      path: runs/run-20261016-195411.json
+      path: runs/run-20261025-162537.json
     validation_report:
       path: validation/latest-report.json
 findings:

@@ -1,0 +1,23 @@
+id: 971-duckdb-axis-setting-wrong
+case_type: mutation
+modes:
+- fixture
+score_types:
+  fixture: mutation_tests
+project_dir: project
+hard_gate: true
+fixture:
+  generator: '{python} {evals_dir}/fixtures/duckdb-axis-order/gen.py {project_dir}
+    --break wrong'
+mutation:
+  control_generator: '{python} {evals_dir}/fixtures/duckdb-axis-order/gen.py {project_dir}'
+assertions:
+- assert: geodata.coordinate_pair_equals
+  args:
+    path: point.json
+    field: point.coordinates
+    equals:
+    - 24.7536
+    - 59.437
+  expect: failed
+  expect_code: coordinate_pair_mismatch

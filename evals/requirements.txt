@@ -1,4 +1,4 @@
-duckdb>=1.2
+duckdb>=1.5.3
 h3==4.5.0
 coverage>=7,<8
 jsonschema>=4,<5

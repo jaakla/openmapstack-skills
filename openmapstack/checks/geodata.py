@@ -115,6 +115,10 @@ def _geometry_expression(con, rel: str, preferred: str | None = None) -> str | N
     columns = con.execute(f"SELECT * FROM {rel} LIMIT 0").description or []
     types = {str(name): str(kind).upper() for name, kind, *_ in columns}
     identifier = '"' + column.replace('"', '""') + '"'
+    if types.get(column) == "BINARY":
+        logical_types = {str(row[0]): str(row[1]).upper() for row in
+                         con.execute(f"DESCRIBE SELECT * FROM {rel}").fetchall()}
+        types[column] = logical_types.get(column, types[column])
     if types.get(column) == "BLOB":
         return f"ST_GeomFromWKB({identifier})"
     if types.get(column, "").startswith("GEOMETRY"):

@@ -105,3 +105,16 @@ class TartuRunEvidenceTests(unittest.TestCase):
         self.assertEqual(artifact_errors(self.root, self.pipeline.PROJECT), [])
         (self.root / "data/derived/summary.json").write_text("mutated secondary download")
         self.assertIn("hash differs", "; ".join(artifact_errors(self.root, self.pipeline.PROJECT)))
+
+
+class CommittedTartuEnvironmentTests(unittest.TestCase):
+    def test_manifest_requirements_and_run_attestation_agree_on_duckdb(self):
+        from packaging.requirements import Requirement
+
+        project = yaml.safe_load((EXAMPLE / 'project.yaml').read_text())
+        record = json.loads((EXAMPLE / project['runs']['latest']['record']['path']).read_text())
+        pinned = str(project['runtime']['environment']['duckdb'])
+        self.assertEqual(pinned, record['environment']['duckdb'])
+        requirement = next(Requirement(line) for line in (EXAMPLE / 'requirements.txt').read_text().splitlines()
+                           if line.startswith('duckdb'))
+        self.assertTrue(requirement.specifier.contains(pinned), (pinned, str(requirement)))

@@ -42,18 +42,10 @@ HERE = Path(__file__).resolve().parent
 
 
 def _connect_spatial() -> duckdb.DuckDBPyConnection:
-    """A DuckDB connection with Spatial loaded, via the repo's helper if available."""
-    try:
-        from openmapstack.checks.spatial import connect_spatial
+    """Use the shared offline Spatial setup, including explicit GIS axes."""
+    from openmapstack.checks.spatial import require_spatial
 
-        connection = connect_spatial()
-        if connection is not None:
-            return connection
-    except ImportError:
-        pass
-    connection = duckdb.connect()
-    connection.execute("LOAD spatial")
-    return connection
+    return require_spatial()
 
 SEED = "20260917"
 
@@ -277,7 +269,7 @@ def gen_fleet_positions() -> None:
                     continue
                 lon, lat = point_in_zone(zone_id, tag)
                 (x, y) = duck.execute(
-                    "SELECT ST_X(g), ST_Y(g) FROM (SELECT ST_Transform(ST_Point(CAST(? AS DOUBLE), CAST(? AS DOUBLE)), 'EPSG:4326', 'EPSG:2263') AS g)",
+                    "SELECT ST_X(g), ST_Y(g) FROM (SELECT ST_Transform(ST_Point(CAST(? AS DOUBLE), CAST(? AS DOUBLE)), 'EPSG:4326', 'EPSG:2263', always_xy := true) AS g)",
                     [lon, lat],
                 ).fetchone()
                 features.append(

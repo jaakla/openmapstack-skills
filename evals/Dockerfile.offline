@@ -5,8 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     OPENMAPSTACK_SPATIAL_EXTENSION_DIR=/opt/openmapstack-duckdb-extensions
 
+ARG DUCKDB_VERSION=2.0.*
 COPY evals/requirements.txt evals/requirements.txt
-RUN python -m pip install --no-cache-dir -r evals/requirements.txt
+RUN python -m pip install --no-cache-dir -r evals/requirements.txt "duckdb==${DUCKDB_VERSION}"
 
 COPY . .
 RUN python -m pip install --no-cache-dir . \

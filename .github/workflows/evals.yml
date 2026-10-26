@@ -26,8 +26,45 @@ jobs:
           : "${OMS_TYLERTOO:?installer must configure the executable}"
           python -m unittest tests.test_tylertoo -v
 
-  fixture-evals:
+  duckdb-compatibility:
+    name: duckdb-compatibility (${{ matrix.duckdb }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {duckdb: "1.5.3", requirement: "1.5.3"}
+          - {duckdb: "2.0.x", requirement: "2.0.*"}
+    env:
+      OPENMAPSTACK_SPATIAL_EXTENSION_DIR: /tmp/openmapstack-duckdb-extensions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install selected DuckDB and test dependencies
+        env:
+          DUCKDB_VERSION: ${{ matrix.requirement }}
+        run: |
+          pip install -r evals/requirements.txt "duckdb==${DUCKDB_VERSION}" pyproj
+          pip install .
+      - run: python evals/prepare_spatial.py
+      - name: Check setup, coordinates, GDAL exports and template
+        run: |
+          python -m unittest -v tests.evals.test_spatial tests.evals.test_duckdb_axis_order tests.test_duckdb_pipelines tests.test_template_pipeline
+          python evals/run.py --mode fixture --case 005-reproducible-rerun --case 970-duckdb-axis-setting-missing --case 971-duckdb-axis-setting-wrong
+      - name: Check CRS-metadata APIs and NYC
+        run: python -m unittest -v tests.evals.test_live_output_contract tests.test_nyc_dashboard
+
+  fixture-evals:
+    name: fixture-evals (${{ matrix.duckdb }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {duckdb: "1.5.3", requirement: "1.5.3"}
+          - {duckdb: "2.0.x", requirement: "2.0.*"}
     # Deterministic fixture evals only: no LLM account required. Spatial is
     # prepared explicitly, then the acceptance suite is repeated inside the
     # same image with its runtime network namespace disabled.
@@ -40,7 +77,7 @@ jobs:
 
       - name: Install eval dependencies and project CLI
         run: |
-          pip install -r evals/requirements.txt
+          pip install -r evals/requirements.txt "duckdb==${{ matrix.requirement }}"
           pip install "playwright>=1.40"
           pip install .
 
@@ -88,7 +125,7 @@ jobs:
         run: python evals/run.py --mode fixture --json eval-results.json
 
       - name: Build prepared offline eval image
-        run: docker build -f evals/Dockerfile.offline -t openmapstack-evals-offline .
+        run: docker build --build-arg "DUCKDB_VERSION=${{ matrix.requirement }}" -f evals/Dockerfile.offline -t openmapstack-evals-offline .
 
       - name: Prove fixture suite with runtime network disabled
         run: |
@@ -106,13 +143,13 @@ jobs:
         uses: ./.github/actions/eval-report
         with:
           results: eval-results.json
-          artifact-name: allure-fixture-${{ github.run_id }}-${{ github.run_attempt }}
+          artifact-name: allure-fixture-${{ matrix.duckdb }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload eval and coverage results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: eval-results
+          name: eval-results-${{ matrix.duckdb }}
           path: |
             eval-results.json
             evals/results/offline-eval-results.json

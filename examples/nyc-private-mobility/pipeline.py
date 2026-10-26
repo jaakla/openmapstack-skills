@@ -304,11 +304,11 @@ def compute_zone_metrics(duck, snapshots: dict[str, Path]) -> list[dict]:
         f"""
         WITH zones AS (
             SELECT zone_id, h3_cell, borough, zone_name, geom,
-                   ST_Centroid(ST_Transform(geom, 'OGC:CRS84', 'EPSG:{ANALYSIS_EPSG}')) AS centroid
+                   ST_Centroid(ST_Transform(geom, 'OGC:CRS84', 'EPSG:{ANALYSIS_EPSG}', always_xy := true)) AS centroid
             FROM read_parquet('{zones}')
         ),
         hub_points AS (
-            SELECT ST_Transform(geom, 'OGC:CRS84', 'EPSG:{ANALYSIS_EPSG}') AS g
+            SELECT ST_Transform(geom, 'OGC:CRS84', 'EPSG:{ANALYSIS_EPSG}', always_xy := true) AS g
             FROM read_parquet('{hubs}')
         ),
         fleet_by_zone AS (
@@ -325,7 +325,7 @@ def compute_zone_metrics(duck, snapshots: dict[str, Path]) -> list[dict]:
         ),
         demand AS (SELECT * FROM {demand_source}),
         market AS (SELECT * FROM {market_source})
-        SELECT z.zone_id, z.h3_cell, z.borough, z.zone_name, z.geom,
+        SELECT z.zone_id, z.h3_cell, z.borough, z.zone_name, ST_AsWKB(z.geom),
                coalesce(a.n, 0) AS demand_accounts,
                coalesce(f.n, 0) AS fleet_present,
                CAST(min(ST_Distance(z.centroid, h.g)) AS INTEGER) AS hub_distance_m,

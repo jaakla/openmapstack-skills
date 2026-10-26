@@ -1058,7 +1058,10 @@ def _evaluate_assertions(
             matched = result.data.get("code") == expect_code
         dim = DIMENSIONS.get(module_name, "other")
         bucket = dimension_totals.setdefault(dim, {"passed": 0, "failed": 0})
-        bucket["passed" if matched else "failed"] += 1
+        # Matching an expected deferral proves the diagnostic contract, not
+        # the underlying predicate. Never credit it as passed coverage.
+        outcome = "not_testable" if result.status == "not_testable" else "passed" if matched else "failed"
+        bucket[outcome] = bucket.get(outcome, 0) + 1
 
         assertion_results.append(
             {
@@ -1568,6 +1571,8 @@ def rollup_dimensions(case_results: list[dict[str, Any]]) -> dict[str, Any]:
             bucket = rollup.setdefault(dim, {"passed": 0, "failed": 0})
             bucket["passed"] += counts.get("passed", 0)
             bucket["failed"] += counts.get("failed", 0)
+            if "not_testable" in counts:
+                bucket["not_testable"] = bucket.get("not_testable", 0) + counts["not_testable"]
     return rollup
 
 

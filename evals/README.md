@@ -104,12 +104,23 @@ mode do not schedule it or add a browser capability gap for it.
 Attribution prose remains an authoring
 and visual-review requirement, not a multilingual meaning check.
 
+Case `970-duckdb-axis-setting-missing` checks the static diagnostic contract:
+missing axis setup warns, while setup evidence returns `not_testable`, never
+`passed`. It is a positive diagnostic case, not a mutation with an artificially
+passing static control. Mutation `971-duckdb-axis-setting-wrong` executes real
+transforms and GDAL exports: an asymmetric coordinate oracle passes on its healthy
+control and fails on swapped axes. Runtime coordinates provide the guarantee;
+static Python analysis cannot certify connection state.
+
 Every score type also publishes a `capability` block — assertions evaluated,
 how many were `not_testable`, and how many soft gates went unmet — and the
 runner says so on the same screen as the pass rate. A rate produced by an
 environment that could not run the PyQGIS or browser assertions is not the
 same evidence as one produced by an environment that could, and the numbers
 must not read alike.
+An expected `not_testable` can satisfy a diagnostic case's expectation, but its
+assertion remains `not_testable` in capability and dimension counts, contributes
+no passed assertion coverage, and prevents `fully_exercised` from being true.
 
 ```bash
 python3 evals/run.py --mode live \

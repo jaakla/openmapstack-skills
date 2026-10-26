@@ -39,7 +39,7 @@ def pin_land(connection, path):
         geometry = connection.execute("""
             SELECT ST_AsGeoJSON(ST_Transform(ST_SimplifyPreserveTopology(
                 ST_Transform(ST_Intersection(ST_GeomFromGeoJSON(?), ST_MakeEnvelope(?,?,?,?)),
-                             'OGC:CRS84', 'EPSG:32618'), 1), 'EPSG:32618', 'OGC:CRS84'))
+                             'OGC:CRS84', 'EPSG:32618', always_xy := true), 1), 'EPSG:32618', 'OGC:CRS84', always_xy := true))
         """, [json.dumps(feature["geometry"]), west, south, east, north]).fetchone()[0]
         if json.loads(geometry)["coordinates"]:
             features.append({"type": "Feature", "properties": {"borough": feature["properties"]["boroname"]},
