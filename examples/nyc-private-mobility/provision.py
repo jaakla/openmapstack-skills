@@ -49,6 +49,8 @@ import sys
 import time
 from pathlib import Path
 
+from openmapstack.checks.spatial import configure_spatial_axes
+
 ROOT = Path(__file__).resolve().parent
 SETUP = ROOT / "setup" / "postgis"
 BIGQUERY_SETUP = ROOT / "setup" / "bigquery"
@@ -519,6 +521,7 @@ def provision_motherduck(admin_token: str, database: str) -> None:
             connection.execute("LOAD spatial")
         except Exception:  # pragma: no cover - build dependent
             raise SystemExit("the motherduck fixture needs DuckDB Spatial (geometry columns in schema.sql)")
+        configure_spatial_axes(connection)
         for name in ("schema.sql", "seed.sql", "security.sql"):
             print(f"applying {name}")
             connection.execute(fixture_sql(MOTHERDUCK_SETUP / name))

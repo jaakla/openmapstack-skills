@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from openmapstack.checks.spatial import connect_spatial
@@ -433,6 +434,36 @@ class MotherDuckTests(unittest.TestCase):
         proxy, connection = _motherduck_session(**kwargs)
         self.addCleanup(connection.close)
         return MotherDuckConnector("md-token-abc", database="northstar_market", connect=lambda token: proxy), proxy
+
+    def test_session_sets_axes_before_queries_and_attaching(self):
+        connector, proxy = self._connector()
+        # The test double's base helper is configured already. Undo it so the
+        # connector must establish its own real session contract.
+        proxy._connection.execute("SET geometry_always_xy = false")
+        session = connector._session()
+        x, y = session.execute(
+            "SELECT ST_X(g), ST_Y(g) FROM (SELECT ST_Transform("
+            "ST_Point(-73.99, 40.75), 'EPSG:4326', 'EPSG:32618') AS g)"
+        ).fetchone()
+        self.assertAlmostEqual(x, 585263, delta=2)
+        self.assertAlmostEqual(y, 4511496, delta=2)
+        order = [statement.lower() for statement in proxy.statements]
+        self.assertLess(order.index('load spatial'), order.index('set geometry_always_xy = true'))
+        attach = next(i for i, statement in enumerate(order) if statement.startswith("attach 'md:"))
+        self.assertLess(order.index('set geometry_always_xy = true'), attach)
+
+    def test_axis_configuration_failure_propagates_and_closes_session(self):
+        connector, proxy = self._connector()
+        execute = proxy.execute
+        def fail_setting(statement, parameters=None):
+            if statement == 'SET geometry_always_xy = true':
+                raise RuntimeError('axis configuration failed')
+            return execute(statement, parameters)
+        with patch.object(proxy, 'execute', side_effect=fail_setting), patch.object(proxy, 'close') as close:
+            with self.assertRaisesRegex(RuntimeError, 'axis configuration failed'):
+                connector._session()
+            close.assert_called_once()
+        self.assertFalse(any(statement.startswith('ATTACH') for statement in proxy.statements))
 
     def test_discovery_lists_the_attached_database_read_only(self) -> None:
         connector, proxy = self._connector()

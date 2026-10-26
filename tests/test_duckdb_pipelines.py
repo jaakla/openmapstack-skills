@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+
+import yaml
 
 from openmapstack.checks import geodata
 
@@ -70,3 +73,56 @@ class PipelineAxisOrderTests(unittest.TestCase):
             module.load_roads(connection, path)
         self.assertEqual(connection.execute('SELECT name, road_class, ST_AsText(geometry) FROM official_roads').fetchall(),
                          [('Known road', 'Põhimaantee', 'LINESTRING (659000 6473000, 659100 6473100)')])
+
+
+class AdditionalSpatialConnectionTests(unittest.TestCase):
+    def connection_with_authority_axes(self):
+        from openmapstack.checks.spatial import connect_spatial
+        connection = connect_spatial()
+        if connection is None:
+            self.skipTest('prepared DuckDB Spatial required')
+        self.addCleanup(connection.close)
+        connection.execute('SET geometry_always_xy = false')
+        return connection
+
+    def assert_nyc_utm(self, connection):
+        x, y = connection.execute("SELECT ST_X(g), ST_Y(g) FROM (SELECT ST_Transform("
+                                  "ST_Point(-73.99,40.75), 'EPSG:4326', 'EPSG:32618') AS g)").fetchone()
+        self.assertAlmostEqual(x, 585263, delta=2)
+        self.assertAlmostEqual(y, 4511496, delta=2)
+
+    def test_established_stack_loader_sets_connection_axes(self):
+        spec = importlib.util.spec_from_file_location('axis_stack_analysis', ROOT / 'examples/established-stack/analysis.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        connection = self.connection_with_authority_axes()
+        module.load_spatial(connection)
+        self.assert_nyc_utm(connection)
+
+    def test_dbt_profile_sets_spatial_connection_axes(self):
+        profile = yaml.safe_load((ROOT / 'examples/established-stack/dbt/profiles.yml').read_text())
+        settings = profile['spatial_example']['outputs']['local'].get('settings', {})
+        self.assertIs(settings.get('geometry_always_xy'), True)
+        connection = self.connection_with_authority_axes()
+        connection.execute('SET geometry_always_xy = ' + str(settings['geometry_always_xy']).lower())
+        self.assert_nyc_utm(connection)
+
+    def test_motherduck_provisioner_sets_spatial_axes_before_fixture_sql(self):
+        spec = importlib.util.spec_from_file_location('axis_nyc_provision', ROOT / 'examples/nyc-private-mobility/provision.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        connection = self.connection_with_authority_axes()
+        commands = []
+        class ProvisionSession:
+            def execute(self, sql):
+                commands.append(sql)
+                if sql == 'LOAD spatial' or sql.startswith('SET geometry_always_xy'):
+                    return connection.execute(sql)
+                return self
+            def close(self):
+                commands.append('CLOSE')
+        with patch.object(module, '_motherduck_connect', return_value=ProvisionSession()):
+            module.provision_motherduck('fake-test-token', 'test_database')
+        self.assert_nyc_utm(connection)
+        self.assertLess(commands.index('LOAD spatial'), commands.index('SET geometry_always_xy = true'))
+        self.assertEqual(commands[-1], 'CLOSE')

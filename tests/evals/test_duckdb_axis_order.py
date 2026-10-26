@@ -60,6 +60,38 @@ class StaticAxisOrderTests(unittest.TestCase):
                   'c.execute("SELECT ST_Transform(g,a,b)")')
         self.assertNotEqual(self.check(source).status, 'passed')
 
+    def test_nested_query_on_raw_connection_cannot_borrow_another_connections_setup(self):
+        sql = ("SELECT ST_Transform(ST_Point(2755558.1473003766,8275444.877846606), "
+               "'EPSG:3857', 'EPSG:4326')")
+        prefix = ('import duckdb\nfrom openmapstack.checks.spatial import configure_spatial_axes\n'
+                  'con = duckdb.connect()\nconfigure_spatial_axes(con)\n'
+                  + 'con.execute(' + repr(sql) + ')\nraw = duckdb.connect()\n')
+        query = 'raw.execute(' + repr(sql) + ').fetchone()'
+        for wrapper in ('print({})', 'consume({})', 'consume(str({}))', 'consume(value={})'):
+            with self.subTest(wrapper=wrapper):
+                self.assertEqual(self.check(prefix + wrapper.format(query)).status, 'not_testable')
+
+    def test_unsupported_chained_side_effects_cannot_preserve_setup_proof(self):
+        prefix = ('import duckdb\nfrom openmapstack.checks.spatial import configure_spatial_axes\n'
+                  'c = duckdb.connect()\nconfigure_spatial_axes(c)\n')
+        for call in ('c.execute("SELECT 1").execute("RESET geometry_always_xy")',
+                     'c.execute("SELECT 1").unknown_callback()'):
+            with self.subTest(call=call):
+                source = prefix + call + '\nc.execute("SELECT ST_Transform(g,a,b)")'
+                self.assertEqual(self.check(source).status, 'not_testable')
+
+    def test_conflicting_imports_cannot_impersonate_trusted_setup(self):
+        prefix = ('import duckdb\nfrom openmapstack.checks.spatial import configure_spatial_axes\n')
+        body = ('c = duckdb.connect()\nconfigure_spatial_axes(c)\n'
+                'c.execute("SELECT ST_Transform(g,a,b)")')
+        for shadow in ('from unrelated import configure_spatial_axes\n',
+                       'import unrelated as configure_spatial_axes\n',
+                       'import unrelated as duckdb\n'):
+            with self.subTest(shadow=shadow):
+                self.assertEqual(self.check(prefix + shadow + body).status, 'not_testable')
+                local = 'def run():\n' + ''.join(' ' + line + '\n' for line in (shadow + body).splitlines())
+                self.assertEqual(self.check(prefix + local).status, 'not_testable')
+
     def test_unreadable_and_non_python_are_not_testable(self):
         workspace = make_workspace()
         for path in ('absent.py', 'pipeline.sql'):

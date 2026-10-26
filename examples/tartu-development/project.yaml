@@ -779,7 +779,7 @@ runtime:
     - requirements.txt
   environment:
     python: '3.12'
-    duckdb: 1.5.5
+    duckdb: 2.0.0
     gdal: DuckDB spatial extension
     proj: pyproj 3.7.2
     qgis: 3.44.3 Docker opt-in; deterministic XML builder by default
