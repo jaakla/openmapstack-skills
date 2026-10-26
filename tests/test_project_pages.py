@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from html.parser import HTMLParser
 import os
 from pathlib import Path
 import shutil
@@ -15,6 +16,53 @@ from xml.etree import ElementTree
 from zipfile import ZipFile
 
 from scripts.build_project_pages import ROOT, build
+
+
+class _SampleSections(HTMLParser):
+    """Read the two sample sets without depending on HTML formatting."""
+
+    def __init__(self, markup: str):
+        super().__init__()
+        self.sections = {}
+        self.active = None
+        self.depth = 0
+        self.heading = None
+        self.text = []
+        self.feed(markup)
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == 'section':
+            if self.active is not None:
+                self.depth += 1
+            elif attrs.get('id') in ('bundled-templates', 'more-examples'):
+                self.active = attrs['id']
+                self.depth = 1
+                self.sections[self.active] = {'h2': [], 'h3': [], 'links': [], 'articles': 0}
+        if self.active is None:
+            return
+        section = self.sections[self.active]
+        if tag in ('h2', 'h3'):
+            self.heading, self.text = tag, []
+        elif tag == 'a':
+            section['links'].append(attrs.get('href'))
+        elif tag == 'article':
+            section['articles'] += 1
+
+    def handle_data(self, data):
+        if self.active is not None and self.heading:
+            self.text.append(data)
+
+    def handle_endtag(self, tag):
+        if self.active is None:
+            return
+        if tag == self.heading:
+            self.sections[self.active][tag].append(''.join(self.text).strip())
+            self.heading = None
+        if tag == 'section':
+            self.depth -= 1
+            if self.depth == 0:
+                self.active = None
 
 
 class SkillPackageFooterTests(unittest.TestCase):
@@ -102,6 +150,19 @@ class ProjectPagesTests(unittest.TestCase):
             build(output / "site", observable_projects=projects)
             output = output / "site"
             homepage = (output / "index.html").read_text(encoding="utf-8")
+            sections = _SampleSections(homepage).sections
+            self.assertEqual(set(sections), {'bundled-templates', 'more-examples'})
+            bundled, gallery = sections['bundled-templates'], sections['more-examples']
+            self.assertEqual(bundled['h2'], ['Bundled templates'])
+            self.assertEqual(bundled['h3'], ['NYC mobility', 'Tartu city development'])
+            self.assertEqual(bundled['articles'], 2)
+            self.assertEqual(set(bundled['links']), {
+                './demos/nyc/', './demos/nyc-observable/',
+                './demos/tartu/', './demos/tartu-observable/',
+            })
+            self.assertEqual(gallery['h2'], ['More examples'])
+            self.assertEqual(gallery['articles'], 1)
+            self.assertEqual(gallery['links'], ['https://jaakla.github.io/openmapstack-samples/'])
             renderer = (output / "langsmith/index.html").read_text(encoding="utf-8")
             self.assertIn('/* SAVED_REVIEW_DATA */ null', renderer)
             self.assertIn("Waiting for LangSmith", renderer)

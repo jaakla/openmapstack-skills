@@ -2,6 +2,12 @@ name: Project homepage
 
 on:
   workflow_dispatch: {}
+  pull_request:
+    paths:
+      - .github/workflows/pages.yml
+      - site/**
+      - scripts/build_project_pages.py
+      - tests/test_project_pages.py
   push:
     branches: [main]
     paths:
@@ -25,7 +31,7 @@ on:
       - examples/nyc-private-mobility/project.yaml
 
 concurrency:
-  group: github-pages
+  group: github-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -36,6 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+        if: github.ref == 'refs/heads/main'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -51,10 +58,17 @@ jobs:
           python3 -m unittest -v tests.test_project_pages tests.test_observable_cities
           python3 scripts/build_project_pages.py --output _site
       - uses: actions/upload-pages-artifact@v4
+        if: github.ref == 'refs/heads/main'
         with:
+          path: _site
+      - uses: actions/upload-artifact@v4
+        if: github.ref != 'refs/heads/main'
+        with:
+          name: homepage-preview
           path: _site
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
