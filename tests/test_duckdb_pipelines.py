@@ -39,9 +39,7 @@ class PipelineAxisOrderTests(unittest.TestCase):
             connection = (module.connect_spatial() if 'nyc-' in relative else module._connect_spatial())
             self.assertIsNotNone(connection)
             try:
-                has_setting = connection.execute("SELECT name FROM duckdb_settings() WHERE name='geometry_always_xy'").fetchone()
-                if has_setting:
-                    self.assertEqual(connection.execute("SELECT current_setting('geometry_always_xy')").fetchone(), (True,))
+                self.assertEqual(connection.execute("SELECT current_setting('geometry_always_xy')").fetchone(), (True,))
                 query = ("SELECT ST_Transform(ST_Point(2755558.1473003766, 8275444.877846606), "
                          "'EPSG:3857', 'EPSG:4326', always_xy := true) AS geometry")
                 point = json.loads(connection.execute('SELECT ST_AsGeoJSON(geometry) FROM (' + query + ')').fetchone()[0])

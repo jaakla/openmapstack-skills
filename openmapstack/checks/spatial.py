@@ -16,16 +16,8 @@ EXTENSION_DIR_ENV = "OPENMAPSTACK_SPATIAL_EXTENSION_DIR"
 
 
 def configure_spatial_axes(connection: Any) -> None:
-    """Use GIS x/y order after loading Spatial, including GDAL I/O.
-
-    The connection setting was introduced in DuckDB 1.5. Older supported
-    versions still need ``always_xy := true`` on every ST_Transform call.
-    Probe the loaded catalog rather than swallowing an arbitrary SET error.
-    """
-    if connection.execute(
-        "SELECT name FROM duckdb_settings() WHERE name = 'geometry_always_xy'"
-    ).fetchone():
-        connection.execute("SET geometry_always_xy = true")
+    """Use GIS x/y order after loading Spatial, including GDAL I/O."""
+    connection.execute("SET geometry_always_xy = true")
 
 
 def _connection_config() -> dict[str, str]:

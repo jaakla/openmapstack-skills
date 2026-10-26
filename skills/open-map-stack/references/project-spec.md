@@ -954,7 +954,7 @@ runtime:
         binding: {argument: "--sample-area"}
   environment:
     python: "3.13"
-    duckdb: "1.2.x"
+    duckdb: "1.5.3"
     gdal: "3.9.x"
     proj: "9.4.x"
 
