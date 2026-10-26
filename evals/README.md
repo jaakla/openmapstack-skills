@@ -850,6 +850,11 @@ that are present but rejected (401), and exhausted quotas, remain setup errors
 failures. Later affected trials are not attempted. Each configured leg enables
 and probes Bubblewrap before any adapter runs. The job timeout is 90 minutes;
 the benchmark step is capped at 35 minutes to leave time for report uploads.
+Live summaries are atomically checkpointed before execution and after each
+completed trial. Until normal completion replaces the checkpoint, it carries
+`run_setup_failed: true` with an `incomplete_run` diagnosis. An interrupted
+benchmark therefore reports its completed trials plus a broken run record,
+rather than losing those trials or presenting the partial run as complete.
 There is no `continue-on-error` masking provider failures.
 
 This offline smoke path uses an empty environment and no provider calls:
