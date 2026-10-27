@@ -177,6 +177,20 @@ class OpenaiCompatibleFileToolTests(unittest.TestCase):
         self.assertIn("CRLF", output)
         self.assertEqual((self.workspace / "windows.txt").read_bytes(), b"1st\r\n2nd\r\nthird\r\n")
 
+    def test_an_exact_match_beats_the_crlf_fallback(self):
+        (self.workspace / "mixed.txt").write_bytes(b"a\r\nb\r\n--\na\nb\n")
+        ok, output = self.execute("edit_file", path="mixed.txt", old_string="a\nb\n", new_string="A\nB\n")
+        self.assertTrue(ok, output)
+        self.assertNotIn("CRLF", output)
+        self.assertEqual((self.workspace / "mixed.txt").read_bytes(), b"a\r\nb\r\n--\nA\nB\n")
+
+    def test_crlf_hint_is_only_for_a_multi_line_old_string(self):
+        self.write("windows.txt", "first\r\nsecond\r\n")
+        ok, output = self.execute("edit_file", path="windows.txt", old_string="frist", new_string="1st")
+        self.assertFalse(ok)
+        self.assertIn("not found", output)
+        self.assertNotIn("CRLF", output)
+
     def test_invalid_edit_arguments_are_rejected(self):
         self.write("a.txt", "a\n")
         for args in [{"old_string": "", "new_string": "b"}, {"old_string": "a", "new_string": None},

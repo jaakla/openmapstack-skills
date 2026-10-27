@@ -332,7 +332,7 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                     old, new, matched_crlf = _crlf(old), _crlf(new), True
                 count = _occurrences(text, old)
                 if count == 0:
-                    hint = " The file uses CRLF (\\r\\n) line endings." if "\r\n" in text else ""
+                    hint = " The file uses CRLF (\\r\\n) line endings." if "\n" in old and "\r\n" in text else ""
                     return False, (f"old_string not found in {args.get('path')!r}; "
                                    f"read the file and copy the text exactly.{hint}")
                 if count > 1 and not replace_all:

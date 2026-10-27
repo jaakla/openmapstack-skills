@@ -537,14 +537,14 @@ at the output limit is not recorded as a completed run.
 
 `read_file` takes an optional 1-based line `offset` and line `limit` and returns
 whole lines, counted at `\n` as `sed` and `grep -n` count them, up to 20,000
-characters of file content. A partial read starts with a one-line note, added on
-top of that cap, giving the line range, the file's total lines and characters,
-and the offset to continue from; the content after it is exact. `edit_file`
-replaces an exact `old_string` that must be unique (overlapping matches count)
-unless `replace_all` is set, so the agent can repair a large file without
-rewriting it. An `old_string` with `\n` endings also matches a CRLF file in that
-file's own line endings. Like `write_file`, it is confined to the workspace and
-cannot modify guidance.
+characters of file content. A ranged or partial read starts with a one-line
+note, added on top of that cap, giving the line range, the file's total lines
+and characters, and the offset to continue from; the content after it is exact.
+`edit_file` replaces an exact `old_string` that must be unique (overlapping
+matches count) unless `replace_all` is set, so the agent can repair a large file
+without rewriting it. An `old_string` with `\n` endings that has no exact match
+also matches a CRLF file in that file's own line endings. Like `write_file`, it
+is confined to the workspace and cannot modify guidance.
 
 All configuration is environment-based:
 
