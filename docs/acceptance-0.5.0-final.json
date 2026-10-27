@@ -1,0 +1,368 @@
+{
+  "schema": "openmapstack-release-candidate-evidence/v1",
+  "status": "accepted_for_publication_with_explicit_exceptions",
+  "version": "0.5.0",
+  "source_revision": "fb0531d15167c1287a47737b9358e43a0a9a5063",
+  "base_revision": "c40488b00f541e3ccd507d533caea3d76c634b70",
+  "evidence_head": {
+    "revision": "19c7bb641f7ef20b1869c85188236a3fa077f583",
+    "changes_since_source_revision": [
+      "docs/acceptance-0.5.0-rc.json",
+      "docs/release-0.5.0.md"
+    ],
+    "payload_identical_to_source_revision": true,
+    "method": "Wheel, sdist, four ZIPs and five snapshots rebuilt from the evidence head and compared by payload with the source_revision build.",
+    "evidence": {
+      "file": "head-payload-identity.json",
+      "sha256": "bba8f646e02fc49a45fb6b725a64f7067d7db81a84df1ce109c4ac2361201a97",
+      "bytes": 535
+    }
+  },
+  "candidate_record": {
+    "file": "docs/acceptance-0.5.0-rc.json",
+    "revision": "19c7bb641f7ef20b1869c85188236a3fa077f583",
+    "sha256": "a234460ca47836800488beb89463f59ffcae4f784615388b0bcdd9819e1105da",
+    "status": "not_accepted",
+    "note": "Full check details, logs, evidence file hashes and the superseded 6558374 candidate. Unchanged history."
+  },
+  "artifact_kind": "prepublication candidate; future publication workflow rebuilds distributions",
+  "artifact_location": "/home/jaak/.cache/agent-tmp/oms-050-rc2",
+  "artifacts": [
+    {
+      "file": "dist/openmapstack-0.5.0-py3-none-any.whl",
+      "sha256": "41bca59a517cf859bda245364791b537334a6759c44b1988c041d342b7a9f42a",
+      "bytes": 227321
+    },
+    {
+      "file": "dist/openmapstack-0.5.0.tar.gz",
+      "sha256": "770f3bd071df2e825d3b830a9ee02ce42d75c7ad3c13d62ea6a375e678012cd3",
+      "bytes": 386566
+    },
+    {
+      "file": "skill-zips/geospatial-data-discovery.zip",
+      "sha256": "15057253a209c8f21963265d1c490bd4bc3088a9c267ff08958ba2a1156326e9",
+      "bytes": 32885
+    },
+    {
+      "file": "skill-zips/open-map-stack.zip",
+      "sha256": "9b8035dea0849900d997575da801fb554dbcbd51cf676fda8a2746de8ef5368c",
+      "bytes": 324395
+    },
+    {
+      "file": "skill-zips/reproducible-gis-project.zip",
+      "sha256": "0bab86bcce3aa8ee6dfc8ac4b560b9900a9831de0ce6ca46b7fb6c5b34d98c1a",
+      "bytes": 297598
+    },
+    {
+      "file": "skill-zips/spatial-sql.zip",
+      "sha256": "381d5876be4626ef778e4107b1c95df7e9f0f7626a9b4f9a53187b2d5ac9abff",
+      "bytes": 22448
+    },
+    {
+      "file": "skill-zips-source-dir/geospatial-data-discovery.zip",
+      "sha256": "3e95193738f96543b287ff3985a73bb081f4d0343178b6c60d43b44d70cf0f2e",
+      "bytes": 32885
+    },
+    {
+      "file": "skill-zips-source-dir/open-map-stack.zip",
+      "sha256": "c1565e4dc9eb4306883cc4ca831cdcda2d0f6722c986ea360471e669e2e573c9",
+      "bytes": 324395
+    },
+    {
+      "file": "skill-zips-source-dir/reproducible-gis-project.zip",
+      "sha256": "895ca3a9fe81e89910a268c3cf383070cae45650652a48e8e7c95b0abc110ca4",
+      "bytes": 297598
+    },
+    {
+      "file": "skill-zips-source-dir/spatial-sql.zip",
+      "sha256": "5631fd8987d4ef6352e4ef5612632d5f0944c6601bf5ee68e2c021639ae0c796",
+      "bytes": 22448
+    },
+    {
+      "file": "snapshots/collection.tar.gz",
+      "sha256": "b62fbf823c7aa43b5484c2e0d7bc24c091d503b5fd96fd253ef64cf6c7b37e2d",
+      "bytes": 613794
+    },
+    {
+      "file": "snapshots/geospatial-data-discovery.tar.gz",
+      "sha256": "ec1236e408c4d72f4d0ba03881e6bf4734d6cd7e75dd416fd8429cd9dcbf158c",
+      "bytes": 30151
+    },
+    {
+      "file": "snapshots/open-map-stack.tar.gz",
+      "sha256": "e1307f3cd0951b2ebff1a8900ecf5549a996d2b93b34aea179b238d469926fc0",
+      "bytes": 298303
+    },
+    {
+      "file": "snapshots/reproducible-gis-project.tar.gz",
+      "sha256": "1ea3e259dd7c5dab0713d076d57d6426aca6f676a5da05d04455b2647e8da5d5",
+      "bytes": 273285
+    },
+    {
+      "file": "snapshots/spatial-sql.tar.gz",
+      "sha256": "9f9794922c839e6f74c67d6ce3329fa9203b429a4617bb17487599871a78a544",
+      "bytes": 20788
+    }
+  ],
+  "snapshots": {
+    "collection": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:5173996749df3ef412f1b87ad532485a9d85441110a171a07e75d1f2e38f7d9c",
+      "source_git": {
+        "commit": "fb0531d15167c1287a47737b9358e43a0a9a5063",
+        "dirty": false
+      },
+      "file_count": 147,
+      "manifest": {
+        "file": "snapshots/collection/snapshot.json",
+        "sha256": "1949f00bbf6659d40f63080f9dff2e8c9fc248fdd1b52212a6f00b1d914f5f20",
+        "bytes": 32946
+      },
+      "archive": {
+        "file": "snapshots/collection.tar.gz",
+        "sha256": "b62fbf823c7aa43b5484c2e0d7bc24c091d503b5fd96fd253ef64cf6c7b37e2d",
+        "bytes": 613794
+      },
+      "inspection": "passed"
+    },
+    "geospatial-data-discovery": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:0089cae912b253ee4b6daf8feb72327e1ee41787ce1829339fdbdc68b88b3559",
+      "source_git": {
+        "commit": "fb0531d15167c1287a47737b9358e43a0a9a5063",
+        "dirty": false
+      },
+      "file_count": 8,
+      "manifest": {
+        "file": "snapshots/geospatial-data-discovery/snapshot.json",
+        "sha256": "9be7171a16bd1f3c68c8e29ce162a7bb8d20545e27ce88972cb3e67967f8eb67",
+        "bytes": 2512
+      },
+      "archive": {
+        "file": "snapshots/geospatial-data-discovery.tar.gz",
+        "sha256": "ec1236e408c4d72f4d0ba03881e6bf4734d6cd7e75dd416fd8429cd9dcbf158c",
+        "bytes": 30151
+      },
+      "inspection": "passed"
+    },
+    "open-map-stack": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:7d56dadbfd3b54df73db310a670b0733e1cfe22395ba8bc29a006c9ab442d559",
+      "source_git": {
+        "commit": "fb0531d15167c1287a47737b9358e43a0a9a5063",
+        "dirty": false
+      },
+      "file_count": 69,
+      "manifest": {
+        "file": "snapshots/open-map-stack/snapshot.json",
+        "sha256": "e486faf8efd37e5c38ddc54aa925d54f9876f48d14d152b82054df01fb8436e0",
+        "bytes": 14951
+      },
+      "archive": {
+        "file": "snapshots/open-map-stack.tar.gz",
+        "sha256": "e1307f3cd0951b2ebff1a8900ecf5549a996d2b93b34aea179b238d469926fc0",
+        "bytes": 298303
+      },
+      "inspection": "passed"
+    },
+    "reproducible-gis-project": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:1b7a67238219f8d9af8e1bfda146721eb630fcea398548d065fb4ebaa180d73f",
+      "source_git": {
+        "commit": "fb0531d15167c1287a47737b9358e43a0a9a5063",
+        "dirty": false
+      },
+      "file_count": 66,
+      "manifest": {
+        "file": "snapshots/reproducible-gis-project/snapshot.json",
+        "sha256": "324a30b06cfc275dbf3d932c1bc9eee0af3e6bade843d36f29426b0d814dadf0",
+        "bytes": 14916
+      },
+      "archive": {
+        "file": "snapshots/reproducible-gis-project.tar.gz",
+        "sha256": "1ea3e259dd7c5dab0713d076d57d6426aca6f676a5da05d04455b2647e8da5d5",
+        "bytes": 273285
+      },
+      "inspection": "passed"
+    },
+    "spatial-sql": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:84e26d19998a880c8a2751b9e7b1be478ebd0d112d51386fe3ff388d602f4cc2",
+      "source_git": {
+        "commit": "fb0531d15167c1287a47737b9358e43a0a9a5063",
+        "dirty": false
+      },
+      "file_count": 7,
+      "manifest": {
+        "file": "snapshots/spatial-sql/snapshot.json",
+        "sha256": "7934b3743856e011bdc8d72a64810d73690acd704d4589501844e997e9073e6a",
+        "bytes": 2184
+      },
+      "archive": {
+        "file": "snapshots/spatial-sql.tar.gz",
+        "sha256": "9f9794922c839e6f74c67d6ce3329fa9203b429a4617bb17487599871a78a544",
+        "bytes": 20788
+      },
+      "inspection": "passed"
+    }
+  },
+  "evidence_bundle": {
+    "file": "release-evidence-0.5.0-rc2.tar.gz",
+    "sha256": "95fb086474683fbcb8d1e0c36efcecb3a6d37e4fa592b89a0363bb0b7b7bd424",
+    "bytes": 16402276
+  },
+  "checks": {
+    "release_versions": {
+      "status": "passed",
+      "owners": 8
+    },
+    "skill_asset_sync": "passed",
+    "unit_suite": {
+      "status": "passed",
+      "tests": 1139,
+      "skips": 49,
+      "assertion_coverage_percent": 83,
+      "coverage_gate_percent": 70
+    },
+    "fixtures": {
+      "contract_passed": 31,
+      "contract_total": 31,
+      "mutations_detected": 68,
+      "mutations_total": 68,
+      "assertions_evaluated": 378,
+      "not_testable_assertions": 5,
+      "unmet_soft_gates": 4,
+      "fully_exercised": false
+    },
+    "packaging": {
+      "build_and_twine": "passed",
+      "skill_packages_and_snapshot_controls": "passed"
+    },
+    "installation": {
+      "fresh-installed-wheel": "passed",
+      "four-uploadable-zip-payloads": "passed",
+      "copied-project-skill-lifecycle": "passed",
+      "copied-global-skill-lifecycle": "passed"
+    },
+    "hosted_pinned_installs": {
+      "project/open-map-stack": "passed",
+      "global/spatial-sql": "passed"
+    },
+    "local_plugin_lifecycle": "passed",
+    "local_offline_container_replay": "not_run",
+    "visual_fixtures": {
+      "image": "qgis/qgis:3.44-trixie@sha256:f94e32abbba833ccb4f42334e7f9b76134703bea2a0f476f3024bf38c9e30904",
+      "qgis": "3.44.15-Solothurn",
+      "integration_passed": 3,
+      "integration_total": 3,
+      "mutations_detected": 4,
+      "mutations_total": 4,
+      "not_testable_assertions": 0,
+      "unmet_soft_gates": 0
+    },
+    "pyqgis_unittests": {
+      "status": "passed",
+      "tests": 69,
+      "note": "Two real worked-example tests passed after the example was regenerated from its sources, as the CI worked-example job does."
+    },
+    "worked_example": "passed",
+    "host_qgis_3_40_verify": {
+      "status": "accepted_exception",
+      "qgis": "3.40.15-Bratislava",
+      "results": {
+        "passed": 60,
+        "not_testable": 2,
+        "failed": 0
+      },
+      "problem": "std::bad_alloc abort at process exit after the passing report.",
+      "exception": 2
+    },
+    "not_testable_capabilities": {
+      "reasons": {
+        "PyQGIS is not importable in this interpreter; see evals/README.md for the micromamba-based QGIS environment used to exercise this path manually": 5,
+        "no live BigQuery fixture configured": 5,
+        "no live MotherDuck fixture configured": 3,
+        "PyQGIS is not installed in this environment": 2,
+        "OPENMAPSTACK_TEST_POSTGIS_DSN is not set": 1,
+        "native QGIS integration requires PyQGIS": 2,
+        "optional tool QA requires explicit OMS_STACK_TOOLS selection": 4,
+        "real Framework/browser QA needs built projects via OMS_OBSERVABLE_CITY_PROJECTS": 1,
+        "set OPENMAPSTACK_NETWORK_TESTS=1 to check a live catalog": 5,
+        "OPENMAPSTACK_TEST_PRIVATE_POSTGIS_ADMIN_DSN is not set": 6,
+        "optional raster runtime not selected (set OPENMAPSTACK_RASTER_TESTS=1)": 9,
+        "optional routing extractor unavailable": 1,
+        "set OMS_TYLERTOO for real tiler QA": 2,
+        "worked example generated outputs are absent; run the example pipeline first": 3
+      },
+      "counted_as_passed": false,
+      "exception": 3
+    }
+  },
+  "ci_runs": {
+    "source_revision": {
+      "revision": "fb0531d15167c1287a47737b9358e43a0a9a5063",
+      "runs": [
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719371",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719409",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719434",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719457",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719650"
+      ],
+      "jobs_passed": 9,
+      "jobs_skipped": [
+        "deploy"
+      ],
+      "jobs_failed": []
+    },
+    "evidence_head": {
+      "revision": "19c7bb641f7ef20b1869c85188236a3fa077f583",
+      "runs": [
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40566114077",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40566114085",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40566114086",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40566114088",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40566114104"
+      ],
+      "jobs_passed": 9,
+      "jobs_skipped": [
+        "deploy"
+      ],
+      "jobs_failed": []
+    }
+  },
+  "live_acceptance": {
+    "status": "deferred",
+    "decided_on": "2026-10-27",
+    "decision_url": "https://github.com/jaakla/openmapstack-skills/issues/122#issuecomment-6450211979",
+    "paid_trials_this_preparation": 0,
+    "routing_trials_this_preparation": 0,
+    "exception": 1
+  },
+  "pending": [
+    "commit release documentation and confirm final CI",
+    "maintainer marks #118 ready and merges it",
+    "publish tag/release and verify PyPI/tag-pinned installations, default-branch floating updates and the publication workflow rebuild"
+  ],
+  "limitations": [
+    "Live executed-project and routing behavior was not measured for 0.5.0; fixture, visual and installation passes do not imply it.",
+    "not_testable capabilities remain unavailable evidence, not passes.",
+    "Prepublication archive/wheel hashes do not identify a future CI rebuild."
+  ],
+  "maintainer_decision": {
+    "date": "2026-10-27",
+    "url": "https://github.com/jaakla/openmapstack-skills/issues/122#issuecomment-6455566428",
+    "publication_authorized": true,
+    "candidate": {
+      "tested": "fb0531d15167c1287a47737b9358e43a0a9a5063",
+      "pr_head": "19c7bb641f7ef20b1869c85188236a3fa077f583",
+      "pr": "https://github.com/jaakla/openmapstack-skills/pull/118"
+    },
+    "qa_verdict": "codex_qa READY",
+    "explicit_exceptions": [
+      "Live executed-project and routing acceptance (ADR 0006) is deferred for 0.5.0, along with the recheck of the October 6 output and contract failures.",
+      "The host QGIS 3.40.15 `std::bad_alloc` abort on exit, after a passing `verify` (60/0), is accepted as a limitation of that older QGIS version. It does not occur on 3.44 (the CI image), and no issue will be opened for it.",
+      "The capability gaps recorded as not_testable are accepted as such and are not counted as passed: raster, PostGIS, BigQuery/MotherDuck, live catalogs, optional tool QA, real tylertoo, Observable city builds, the routing extractor, the 5 not_testable fixture assertions and the 4 unmet soft gates."
+    ],
+    "failed_checks_reclassified_as_passes": false
+  }
+}
