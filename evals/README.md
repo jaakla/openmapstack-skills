@@ -520,8 +520,20 @@ repetitions; publication runs should request five.
 The `openai_compatible` adapter runs live cases against any OpenAI-compatible
 `/chat/completions` endpoint with no CLI install. It drives the model as an
 autonomous agent via a tool-execution loop (`run_shell`, `write_file`,
-`read_file`, `list_dir`) scoped to the trial workspace, so the same assertions
-can grade an OpenRouter-hosted model exactly like a CLI agent.
+`read_file`, `list_dir`), so the same assertions can grade an endpoint-hosted
+model like a CLI agent. File reads/listings allow the workspace and the
+runner-staged `benchmark-context/openmapstack` guidance directory; file writes
+remain in the workspace and cannot modify guidance. These file-tool boundaries
+do not isolate shell commands: the shell still runs on the host, and this
+adapter is not yet suitable for ADR 0006 release evidence (see #120).
+
+Each response's `finish_reason` is retained in run metadata and assistant
+events. Invalid tool arguments are not executed: classified diagnostics in
+metadata/tool events distinguish an output-limit truncation (`length`) from
+malformed arguments without that signal, retain JSON error locations, and are
+returned to the model for repair. Missing finish reasons remain explicit nulls;
+an unterminated string alone does not prove truncation. A final response ending
+at the output limit is not recorded as a completed run.
 
 All configuration is environment-based:
 
