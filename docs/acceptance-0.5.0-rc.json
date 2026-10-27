@@ -2,37 +2,1206 @@
   "schema": "openmapstack-release-candidate-evidence/v1",
   "status": "not_accepted",
   "version": "0.5.0",
+  "recorded_at": "2026-10-27T08:08:09.909125+00:00",
+  "source_revision": "65583747aeab54ee82ec45095759fb371b86cab2",
   "base_revision": "eb41c238a7d82d41ddfa74703a1f20fdbb38720c",
-  "artifact_kind": "prepublication candidate; no published artifacts",
+  "artifact_kind": "prepublication candidate; future publication workflow rebuilds distributions",
+  "artifact_location": "/home/jaak/.cache/agent-tmp/oms-050",
+  "artifacts": [
+    {
+      "file": "dist/openmapstack-0.5.0-py3-none-any.whl",
+      "sha256": "df1a5a40704d0a5a00ff183c619c56e2f138af7900e82ae3176bcf484350eabe",
+      "bytes": 227321
+    },
+    {
+      "file": "dist/openmapstack-0.5.0.tar.gz",
+      "sha256": "8a3488a23368daccf12f96e5b701fb3c72fbdd0fc698596f489344f5916e5637",
+      "bytes": 386151
+    },
+    {
+      "file": "skill-zips/geospatial-data-discovery.zip",
+      "sha256": "b7312437579c012e680fe0c4fa6dbb49cd4e600f1d047abadc74df2058500a3e",
+      "bytes": 32885
+    },
+    {
+      "file": "skill-zips/open-map-stack.zip",
+      "sha256": "51a1e9ab58fa8b40913f3819a64abbfb146d9da0e3c2cc1bce2d7fab65315ddf",
+      "bytes": 324395
+    },
+    {
+      "file": "skill-zips/reproducible-gis-project.zip",
+      "sha256": "cc4dcc4673b993f0b4e2b8ebf9495f48b1608bd1bf33111b69c459c2f2c184b1",
+      "bytes": 297598
+    },
+    {
+      "file": "skill-zips/spatial-sql.zip",
+      "sha256": "2ce56bc9c07f1fa22675f395d50e21a12390b14a5cec9464c7907340728a1fac",
+      "bytes": 22448
+    },
+    {
+      "file": "skill-zips-source-dir/geospatial-data-discovery.zip",
+      "sha256": "4f0f6e7a5af949cf28f8705dec047c4f1aee386b7bbd0af31b43ad35a37d9e79",
+      "bytes": 32885
+    },
+    {
+      "file": "skill-zips-source-dir/open-map-stack.zip",
+      "sha256": "d7b295677f293b1b5320f4a05d3f6c5035fad2617f9da820f8bc9673285a0d10",
+      "bytes": 324395
+    },
+    {
+      "file": "skill-zips-source-dir/reproducible-gis-project.zip",
+      "sha256": "871887bfd6f69f70320030ad950546be3acf5d0cafb345f9b378f119488f374c",
+      "bytes": 297598
+    },
+    {
+      "file": "skill-zips-source-dir/spatial-sql.zip",
+      "sha256": "4dfb364519f16536868d47207b8500a45398cb979c1cff917a51425b89e6ae50",
+      "bytes": 22448
+    },
+    {
+      "file": "snapshots/collection.tar.gz",
+      "sha256": "1f713e97f4ab0584e5f817b997559da311084f11f46ebe57031ac071b62d73c9",
+      "bytes": 613796
+    },
+    {
+      "file": "snapshots/geospatial-data-discovery.tar.gz",
+      "sha256": "30863f2275ed3f8e27423836130fd6857c5b1a030442066cce39d36e4ff41631",
+      "bytes": 30148
+    },
+    {
+      "file": "snapshots/open-map-stack.tar.gz",
+      "sha256": "518693be2d93fbd900e0c5adf83f64d3886b44c3d66a01e5994d310ee3ca589b",
+      "bytes": 298307
+    },
+    {
+      "file": "snapshots/reproducible-gis-project.tar.gz",
+      "sha256": "d9c67f4661133d6a35a724920848991646a43d67cb1eb1aacf4217861592f1b5",
+      "bytes": 273284
+    },
+    {
+      "file": "snapshots/spatial-sql.tar.gz",
+      "sha256": "1bb535c82b0f76449a1818ef7bb293b683c1dd523483326236be91bf3d28c233",
+      "bytes": 20786
+    },
+    {
+      "file": "source-candidate.tar",
+      "sha256": "9f7160d875ef0785a3d61e087108db406600ba92526edb25d6568f6e039cb278",
+      "bytes": 24012800
+    }
+  ],
+  "snapshots": {
+    "collection": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:5173996749df3ef412f1b87ad532485a9d85441110a171a07e75d1f2e38f7d9c",
+      "source_git": {
+        "commit": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "dirty": false
+      },
+      "file_count": 147,
+      "manifest": {
+        "file": "snapshots/collection/snapshot.json",
+        "sha256": "f6244631284d6ae97be54286edd6c3a4ec7414cbd04078f0e86579b0eb8e21c6",
+        "bytes": 32946
+      },
+      "archive": {
+        "file": "snapshots/collection.tar.gz",
+        "sha256": "1f713e97f4ab0584e5f817b997559da311084f11f46ebe57031ac071b62d73c9",
+        "bytes": 613796
+      },
+      "inspection": "passed"
+    },
+    "geospatial-data-discovery": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:0089cae912b253ee4b6daf8feb72327e1ee41787ce1829339fdbdc68b88b3559",
+      "source_git": {
+        "commit": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "dirty": false
+      },
+      "file_count": 8,
+      "manifest": {
+        "file": "snapshots/geospatial-data-discovery/snapshot.json",
+        "sha256": "80abf31cceb4abb083bfdda27d4aab5d12f0ccfe3f17283d6847a0d124660351",
+        "bytes": 2512
+      },
+      "archive": {
+        "file": "snapshots/geospatial-data-discovery.tar.gz",
+        "sha256": "30863f2275ed3f8e27423836130fd6857c5b1a030442066cce39d36e4ff41631",
+        "bytes": 30148
+      },
+      "inspection": "passed"
+    },
+    "open-map-stack": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:7d56dadbfd3b54df73db310a670b0733e1cfe22395ba8bc29a006c9ab442d559",
+      "source_git": {
+        "commit": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "dirty": false
+      },
+      "file_count": 69,
+      "manifest": {
+        "file": "snapshots/open-map-stack/snapshot.json",
+        "sha256": "e86f53f98f436df8cf588389d9454d9aa4a57ca4ed8a995149400da56973a987",
+        "bytes": 14951
+      },
+      "archive": {
+        "file": "snapshots/open-map-stack.tar.gz",
+        "sha256": "518693be2d93fbd900e0c5adf83f64d3886b44c3d66a01e5994d310ee3ca589b",
+        "bytes": 298307
+      },
+      "inspection": "passed"
+    },
+    "reproducible-gis-project": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:1b7a67238219f8d9af8e1bfda146721eb630fcea398548d065fb4ebaa180d73f",
+      "source_git": {
+        "commit": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "dirty": false
+      },
+      "file_count": 66,
+      "manifest": {
+        "file": "snapshots/reproducible-gis-project/snapshot.json",
+        "sha256": "e640f476c7cf217ee2376e799cd96dd1484927a3fd48d73fba8f18bde3fd7e25",
+        "bytes": 14916
+      },
+      "archive": {
+        "file": "snapshots/reproducible-gis-project.tar.gz",
+        "sha256": "d9c67f4661133d6a35a724920848991646a43d67cb1eb1aacf4217861592f1b5",
+        "bytes": 273284
+      },
+      "inspection": "passed"
+    },
+    "spatial-sql": {
+      "schema": "openmapstack-skill-snapshot/v2",
+      "content_sha256": "sha256:84e26d19998a880c8a2751b9e7b1be478ebd0d112d51386fe3ff388d602f4cc2",
+      "source_git": {
+        "commit": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "dirty": false
+      },
+      "file_count": 7,
+      "manifest": {
+        "file": "snapshots/spatial-sql/snapshot.json",
+        "sha256": "b469b24e69c1b5e77ca55bd936620ddec1e84657d9a12b58d87290df5cbfbe0f",
+        "bytes": 2184
+      },
+      "archive": {
+        "file": "snapshots/spatial-sql.tar.gz",
+        "sha256": "1bb535c82b0f76449a1818ef7bb293b683c1dd523483326236be91bf3d28c233",
+        "bytes": 20786
+      },
+      "inspection": "passed"
+    }
+  },
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "packages": {
+      "duckdb": "2.0.0",
+      "coverage": "7.17.0",
+      "playwright": "1.64.1",
+      "build": "1.6.1",
+      "twine": "7.0.0",
+      "PyYAML": "6.0.3",
+      "jsonschema": "4.26.0",
+      "pyproj": "3.8.0"
+    },
+    "node": "v24.19.0",
+    "skills_cli": "1.5.26",
+    "claude_cli": "2.1.311 (Claude Code)",
+    "spatial_preparation": "DuckDB Spatial prepared (OPENMAPSTACK_SPATIAL_EXTENSION_DIR; version=a3dbcd1781)",
+    "temporary_root": "/home/jaak/.cache/agent-tmp/oms-050/tmp",
+    "cache_root": "/home/jaak/.cache/agent-tmp/oms-050/cache"
+  },
   "checks": {
     "release_versions": {
       "status": "passed",
       "tests": 1,
-      "skips": 0
+      "skips": 0,
+      "log": "evidence/test-release.log"
     },
     "asset_sync": {
-      "status": "passed"
+      "status": "passed",
+      "log": "evidence/asset-sync.log"
     },
-    "unit_coverage": {
-      "status": "pending"
+    "openmapstack_unittest": {
+      "status": "passed",
+      "tests": 1100,
+      "skips": 49,
+      "passed": 1051,
+      "duration_seconds": 812.013,
+      "duckdb": "2.0.0",
+      "command": "python -m coverage run -m unittest discover -v",
+      "log": "evidence/unit-coverage.log",
+      "skip_reasons": {
+        "PyQGIS is not importable in this interpreter; see evals/README.md for the micromamba-based QGIS environment used to exercise this path manually": 5,
+        "no live BigQuery fixture configured": 5,
+        "no live MotherDuck fixture configured": 3,
+        "PyQGIS is not installed in this environment": 2,
+        "OPENMAPSTACK_TEST_POSTGIS_DSN is not set": 1,
+        "native QGIS integration requires PyQGIS": 2,
+        "optional tool QA requires explicit OMS_STACK_TOOLS selection": 4,
+        "real Framework/browser QA needs built projects via OMS_OBSERVABLE_CITY_PROJECTS": 1,
+        "set OPENMAPSTACK_NETWORK_TESTS=1 to check a live catalog": 5,
+        "OPENMAPSTACK_TEST_PRIVATE_POSTGIS_ADMIN_DSN is not set": 6,
+        "optional raster runtime not selected (set OPENMAPSTACK_RASTER_TESTS=1)": 9,
+        "optional routing extractor unavailable": 1,
+        "set OMS_TYLERTOO for real tiler QA": 2,
+        "worked example generated outputs are absent; run the example pipeline first": 3
+      }
     },
-    "fixture_evals": {
-      "status": "pending"
+    "assertion_coverage": {
+      "status": "passed",
+      "percent": 82.67085076708507,
+      "display_percent": "83",
+      "floor": 70,
+      "totals": {
+        "covered_lines": 3280,
+        "num_statements": 3884,
+        "percent_covered": 82.67085076708507,
+        "percent_covered_display": "83",
+        "missing_lines": 604,
+        "excluded_lines": 2,
+        "percent_statements_covered": 84.44902162718847,
+        "percent_statements_covered_display": "84",
+        "num_branches": 1852,
+        "num_partial_branches": 252,
+        "covered_branches": 1462,
+        "missing_branches": 390,
+        "percent_branches_covered": 78.94168466522679,
+        "percent_branches_covered_display": "79"
+      },
+      "log": "evidence/coverage-report.log"
     },
-    "packaging_and_installation": {
-      "status": "pending"
+    "openmapstack_fixtures": {
+      "status": "passed",
+      "mode": "fixture",
+      "selection": {
+        "result_records": 108,
+        "trials_run": 99,
+        "case_definitions_skipped": 9,
+        "trials_not_attempted": 0
+      },
+      "outcomes": {
+        "passed": 99,
+        "assertions_failed": 0,
+        "setup_failed": 0
+      },
+      "contract": {
+        "trials_run": 31,
+        "graded_trials": 31,
+        "passed": 31,
+        "assertions_failed": 0,
+        "setup_failed": 0,
+        "pass_rate": 1.0,
+        "capability": {
+          "assertions_evaluated": 378,
+          "assertions_not_testable": 5,
+          "unmet_soft_gates": 4,
+          "fully_exercised": false
+        },
+        "dimensions": {
+          "reproducibility_compliance": {
+            "passed": 61,
+            "failed": 0,
+            "not_testable": 1
+          },
+          "provenance": {
+            "passed": 44,
+            "failed": 0
+          },
+          "gis_correctness": {
+            "passed": 103,
+            "failed": 0
+          },
+          "validation_integrity": {
+            "passed": 39,
+            "failed": 0
+          },
+          "presentation_contract": {
+            "passed": 59,
+            "failed": 0,
+            "not_testable": 4
+          },
+          "override_handling": {
+            "passed": 49,
+            "failed": 0
+          },
+          "rerun_success": {
+            "passed": 13,
+            "failed": 0
+          },
+          "metamorphic_evidence": {
+            "passed": 4,
+            "failed": 0
+          },
+          "table_correctness": {
+            "passed": 1,
+            "failed": 0
+          }
+        }
+      },
+      "mutations": {
+        "total": 68,
+        "valid": 68,
+        "detected": 68,
+        "survived": 0,
+        "invalid": 0,
+        "isolated": 68,
+        "score": 1.0
+      },
+      "result": "evidence/fixture-evals.json",
+      "live_trials": 0
+    },
+    "build_and_twine": {
+      "status": "passed",
+      "logs": [
+        "evidence/build.log",
+        "evidence/twine-check.log"
+      ]
+    },
+    "skill_packages_and_snapshot_controls": {
+      "status": "passed",
+      "source_directory_without_git": {
+        "spatial-sql.zip": {
+          "status": "passed",
+          "payload_identical": true
+        },
+        "geospatial-data-discovery.zip": {
+          "status": "passed",
+          "payload_identical": true
+        },
+        "open-map-stack.zip": {
+          "status": "passed",
+          "payload_identical": true
+        },
+        "reproducible-gis-project.zip": {
+          "status": "passed",
+          "payload_identical": true
+        }
+      },
+      "snapshot_negative_controls": {
+        "changed": {
+          "expected_exit_code": 1,
+          "actual_exit_code": 1,
+          "intact": false,
+          "problems": [
+            "changed: skills/spatial-sql/SKILL.md",
+            "content_sha256 does not match the inventory"
+          ]
+        },
+        "missing": {
+          "expected_exit_code": 1,
+          "actual_exit_code": 1,
+          "intact": false,
+          "problems": [
+            "missing: skills/spatial-sql/SKILL.md",
+            "content_sha256 does not match the inventory"
+          ]
+        }
+      },
+      "installed_snapshot_receipts": [
+        {
+          "scope": "project",
+          "skill": "geospatial-data-discovery",
+          "file": "installs/project/snapshots/geospatial-data-discovery/snapshot.json",
+          "sha256": "671c051411dad56cea9e2d23e452057e8906e6204ed2ea534d165ed9cd514f31",
+          "content_sha256": "sha256:0089cae912b253ee4b6daf8feb72327e1ee41787ce1829339fdbdc68b88b3559",
+          "file_count": 8,
+          "matches_candidate_snapshot": true
+        },
+        {
+          "scope": "project",
+          "skill": "open-map-stack",
+          "file": "installs/project/snapshots/open-map-stack/snapshot.json",
+          "sha256": "1713a73ea834fb758c2c77cc5c0f8940a438e238dccdf63e21ff5dca6f499421",
+          "content_sha256": "sha256:7d56dadbfd3b54df73db310a670b0733e1cfe22395ba8bc29a006c9ab442d559",
+          "file_count": 69,
+          "matches_candidate_snapshot": true
+        },
+        {
+          "scope": "project",
+          "skill": "reproducible-gis-project",
+          "file": "installs/project/snapshots/reproducible-gis-project/snapshot.json",
+          "sha256": "4e757c5f8566f8db4e8976bf26797a308850cead22fb376315e9c7a52f30df30",
+          "content_sha256": "sha256:1b7a67238219f8d9af8e1bfda146721eb630fcea398548d065fb4ebaa180d73f",
+          "file_count": 66,
+          "matches_candidate_snapshot": true
+        },
+        {
+          "scope": "project",
+          "skill": "spatial-sql",
+          "file": "installs/project/snapshots/spatial-sql/snapshot.json",
+          "sha256": "f0d9442e1935d7419abb29b72f946db7b8869ae47312abb04f80242d5c30050b",
+          "content_sha256": "sha256:84e26d19998a880c8a2751b9e7b1be478ebd0d112d51386fe3ff388d602f4cc2",
+          "file_count": 7,
+          "matches_candidate_snapshot": true
+        },
+        {
+          "scope": "global",
+          "skill": "geospatial-data-discovery",
+          "file": "installs/global/snapshots/geospatial-data-discovery/snapshot.json",
+          "sha256": "28f9ba1d8621da9fb1f286851c57ce6e409bf5dbf92c43384a707a3b57f7ea74",
+          "content_sha256": "sha256:0089cae912b253ee4b6daf8feb72327e1ee41787ce1829339fdbdc68b88b3559",
+          "file_count": 8,
+          "matches_candidate_snapshot": true
+        },
+        {
+          "scope": "global",
+          "skill": "open-map-stack",
+          "file": "installs/global/snapshots/open-map-stack/snapshot.json",
+          "sha256": "1b48ecc4c96489fd50c88874a4d6b83c2ef786a82180aeb32db38cc0054823bc",
+          "content_sha256": "sha256:7d56dadbfd3b54df73db310a670b0733e1cfe22395ba8bc29a006c9ab442d559",
+          "file_count": 69,
+          "matches_candidate_snapshot": true
+        },
+        {
+          "scope": "global",
+          "skill": "reproducible-gis-project",
+          "file": "installs/global/snapshots/reproducible-gis-project/snapshot.json",
+          "sha256": "2ae466df5a372a9a4975e1fd6427ee1a52735624f088fda1029cdcd4cbacfc75",
+          "content_sha256": "sha256:1b7a67238219f8d9af8e1bfda146721eb630fcea398548d065fb4ebaa180d73f",
+          "file_count": 66,
+          "matches_candidate_snapshot": true
+        },
+        {
+          "scope": "global",
+          "skill": "spatial-sql",
+          "file": "installs/global/snapshots/spatial-sql/snapshot.json",
+          "sha256": "c31109bc9765eac9ab923796b4e4cfab48aab16c0b1b0b3bc1064719598fb01b",
+          "content_sha256": "sha256:84e26d19998a880c8a2751b9e7b1be478ebd0d112d51386fe3ff388d602f4cc2",
+          "file_count": 7,
+          "matches_candidate_snapshot": true
+        }
+      ]
+    },
+    "installation": [
+      {
+        "name": "fresh-installed-wheel",
+        "status": "passed",
+        "details": {
+          "version": "0.5.0",
+          "wheel": "openmapstack-0.5.0-py3-none-any.whl",
+          "isolated_site_packages": true,
+          "api_version": "openmapstack-check-api/v1"
+        }
+      },
+      {
+        "name": "four-uploadable-zip-payloads",
+        "status": "passed",
+        "details": {
+          "file_counts": {
+            "open-map-stack": 68,
+            "reproducible-gis-project": 65,
+            "geospatial-data-discovery": 7,
+            "spatial-sql": 6
+          },
+          "payload_bytes_match": true
+        }
+      },
+      {
+        "name": "copied-project-skill-lifecycle",
+        "status": "passed",
+        "details": {
+          "scope": "project",
+          "skills": 4,
+          "prior_generalist_version": "0.4.0",
+          "installed_version": "0.5.0",
+          "file_counts": {
+            "open-map-stack": 68,
+            "reproducible-gis-project": 65,
+            "geospatial-data-discovery": 7,
+            "spatial-sql": 6
+          },
+          "preflights": {
+            "open-map-stack": {
+              "status": "warning",
+              "counts": {
+                "passed": 31,
+                "warning": 1,
+                "not_testable": 1,
+                "failed": 0
+              }
+            },
+            "reproducible-gis-project": {
+              "status": "warning",
+              "counts": {
+                "passed": 31,
+                "warning": 1,
+                "not_testable": 1,
+                "failed": 0
+              }
+            }
+          },
+          "standalone_snapshots_intact": true,
+          "explicit_upgrade_replaces_payload": true,
+          "removal_leaves_no_installed_skills": true
+        }
+      },
+      {
+        "name": "copied-global-skill-lifecycle",
+        "status": "passed",
+        "details": {
+          "scope": "global",
+          "skills": 4,
+          "prior_generalist_version": "0.4.0",
+          "installed_version": "0.5.0",
+          "file_counts": {
+            "open-map-stack": 68,
+            "reproducible-gis-project": 65,
+            "geospatial-data-discovery": 7,
+            "spatial-sql": 6
+          },
+          "preflights": {
+            "open-map-stack": {
+              "status": "warning",
+              "counts": {
+                "passed": 31,
+                "warning": 1,
+                "not_testable": 1,
+                "failed": 0
+              }
+            },
+            "reproducible-gis-project": {
+              "status": "warning",
+              "counts": {
+                "passed": 31,
+                "warning": 1,
+                "not_testable": 1,
+                "failed": 0
+              }
+            }
+          },
+          "standalone_snapshots_intact": true,
+          "explicit_upgrade_replaces_payload": true,
+          "removal_leaves_no_installed_skills": true
+        }
+      }
+    ],
+    "hosted_pinned_installs": [
+      {
+        "scope": "project",
+        "skill": "open-map-stack",
+        "revision": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "status": "passed",
+        "pinned_update_preserves_payload_and_lock": true
+      },
+      {
+        "scope": "global",
+        "skill": "spatial-sql",
+        "revision": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "status": "passed",
+        "pinned_update_preserves_payload_and_lock": true
+      }
+    ],
+    "local_plugin_lifecycle": {
+      "status": "passed",
+      "scope": "isolated local marketplace; no live agent/model",
+      "commands": 12,
+      "log": "evidence/plugin-checks.json"
+    },
+    "local_offline_container_replay": {
+      "status": "not_run",
+      "reason": "Version-matched offline Docker gates are CI evidence; not executed locally in this preparation."
+    },
+    "final_native_visual_acceptance": {
+      "status": "pending",
+      "reason": "Local Python lacks PyQGIS; optional raster/warehouse/native and full visual evidence remain separate from unit browser tests."
     }
+  },
+  "ci_snapshot": {
+    "headRefOid": "65583747aeab54ee82ec45095759fb371b86cab2",
+    "isDraft": true,
+    "jobs": [
+      {
+        "conclusion": "SUCCESS",
+        "name": "claude-review",
+        "status": "COMPLETED"
+      },
+      {
+        "conclusion": "SUCCESS",
+        "name": "validate-manifests",
+        "status": "COMPLETED"
+      },
+      {
+        "conclusion": "SUCCESS",
+        "name": "tylertoo-integration",
+        "status": "COMPLETED"
+      },
+      {
+        "conclusion": "SUCCESS",
+        "name": "build",
+        "status": "COMPLETED"
+      },
+      {
+        "conclusion": "SUCCESS",
+        "name": "worked-example",
+        "status": "COMPLETED"
+      },
+      {
+        "conclusion": "SKIPPED",
+        "name": "deploy",
+        "status": "COMPLETED"
+      },
+      {
+        "conclusion": "SUCCESS",
+        "name": "duckdb-compatibility (1.5.3)",
+        "status": "COMPLETED"
+      },
+      {
+        "conclusion": "SUCCESS",
+        "name": "duckdb-compatibility (2.0.x)",
+        "status": "COMPLETED"
+      },
+      {
+        "conclusion": "",
+        "name": "fixture-evals (1.5.3)",
+        "status": "IN_PROGRESS"
+      },
+      {
+        "conclusion": "",
+        "name": "fixture-evals (2.0.x)",
+        "status": "IN_PROGRESS"
+      }
+    ],
+    "url": "https://github.com/jaakla/openmapstack-skills/pull/118"
   },
   "live_acceptance": {
     "status": "pending",
     "issue": "https://github.com/jaakla/openmapstack-skills/issues/112",
     "paid_trials_this_preparation": 0,
-    "openai_compatible_isolation": "Sandbox isolation is required before this adapter can supply ADR 0006 release evidence."
+    "routing_trials_this_preparation": 0,
+    "openai_compatible_isolation": "Sandbox the adapter before using its agent executions as ADR 0006 release evidence.",
+    "codex_isolation": "ADR 0006 also requires isolating reads outside its workspace before equivalent release evidence.",
+    "maintainer_actions": [
+      "Restore the Codex credential.",
+      "Replenish or re-scope Anthropic quota.",
+      "Decide whether openai_compatible should run on schedule; configure its endpoint/key/exact model if enabled."
+    ],
+    "october_6_output_contract_failures": "not rechecked; live execution is not authorized"
   },
   "pending": [
-    "Unit/coverage and fixture checks",
-    "Prepublication builds, snapshots and fresh isolated installation",
-    "Live acceptance and maintainer approval",
-    "Tagging, publication and actual-tag/PyPI verification"
-  ]
+    "Final candidate CI and version-matched offline replay review; this CI snapshot is tied to its recorded head.",
+    "Final native/QGIS/full visual and other capability-dependent release evidence or explicit maintainer disposition.",
+    "Live executed-project and routing acceptance after sandbox/account readiness and explicit scope/model/budget authorization.",
+    "Default-branch floating 0.5.0 updates and GitHub-backed marketplace refresh after the candidate reaches the appropriate distribution branch.",
+    "Maintainer final acceptance; no 0.4.0 release exception is inherited automatically.",
+    "Tagging/publication, actual-tag and PyPI installation verification, and comparison with the publication workflow rebuild."
+  ],
+  "provenance": {
+    "tested_source": "Clean committed candidate at source_revision; tests ran in a local clone under artifact_location.",
+    "follow_up_scope": "Later evidence commits update only docs/release-0.5.0.md and docs/acceptance-0.5.0-rc.json; runtime, package inputs and skill payloads retain the recorded candidate bytes.",
+    "publication_authorized": false
+  },
+  "preparation_notes": [
+    "The first version-test probe preceded dependency installation and failed to import yaml; after setup, the version test and full suite passed. Bootstrap log is retained.",
+    "An initial standalone snapshot probe selected legacy v1, which cannot represent guidance-only skills; fresh install checks were restarted with explicit --format v2. No product code change was needed; the failed probe is retained under evidence/install-attempt-1/.",
+    "Project/global copied-install checks use fresh isolated homes and physically isolated individual skill sources. Upgrade checks explicitly replace the real v0.4.0 generalist; hosted pin controls use source_revision, not a nonexistent v0.5.0 tag.",
+    "Selected diagnostic fixture cases matching not_testable do not count as passed assertion coverage or fully exercised capability."
+  ],
+  "evidence_files": {
+    "evidence/.coverage": {
+      "sha256": "f9c7144f52135163e4fef16b785703f444b6ad85251cf7f6a0fa0c8a1b5b0538",
+      "bytes": 229376
+    },
+    "evidence/artifacts.json": {
+      "sha256": "84e52fd5b127c19ff15840b5d5f52b75ad5df7969a1f5d430ddf9059ed2992eb",
+      "bytes": 2602
+    },
+    "evidence/asset-sync.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "evidence/browser-install.log": {
+      "sha256": "dd69c1a3f82fd643a1b1590dee2ab8aa5457c24b2c72f853a6797448c7137894",
+      "bytes": 6876
+    },
+    "evidence/build.log": {
+      "sha256": "a5a840fdfd1d760b7d930794bcc87475b7becb519bccdb2513aa0b2782264d07",
+      "bytes": 24311
+    },
+    "evidence/check-driver.log": {
+      "sha256": "9f2776e5f194eb0dc03fbf0db839c012dc53b05703c38cc6792642bdd6ab9039",
+      "bytes": 114
+    },
+    "evidence/coverage-json.log": {
+      "sha256": "190e69fa69b6d8d6062baab6c8c7e5f6e446689b971528269f25f5d435d31731",
+      "bytes": 80
+    },
+    "evidence/coverage-report.log": {
+      "sha256": "db244bcb4335911598c7e3563047bc21b662c3452620cbf50b4cf008dfa26b07",
+      "bytes": 3482
+    },
+    "evidence/coverage.json": {
+      "sha256": "ea6ae1d8b58864badff795f07037c3f8b25f640ab09981c9c54de4f63d64d68e",
+      "bytes": 280458
+    },
+    "evidence/dependency-install.log": {
+      "sha256": "04abbf620b13af1e431b553b80a8abd83daed558f8d20ce1778cde40d0c90b97",
+      "bytes": 12013
+    },
+    "evidence/fixture-evals.json": {
+      "sha256": "bee407881a11bf4b96e60e1af1f029d12b142ee8b67b04e745f16c3683499be7",
+      "bytes": 1041122
+    },
+    "evidence/fixture-evals.log": {
+      "sha256": "ecfc987df00bc9d7cd67e837ad28e48fb1b79320ee32c0d9d02cbb9c09690f81",
+      "bytes": 6705
+    },
+    "evidence/inspect-collection.json": {
+      "sha256": "220851cdb12177bbbdc31c398b8e0c86f0003490c602c0793ae0058237c898ce",
+      "bytes": 34891
+    },
+    "evidence/inspect-geospatial-data-discovery.json": {
+      "sha256": "8925e825277151764295fcaf92686ae323397ca1c540df4faea14fd881ad675a",
+      "bytes": 3044
+    },
+    "evidence/inspect-open-map-stack.json": {
+      "sha256": "6cf2047090d0a69acdbe5afd0ee25814aa6847c94eefb15e203d2d96c8e731a1",
+      "bytes": 16083
+    },
+    "evidence/inspect-reproducible-gis-project.json": {
+      "sha256": "7ddbb47bdca2770b2be2059ab6ba1d5cf3e7e32f990a34cf8d11d8a321b8b27c",
+      "bytes": 16028
+    },
+    "evidence/inspect-spatial-sql.json": {
+      "sha256": "d7d473bbc6acd9177594266fb994b778f2133b3f3fbe8177fc1cc46d38b25091",
+      "bytes": 2692
+    },
+    "evidence/install-attempt-1/install-create-wheel-env.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "evidence/install-attempt-1/install-driver.log": {
+      "sha256": "5a56de6abb2ce39394590910fffee0de2f3cc88c4741f571f3986b0ea4e987e7",
+      "bytes": 1190
+    },
+    "evidence/install-attempt-1/install-fresh-wheel.log": {
+      "sha256": "335fd992ccae65e247bf495ee1943a9f5c9cff10e7edaad5669c627b5aa2fe59",
+      "bytes": 2481
+    },
+    "evidence/install-attempt-1/install-project-geospatial-data-discovery-add.log": {
+      "sha256": "d9b9495158dc8b12879c1793655df7d5dbe0da11c45a090e826a95f0a9e670c8",
+      "bytes": 1414
+    },
+    "evidence/install-attempt-1/install-project-geospatial-data-discovery-snapshot.log": {
+      "sha256": "53acefc39b77b6f994b5b561c398895987ea2115364c70b38af5bc8c255d5903",
+      "bytes": 198
+    },
+    "evidence/install-attempt-1/install-project-old-install.log": {
+      "sha256": "7d57ce26038e821f4eccbae4efbccc48ea289fa25b6971f8fdccc7cc56b203f5",
+      "bytes": 1171
+    },
+    "evidence/install-attempt-1/install-project-open-map-stack-add.log": {
+      "sha256": "8d56f9502e4dc4e4bd0e3cc4b2577894aa315e6256c735e3022b77e0f9182476",
+      "bytes": 1214
+    },
+    "evidence/install-attempt-1/install-project-open-map-stack-inspect.log": {
+      "sha256": "c835488415edf70a48c0fe68575216b1dd1dcb7cb7d27c3886af44b2ff2d45f3",
+      "bytes": 4546
+    },
+    "evidence/install-attempt-1/install-project-open-map-stack-preflight.log": {
+      "sha256": "99300a58804f27a5989ec7fcb561c3b8ff890f9e78bbcfa2c4db68d6339cfd7f",
+      "bytes": 6483
+    },
+    "evidence/install-attempt-1/install-project-open-map-stack-snapshot.log": {
+      "sha256": "1ce3054a129d58c13551cc9bd167785e17b5c318f9af8117b764a45d9779103b",
+      "bytes": 3891
+    },
+    "evidence/install-attempt-1/install-project-reproducible-gis-project-add.log": {
+      "sha256": "280d32ae14f8c5103b59f0c80a0c65c9e1797075062830363e1d677b1fa15d16",
+      "bytes": 1392
+    },
+    "evidence/install-attempt-1/install-project-reproducible-gis-project-inspect.log": {
+      "sha256": "d5623bc7e62ad465488244b726716ea052f7498038ee30df44e62d28f7691c0d",
+      "bytes": 4034
+    },
+    "evidence/install-attempt-1/install-project-reproducible-gis-project-preflight.log": {
+      "sha256": "b6716c60579f28285515f459e479a6c50e5cf519647b20a95c36924bd061404a",
+      "bytes": 6493
+    },
+    "evidence/install-attempt-1/install-project-reproducible-gis-project-snapshot.log": {
+      "sha256": "a26b4f1f2961a8a507ab0332873e2563570e0db92e972e8587f4050a6457b3a1",
+      "bytes": 3399
+    },
+    "evidence/install-attempt-1/install-wheel-api.log": {
+      "sha256": "c94602799aaa1274ee407238440600a680fe811498610ff6a4aaac49d2bcb5a2",
+      "bytes": 1619
+    },
+    "evidence/install-attempt-1/install-wheel-checks.log": {
+      "sha256": "bbc6e5e278d03df945d10cc49b9f6de23bd1c24e4c7f600e50ec2f44543411ea",
+      "bytes": 45768
+    },
+    "evidence/install-attempt-1/install-wheel-import.log": {
+      "sha256": "71ab91984ed08f146bea3da6ac15f27dbbc5b18173c5cf3cf5094f14482453fe",
+      "bytes": 119
+    },
+    "evidence/install-attempt-1/install-wheel-version.log": {
+      "sha256": "ce940d1d5b5bb4e1855534b2bbc3bedc91b174d65980d2ecf7ee45b422d04bcc",
+      "bytes": 19
+    },
+    "evidence/install-attempt-1/installation-checks.json": {
+      "sha256": "d96802aca16ce9d0e5132ab8143c21df7a7a85e4e13c2d83f0ef94bd070a7e23",
+      "bytes": 8877
+    },
+    "evidence/install-create-wheel-env.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "evidence/install-driver.log": {
+      "sha256": "e26f9215f026f3d9867884eb1414810ec23061f901492f4adc7a74c8e92b1827",
+      "bytes": 170
+    },
+    "evidence/install-fresh-wheel.log": {
+      "sha256": "335fd992ccae65e247bf495ee1943a9f5c9cff10e7edaad5669c627b5aa2fe59",
+      "bytes": 2481
+    },
+    "evidence/install-global-geospatial-data-discovery-add.log": {
+      "sha256": "0717dc2e59eb84a66d87f59d917987a8d12a7aff1d29ec934854fca28bb6a649",
+      "bytes": 1414
+    },
+    "evidence/install-global-geospatial-data-discovery-inspect.log": {
+      "sha256": "a0d71de50a22a0a40ac31b92fb9e943b6bfca19842ba225704619b07ef22e32e",
+      "bytes": 3021
+    },
+    "evidence/install-global-geospatial-data-discovery-snapshot.log": {
+      "sha256": "28f9ba1d8621da9fb1f286851c57ce6e409bf5dbf92c43384a707a3b57f7ea74",
+      "bytes": 2473
+    },
+    "evidence/install-global-list-empty.log": {
+      "sha256": "69ef9f0d8f5d1306902c41e5dc945683f237e39419bc1e53fdde7fa57ef02d91",
+      "bytes": 209
+    },
+    "evidence/install-global-list.log": {
+      "sha256": "d553380cff21945fb5f90c2fd88b8d46d594ca542b446f47874ef3530be2b867",
+      "bytes": 1313
+    },
+    "evidence/install-global-old-install.log": {
+      "sha256": "0e9ac2af0136da9552d4db4a73f1f5613fbeedf2e158f7ca8ef945067cb6b361",
+      "bytes": 1171
+    },
+    "evidence/install-global-open-map-stack-add.log": {
+      "sha256": "aba76b211a454ab74b53cacce3c31a77cbde8348a9e028fa7d1f028b1294e035",
+      "bytes": 1172
+    },
+    "evidence/install-global-open-map-stack-inspect.log": {
+      "sha256": "00f14cc49ef6f036c833b342ca3d97764d1a64f4ee7bef2be8585bd52888cefe",
+      "bytes": 16060
+    },
+    "evidence/install-global-open-map-stack-preflight.log": {
+      "sha256": "828a7e33fc5d02839fbc1433d01da69737497689c1664cf202d8e070be34c648",
+      "bytes": 6479
+    },
+    "evidence/install-global-open-map-stack-snapshot.log": {
+      "sha256": "1b48ecc4c96489fd50c88874a4d6b83c2ef786a82180aeb32db38cc0054823bc",
+      "bytes": 14912
+    },
+    "evidence/install-global-remove.log": {
+      "sha256": "8a1765f701dbb622b10793df6e8791f5c2fb9823faf346a4642db86402fc8277",
+      "bytes": 222
+    },
+    "evidence/install-global-reproducible-gis-project-add.log": {
+      "sha256": "16030149efae20d17970c7b17a76ef5ff1f76e123395fe6faedf1e9f64e3b76e",
+      "bytes": 1392
+    },
+    "evidence/install-global-reproducible-gis-project-inspect.log": {
+      "sha256": "31217ea367489512163cf698bd7f1e695082d686ab9aee2af780a32987529b8b",
+      "bytes": 16005
+    },
+    "evidence/install-global-reproducible-gis-project-preflight.log": {
+      "sha256": "45206a523efc38c11777a214748d6419a0ba07b52e879e527ce7da22a8704aa8",
+      "bytes": 6489
+    },
+    "evidence/install-global-reproducible-gis-project-snapshot.log": {
+      "sha256": "2ae466df5a372a9a4975e1fd6427ee1a52735624f088fda1029cdcd4cbacfc75",
+      "bytes": 14877
+    },
+    "evidence/install-global-spatial-sql-add.log": {
+      "sha256": "903a6bed4cf4fa48a508e8cce8dd46c8f62b89a3ae2f4a643873187f3086aa1e",
+      "bytes": 1106
+    },
+    "evidence/install-global-spatial-sql-inspect.log": {
+      "sha256": "ef76c9c24fdea06032a4ee8069b005605c7d8cd084c3d4f4e3a5a028fec8a930",
+      "bytes": 2669
+    },
+    "evidence/install-global-spatial-sql-snapshot.log": {
+      "sha256": "c31109bc9765eac9ab923796b4e4cfab48aab16c0b1b0b3bc1064719598fb01b",
+      "bytes": 2145
+    },
+    "evidence/install-project-geospatial-data-discovery-add.log": {
+      "sha256": "d9b9495158dc8b12879c1793655df7d5dbe0da11c45a090e826a95f0a9e670c8",
+      "bytes": 1414
+    },
+    "evidence/install-project-geospatial-data-discovery-inspect.log": {
+      "sha256": "778537a47cb67a117de1d4e3e5b8e9f2cf5a83c19d5d73d47989d0ed1a036df6",
+      "bytes": 3022
+    },
+    "evidence/install-project-geospatial-data-discovery-snapshot.log": {
+      "sha256": "671c051411dad56cea9e2d23e452057e8906e6204ed2ea534d165ed9cd514f31",
+      "bytes": 2473
+    },
+    "evidence/install-project-list-empty.log": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "evidence/install-project-list.log": {
+      "sha256": "be30f473d58ae1c35da44c328c474d3cfd5e1348054acf1faacbee6fdfb48f3e",
+      "bytes": 1461
+    },
+    "evidence/install-project-old-install.log": {
+      "sha256": "7d57ce26038e821f4eccbae4efbccc48ea289fa25b6971f8fdccc7cc56b203f5",
+      "bytes": 1171
+    },
+    "evidence/install-project-open-map-stack-add.log": {
+      "sha256": "8d56f9502e4dc4e4bd0e3cc4b2577894aa315e6256c735e3022b77e0f9182476",
+      "bytes": 1214
+    },
+    "evidence/install-project-open-map-stack-inspect.log": {
+      "sha256": "49ad8df46bc1c69f1cea16a672a14a5aa00713535a1170724c5cea3100c4b1ba",
+      "bytes": 16061
+    },
+    "evidence/install-project-open-map-stack-preflight.log": {
+      "sha256": "99300a58804f27a5989ec7fcb561c3b8ff890f9e78bbcfa2c4db68d6339cfd7f",
+      "bytes": 6483
+    },
+    "evidence/install-project-open-map-stack-snapshot.log": {
+      "sha256": "1713a73ea834fb758c2c77cc5c0f8940a438e238dccdf63e21ff5dca6f499421",
+      "bytes": 14912
+    },
+    "evidence/install-project-remove.log": {
+      "sha256": "87ca9e57ac4bd815d1b1701809a2eb412784fab401c6f801c970ed42c04c39fb",
+      "bytes": 222
+    },
+    "evidence/install-project-reproducible-gis-project-add.log": {
+      "sha256": "280d32ae14f8c5103b59f0c80a0c65c9e1797075062830363e1d677b1fa15d16",
+      "bytes": 1392
+    },
+    "evidence/install-project-reproducible-gis-project-inspect.log": {
+      "sha256": "0902d8a51e39009d809e3db4bb7d7c5c3731ce8185ee3c69952b7bde363d8a1b",
+      "bytes": 16006
+    },
+    "evidence/install-project-reproducible-gis-project-preflight.log": {
+      "sha256": "b6716c60579f28285515f459e479a6c50e5cf519647b20a95c36924bd061404a",
+      "bytes": 6493
+    },
+    "evidence/install-project-reproducible-gis-project-snapshot.log": {
+      "sha256": "4e757c5f8566f8db4e8976bf26797a308850cead22fb376315e9c7a52f30df30",
+      "bytes": 14877
+    },
+    "evidence/install-project-spatial-sql-add.log": {
+      "sha256": "3ba0d044c6460e52ed8f86a940827944cec1560e641cc477a30298c6a205cf69",
+      "bytes": 1106
+    },
+    "evidence/install-project-spatial-sql-inspect.log": {
+      "sha256": "50074c49b53b3be7c22144eb3d7279119bf7ba9510ead1d417c244414d41484d",
+      "bytes": 2670
+    },
+    "evidence/install-project-spatial-sql-snapshot.log": {
+      "sha256": "f0d9442e1935d7419abb29b72f946db7b8869ae47312abb04f80242d5c30050b",
+      "bytes": 2145
+    },
+    "evidence/install-wheel-api.log": {
+      "sha256": "c94602799aaa1274ee407238440600a680fe811498610ff6a4aaac49d2bcb5a2",
+      "bytes": 1619
+    },
+    "evidence/install-wheel-checks.log": {
+      "sha256": "bbc6e5e278d03df945d10cc49b9f6de23bd1c24e4c7f600e50ec2f44543411ea",
+      "bytes": 45768
+    },
+    "evidence/install-wheel-import.log": {
+      "sha256": "71ab91984ed08f146bea3da6ac15f27dbbc5b18173c5cf3cf5094f14482453fe",
+      "bytes": 119
+    },
+    "evidence/install-wheel-version.log": {
+      "sha256": "ce940d1d5b5bb4e1855534b2bbc3bedc91b174d65980d2ecf7ee45b422d04bcc",
+      "bytes": 19
+    },
+    "evidence/installation-checks.json": {
+      "sha256": "eeed8d28cf7bae9a435e53cc5a7eac111e0eb69d332c2ae809bd93674e3ef862",
+      "bytes": 22767
+    },
+    "evidence/local-checks.json": {
+      "sha256": "653c842fe7f1c5d8bf9bc0e912f73772b5dfd48aebd1fc7fff7cb637d0e97076",
+      "bytes": 1404
+    },
+    "evidence/package-controls.json": {
+      "sha256": "ea7b39711332ff667f8d68f8335208bc087c354893e2cc25518b23a1484c920e",
+      "bytes": 4188
+    },
+    "evidence/pin-checks.json": {
+      "sha256": "5dd902e12a637f98be28f94f3cfaf8fcd683f6ebd351d38d240404d137fd13a9",
+      "bytes": 3535
+    },
+    "evidence/pin-driver.log": {
+      "sha256": "c1585695a79cf1a86106e8e0395cf439073a365ce9f59b48c1e23d46e89f89af",
+      "bytes": 122
+    },
+    "evidence/pin-global-add.log": {
+      "sha256": "a4c8d687832baabe634c055bb00d03cca4809662e1339b5f3dd6591f13fb9c9a",
+      "bytes": 1936
+    },
+    "evidence/pin-global-remove.log": {
+      "sha256": "d1f0280051cb7baed531d6dd454fc9318bb6c1df51a615ce5def2ed6ffd6ceed",
+      "bytes": 222
+    },
+    "evidence/pin-global-update.log": {
+      "sha256": "34be17130993144ce4b609ae4dc28e1aee3731ecbb29404e1a2067cf593b6b76",
+      "bytes": 173
+    },
+    "evidence/pin-project-add.log": {
+      "sha256": "2f98d046f988c96e784c50f93ad287471890e0144b244bb1f561fb49ef985e9a",
+      "bytes": 2002
+    },
+    "evidence/pin-project-remove.log": {
+      "sha256": "a8f7c5b77e882535ad25eb010432ec066d8d2311df86216d6fd49fe537333544",
+      "bytes": 222
+    },
+    "evidence/pin-project-update.log": {
+      "sha256": "88e83b67e1c39e68d83e581c08b225cdba912dd5457ae6596fb4aadc134c5dd7",
+      "bytes": 249
+    },
+    "evidence/plugin-checks.json": {
+      "sha256": "979b2b7187d947152282c58c195d1a77c7c5e1bd18443a4c364e9e9907330e5b",
+      "bytes": 2960
+    },
+    "evidence/plugin-driver.log": {
+      "sha256": "c24adfa42d78becb99556d8e572f3dea26dfe354319b426c221998cffd53ca55",
+      "bytes": 65
+    },
+    "evidence/plugin-install.log": {
+      "sha256": "abdc21292803cc61a1900da0255185ad914ad198ed3eead5709da7308d26921d",
+      "bytes": 131
+    },
+    "evidence/plugin-list-empty.log": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "evidence/plugin-list.log": {
+      "sha256": "52d570771543d7e390206e9a9fbc4c99a27f971095beee66eb7392c4c23a5550",
+      "bytes": 477
+    },
+    "evidence/plugin-marketplace-add.log": {
+      "sha256": "398f0d5ec54204d268b61d8968b187cba2a76cdbeb33c9479a80ccc59e2386b6",
+      "bytes": 100
+    },
+    "evidence/plugin-marketplace-remove.log": {
+      "sha256": "57da5d384c7bd62402f8db882ca064fd45b74d1a6298f32e0ac7e45fefacd408",
+      "bytes": 53
+    },
+    "evidence/plugin-marketplace-update.log": {
+      "sha256": "6424f904aee33f942f35f83d202a4e5c1b3cb82e55142e8e51881dbd38068a88",
+      "bytes": 121
+    },
+    "evidence/plugin-marketplace-validation.log": {
+      "sha256": "565272ac8894d24c55e00b8fc4ec9a29c081b934b020298a27ae95dab8f3031b",
+      "bytes": 131
+    },
+    "evidence/plugin-plugin-validation.log": {
+      "sha256": "7e6fac6b14130fe8dd6543214873b81c407a7c82ad6fa699196fdebbdeb15bea",
+      "bytes": 1661
+    },
+    "evidence/plugin-source-inventory.log": {
+      "sha256": "f859ee2447310c13ff63ef7f59ee17afebff2b1a47d8866456e01e447f6c1d43",
+      "bytes": 990
+    },
+    "evidence/plugin-uninstall.log": {
+      "sha256": "0008a602feec35a6b0030df6b6d70cffe3d2da7b1fe52fa885d49bd825eb01af",
+      "bytes": 66
+    },
+    "evidence/plugin-update.log": {
+      "sha256": "7f292cbb82261c66e0ded5739accd7d3efee0b16151945fd993a22e6c5da30e2",
+      "bytes": 301
+    },
+    "evidence/plugin-version.log": {
+      "sha256": "0896bb2b0f0c7741c8ab6df43385b83f8fc18620da007e784d0dba2f4b75580b",
+      "bytes": 22
+    },
+    "evidence/pr-candidate-ci.json": {
+      "sha256": "758ae7e2478b680a53c75859b8b8e8c1d55587e4b496d25a574b9b0e558a4e8f",
+      "bytes": 869
+    },
+    "evidence/pr-initial-ci.json": {
+      "sha256": "7b04d55b1ac0d2a80f81ebb064f9f1b62204c2dcc6ee9cddd13b34d5ae575043",
+      "bytes": 864
+    },
+    "evidence/requirements-frozen.txt": {
+      "sha256": "5c435a1e3c230a7d30d6340b5c7328733d192a460ee67e0b58cd6cb805929c47",
+      "bytes": 856
+    },
+    "evidence/skill-packages.log": {
+      "sha256": "991a2055351b992202e48753620642fdbcdec4c5c5a2976c4e3fd15195727f8f",
+      "bytes": 378
+    },
+    "evidence/skills-add-help.log": {
+      "sha256": "03acd0a337fe3308cb05b3f72f3df6e20644f781bac046e6b98bb91feee66bee",
+      "bytes": 5163
+    },
+    "evidence/skills-cli-version.log": {
+      "sha256": "653e7cf38027961122ce971eb6a597ce4132f39b4983320fa2a35e0f76cb8961",
+      "bytes": 216
+    },
+    "evidence/snapshot-changed-control.json": {
+      "sha256": "24a5452913e295dc16ca69422dd00e31c85db142e2a1a20ed70ab5ae276ae758",
+      "bytes": 2794
+    },
+    "evidence/snapshot-collection.json": {
+      "sha256": "f6244631284d6ae97be54286edd6c3a4ec7414cbd04078f0e86579b0eb8e21c6",
+      "bytes": 32946
+    },
+    "evidence/snapshot-geospatial-data-discovery.json": {
+      "sha256": "80abf31cceb4abb083bfdda27d4aab5d12f0ccfe3f17283d6847a0d124660351",
+      "bytes": 2512
+    },
+    "evidence/snapshot-missing-control.json": {
+      "sha256": "1f832cd2a997da6da0f37ce08cb55c3ca6f83d808bed063fe079d29208050f50",
+      "bytes": 2794
+    },
+    "evidence/snapshot-open-map-stack.json": {
+      "sha256": "e86f53f98f436df8cf588389d9454d9aa4a57ca4ed8a995149400da56973a987",
+      "bytes": 14951
+    },
+    "evidence/snapshot-reproducible-gis-project.json": {
+      "sha256": "e640f476c7cf217ee2376e799cd96dd1484927a3fd48d73fba8f18bde3fd7e25",
+      "bytes": 14916
+    },
+    "evidence/snapshot-spatial-sql.json": {
+      "sha256": "b469b24e69c1b5e77ca55bd936620ddec1e84657d9a12b58d87290df5cbfbe0f",
+      "bytes": 2184
+    },
+    "evidence/source-clone.log": {
+      "sha256": "ae0ffe2c57444774f00cc2f6ed328c3cce9932ce9d075ba88eb0291aa798362d",
+      "bytes": 67
+    },
+    "evidence/source-directory-packages.log": {
+      "sha256": "2b7f072b745997183f8b4a9e6b23da9888b9249425a706e8476c453bc6a439c5",
+      "bytes": 431
+    },
+    "evidence/spatial-prepare.log": {
+      "sha256": "7ff26eef59e01438c8f5c56ea34705c7b2142597dfb12c3e27b9a519fafd5598",
+      "bytes": 81
+    },
+    "evidence/test-cli-install.log": {
+      "sha256": "972344d72e595ff33e3fb0b518cef2e34a1aa1cf384d2770799e8f9718067136",
+      "bytes": 2407
+    },
+    "evidence/test-release-bootstrap-missing-deps.log": {
+      "sha256": "1b21be67a20b5124097b8e7272b1152be69be590b0b6b3e65d22d3fb7effa783",
+      "bytes": 1366
+    },
+    "evidence/test-release.log": {
+      "sha256": "d0eddb7e0c010728751a737a985b87d0499652364e605f761f3a40dd37adf95d",
+      "bytes": 221
+    },
+    "evidence/twine-check.log": {
+      "sha256": "2afe94e6e777f816397f8828927abe4abd1d846bf0a2e355ab3a40418f432181",
+      "bytes": 179
+    },
+    "evidence/unit-coverage.log": {
+      "sha256": "a25b802544e8cf410df66f904dc62913ab3e6f050e51f99e59c00d8b9162a750",
+      "bytes": 183850
+    }
+  },
+  "evidence_bundle": {
+    "file": "release-evidence-0.5.0-rc.tar.gz",
+    "sha256": "01d836466e8ffbb9a69cdadcc234aa380754de01f7bbc91819677107d332e181",
+    "bytes": 16353701
+  }
 }
