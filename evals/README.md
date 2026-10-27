@@ -523,9 +523,13 @@ autonomous agent via a tool-execution loop (`run_shell`, `write_file`,
 `read_file`, `list_dir`), so the same assertions can grade an endpoint-hosted
 model like a CLI agent. File reads/listings allow the workspace and the
 runner-staged `benchmark-context/openmapstack` guidance directory; file writes
-remain in the workspace and cannot modify guidance. These file-tool boundaries
-do not isolate shell commands: the shell still runs on the host, and this
-adapter is not yet suitable for ADR 0006 release evidence (see #120).
+remain in the workspace and cannot modify guidance. `run_shell` commands run
+in the same rootless Bubblewrap allowlist as the Claude Code adapter
+(`evals/adapters/isolation.py`, ADR 0006): the workspace is the only writable
+path, staged guidance is mounted read-only, the repository and the rest of the
+trial directory are invisible, the shell environment carries no API key, and
+the network is shared. The adapter refuses to run where that sandbox is
+unavailable, and records the allowlist as `permissions.isolation`.
 
 Each response's `finish_reason` is retained in run metadata and assistant
 events. Invalid tool arguments are not executed: classified diagnostics in

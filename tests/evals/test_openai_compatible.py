@@ -1,4 +1,9 @@
-"""File-tool boundaries and response diagnostics, without provider calls."""
+"""File-tool boundaries, response diagnostics and shell isolation, without provider calls.
+
+The shell tests run a real Bubblewrap sandbox and skip where unprivileged user
+namespaces are unavailable; CI sets ``OPENMAPSTACK_REQUIRE_SANDBOX=1`` so an
+unavailable sandbox fails instead of skipping.
+"""
 from __future__ import annotations
 
 import json
@@ -10,19 +15,23 @@ from unittest.mock import patch
 
 from jsonschema import validate
 
+from evals.adapters.isolation import unavailable_reason
 from evals.adapters.openai_compatible import OpenaiCompatibleAdapter
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+REQUIRED = os.environ.get("OPENMAPSTACK_REQUIRE_SANDBOX") == "1"
 
-def response(*, arguments=None, finish_reason="stop", tool=False, content="done"):
+
+def response(*, arguments=None, finish_reason="stop", tool=False, content="done", name="write_file"):
     message = {"role": "assistant", "content": content}
     if tool:
         message["tool_calls"] = [{"id": "call-1", "type": "function", "function": {
-            "name": "write_file", "arguments": arguments,
+            "name": name, "arguments": arguments,
         }}]
     return {"choices": [{"message": message, "finish_reason": finish_reason}]}
 
 
-class OpenaiCompatibleDiagnosticsTests(unittest.TestCase):
+class AdapterCase(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix="oms-oac-diagnostics-")
         self.addCleanup(temporary.cleanup)
@@ -46,6 +55,15 @@ class OpenaiCompatibleDiagnosticsTests(unittest.TestCase):
         }, clear=True), patch.object(self.adapter, "_post_chat", side_effect=responses) as post:
             result = self.adapter.run("build a project", self.workspace)
         return result, post
+
+
+class OpenaiCompatibleDiagnosticsTests(AdapterCase):
+    def setUp(self):
+        super().setUp()
+        # These runs never execute a shell command; isolation is tested below.
+        isolation = patch("evals.adapters.openai_compatible.unavailable_reason", return_value=None)
+        isolation.start()
+        self.addCleanup(isolation.stop)
 
     def test_guidance_can_be_read_and_listed_while_workspace_remains_writable(self):
         self.assertEqual(self.execute("read_file", path="../benchmark-context/openmapstack/SKILL.md"),
@@ -169,6 +187,113 @@ class OpenaiCompatibleDiagnosticsTests(unittest.TestCase):
         self.assertFalse(result.success)
         self.assertFalse(result.metadata["structured_completion"])
         self.assertIn("length", result.stderr)
+
+
+class OpenaiCompatibleIsolationRefusalTests(AdapterCase):
+    """Without a sandbox the adapter refuses; it never runs the shell on the host."""
+
+    def setUp(self):
+        super().setUp()
+        isolation = patch("evals.adapters.openai_compatible.unavailable_reason", return_value="bwrap missing")
+        isolation.start()
+        self.addCleanup(isolation.stop)
+
+    def test_shell_tool_refuses_instead_of_running_on_the_host(self):
+        with patch("evals.adapters.openai_compatible.subprocess.run") as run:
+            ok, output = self.execute("run_shell", command="touch host-ran")
+        run.assert_not_called()
+        self.assertFalse(ok)
+        self.assertIn("unisolated", output)
+        self.assertFalse((self.workspace / "host-ran").exists())
+
+    def test_run_refuses_before_any_provider_call(self):
+        result, post = self.run_responses([response()])
+        post.assert_not_called()
+        self.assertFalse(result.success)
+        self.assertIn("refusing an unisolated live run: bwrap missing", result.stderr)
+        self.assertTrue(result.metadata["adapter_not_started"])
+        self.assertEqual(result.metadata["isolation_unavailable"], "bwrap missing")
+
+
+class OpenaiCompatibleShellSandboxTests(AdapterCase):
+    @classmethod
+    def setUpClass(cls):
+        # Probed here rather than at import so unrelated test runs skip it.
+        cls.unavailable = unavailable_reason()
+        if cls.unavailable and not REQUIRED:
+            raise unittest.SkipTest(f"sandbox unavailable: {cls.unavailable}")
+
+    def setUp(self):
+        if self.unavailable:
+            self.fail(f"OPENMAPSTACK_REQUIRE_SANDBOX=1 but the sandbox is unavailable: {self.unavailable}")
+        super().setUp()
+
+    def test_healthy_command_runs_in_the_workspace_with_the_python_runtime(self):
+        ok, output = self.execute("run_shell", command="printf healthy > out.txt && cat out.txt && "
+                                                       "python3 -c 'import openmapstack; print(\"pkg-ok\")'")
+        self.assertTrue(ok, output)
+        self.assertIn("healthy", output)
+        self.assertIn("pkg-ok", output)
+        self.assertEqual((self.workspace / "out.txt").read_text(), "healthy")
+
+    def test_repository_and_trial_paths_outside_the_workspace_are_invisible(self):
+        (self.root / "expected-answers.json").write_text("secret answer")
+        for command in [f"cat {REPO_ROOT / 'AGENTS.md'}", f"ls {REPO_ROOT / 'evals'}",
+                        "cat ../expected-answers.json", f"cat {self.root / 'expected-answers.json'}"]:
+            with self.subTest(command=command):
+                ok, output = self.execute("run_shell", command=command)
+                self.assertFalse(ok, output)
+                self.assertIn("No such file or directory", output)
+                self.assertNotIn("secret answer", output)
+                self.assertNotIn("Repository-wide", output)
+
+    def test_guidance_is_readable_but_not_writable(self):
+        ok, output = self.execute("run_shell", command="cat ../benchmark-context/openmapstack/SKILL.md")
+        self.assertTrue(ok, output)
+        self.assertIn("controlled guidance", output)
+        for command in ["echo changed > ../benchmark-context/openmapstack/SKILL.md",
+                        "touch ../benchmark-context/openmapstack/new.md"]:
+            with self.subTest(command=command):
+                ok, output = self.execute("run_shell", command=command)
+                self.assertFalse(ok, output)
+                self.assertIn("Read-only file system", output)
+        self.assertEqual([p.name for p in self.guidance.iterdir()], ["SKILL.md"])
+        self.assertEqual((self.guidance / "SKILL.md").read_text(), "controlled guidance")
+
+    def test_guidance_stays_read_only_when_nested_inside_the_workspace(self):
+        self.workspace = self.root
+        ok, output = self.execute("run_shell", command="echo changed > benchmark-context/openmapstack/SKILL.md")
+        self.assertFalse(ok, output)
+        self.assertTrue(self.execute("run_shell", command="echo ok > result.txt")[0])
+        self.assertEqual((self.guidance / "SKILL.md").read_text(), "controlled guidance")
+
+    def test_redirected_guidance_is_not_mounted(self):
+        self.guidance.rename(self.root / "private-guidance")
+        self.guidance.symlink_to(self.root / "private-guidance", target_is_directory=True)
+        ok, output = self.execute("run_shell", command=f"cat {self.root / 'private-guidance/SKILL.md'}")
+        self.assertFalse(ok, output)
+        self.assertNotIn("controlled guidance", output)
+
+    def test_shell_cannot_see_the_api_key_and_evidence_records_the_allowlist(self):
+        result, _ = self.run_responses([
+            response(arguments=json.dumps({"command": "env; echo done"}), tool=True,
+                     finish_reason="tool_calls", name="run_shell"),
+            response(),
+        ])
+        self.assertTrue(result.success, result.stderr)
+        shell = next(e for e in result.events if e["type"] == "tool.result")
+        self.assertTrue(shell["ok"], shell["output"])
+        self.assertNotIn("fake-api-key", shell["output"])
+        self.assertNotIn("OPENAI_COMPATIBLE", shell["output"])
+        normalized = result.normalized(include_streams=False)
+        isolation = normalized["permissions"]["isolation"]
+        self.assertEqual(isolation["schema"], "openmapstack-live-isolation/v1")
+        self.assertEqual(isolation["writable"], [str(self.workspace.resolve())])
+        self.assertIn(str(self.guidance), isolation["read_only"])
+        self.assertNotIn(str(REPO_ROOT), isolation["read_only"])
+        self.assertNotIn("fake-api-key", json.dumps(normalized))
+        schema = REPO_ROOT / "evals/schemas/agent-run-v1.schema.json"
+        validate(normalized, json.loads(schema.read_text()))
 
 
 if __name__ == "__main__":

@@ -151,7 +151,12 @@ class Sandbox:
         for name, host in sorted(self.executables.items()):
             command.extend(["--symlink", os.path.abspath(host), f"{BIN_DIR}/{name}"])
         workspace = str(self.workspace.resolve())
-        command.extend(["--bind", workspace, workspace, "--chdir", str(cwd.resolve())])
+        command.extend(["--bind", workspace, workspace])
+        # A read-only path nested in the workspace stays read-only.
+        for path in visible_paths:
+            if path != workspace and Path(path).is_relative_to(workspace):
+                command.extend(["--ro-bind", path, path])
+        command.extend(["--chdir", str(cwd.resolve())])
         return command
 
     def environment(self, extra: dict[str, str]) -> dict[str, str]:
