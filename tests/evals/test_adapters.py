@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import subprocess
@@ -26,6 +27,23 @@ def _chat_response(*, content=None, tool_calls=None, model="vendor/model-x", usa
     if usage is not None:
         response["usage"] = dict(usage, **({"cost": cost} if cost is not None else {}))
     return response
+
+
+@contextlib.contextmanager
+def _contract_shell():
+    """Exercise the openai_compatible HTTP and tool-loop contract without bwrap.
+
+    The adapter refuses to start where no sandbox exists, which these tests do
+    not cover. Here the sandbox prefix only enters the workspace, so they run
+    the same with or without Bubblewrap; isolation itself is tested against a
+    real sandbox in test_openai_compatible.py.
+    """
+    with (
+        patch("adapters.openai_compatible.unavailable_reason", return_value=None),
+        patch("adapters.openai_compatible.Sandbox.argv",
+              lambda self, cwd: ["/bin/sh", "-c", 'cd "$0" && exec "$@"', str(cwd)]),
+    ):
+        yield
 
 
 class AdapterContractTests(unittest.TestCase):
@@ -313,7 +331,7 @@ class AdapterContractTests(unittest.TestCase):
         ):
             adapter = OpenaiCompatibleAdapter()
             self.assertTrue(adapter.is_available())
-            with patch.object(adapter, "_post_chat", side_effect=responses) as post:
+            with _contract_shell(), patch.object(adapter, "_post_chat", side_effect=responses) as post:
                 result = adapter.run("build it", self.workspace, model=None)
 
         self.assertTrue(result.success)
@@ -350,7 +368,7 @@ class AdapterContractTests(unittest.TestCase):
             },
         ):
             adapter = OpenaiCompatibleAdapter()
-            with patch.object(adapter, "_post_chat", side_effect=responses) as post:
+            with _contract_shell(), patch.object(adapter, "_post_chat", side_effect=responses) as post:
                 result = adapter.run("build it", self.workspace, model="flag/model")
 
         self.assertTrue(result.success)
@@ -400,7 +418,7 @@ class AdapterContractTests(unittest.TestCase):
             },
         ):
             adapter = OpenaiCompatibleAdapter()
-            with patch.object(adapter, "_post_chat", side_effect=responses):
+            with _contract_shell(), patch.object(adapter, "_post_chat", side_effect=responses):
                 result = adapter.run("build it", self.workspace)
 
         self.assertFalse((self.workspace.parent / "escaped.txt").exists())
@@ -421,7 +439,7 @@ class AdapterContractTests(unittest.TestCase):
             },
         ):
             adapter = OpenaiCompatibleAdapter()
-            with patch.object(
+            with _contract_shell(), patch.object(
                 adapter,
                 "_post_chat",
                 side_effect=urllib.error.HTTPError("https://api.example/v1/chat/completions", 401, "Unauthorized", {}, None),
@@ -444,7 +462,7 @@ class AdapterContractTests(unittest.TestCase):
             }):
                 adapter = OpenaiCompatibleAdapter()
                 error = urllib.error.HTTPError('https://example.invalid', 429, 'Too Many Requests', {}, io.BytesIO(body))
-                with patch.object(adapter, '_post_chat', side_effect=error):
+                with _contract_shell(), patch.object(adapter, '_post_chat', side_effect=error):
                     result = adapter.run('build it', self.workspace)
             self.assertFalse(result.success)
             self.assertEqual(result.failure['category'] if result.failure else None, expected)
