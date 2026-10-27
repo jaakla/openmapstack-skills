@@ -2,7 +2,7 @@
 name: open-map-stack
 description: "Plan and execute ambiguous or multi-stage GIS work, jointly choosing authoritative sources, compute, storage and delivery for the scale and team. Covers vector/raster/point-cloud analysis, routing, QGIS, tiles and web maps. Use for unresolved geospatial architecture and end-to-end analysis; prefer installed geospatial-data-discovery, spatial-sql or reproducible-gis-project for their bounded tasks. Retains standalone GIS support when specialists are absent. Do not use for casual place lookups, ordinary travel directions or non-spatial coding."
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # OpenMapStack Toolkit

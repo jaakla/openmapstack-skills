@@ -5,11 +5,11 @@ This skill includes `templates/`, `schemas/project-v1.schema.json` and
 no other skill or repository checkout is required to read them. Copy templates
 or the example into the user's project before modifying or executing them.
 
-Use the OpenMapStack CLI matching this skill's `metadata.version` (0.4.0).
-After 0.4.0 is published, install it in the project's Python environment:
+Use the OpenMapStack CLI matching this skill's `metadata.version` (0.5.0).
+After 0.5.0 is published, install it in the project's Python environment:
 
 ```bash
-python -m pip install 'openmapstack[geo]==0.4.0'
+python -m pip install 'openmapstack[geo]==0.5.0'
 openmapstack --version
 ```
 

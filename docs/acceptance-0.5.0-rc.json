@@ -1,0 +1,38 @@
+{
+  "schema": "openmapstack-release-candidate-evidence/v1",
+  "status": "not_accepted",
+  "version": "0.5.0",
+  "base_revision": "eb41c238a7d82d41ddfa74703a1f20fdbb38720c",
+  "artifact_kind": "prepublication candidate; no published artifacts",
+  "checks": {
+    "release_versions": {
+      "status": "passed",
+      "tests": 1,
+      "skips": 0
+    },
+    "asset_sync": {
+      "status": "passed"
+    },
+    "unit_coverage": {
+      "status": "pending"
+    },
+    "fixture_evals": {
+      "status": "pending"
+    },
+    "packaging_and_installation": {
+      "status": "pending"
+    }
+  },
+  "live_acceptance": {
+    "status": "pending",
+    "issue": "https://github.com/jaakla/openmapstack-skills/issues/112",
+    "paid_trials_this_preparation": 0,
+    "openai_compatible_isolation": "Sandbox isolation is required before this adapter can supply ADR 0006 release evidence."
+  },
+  "pending": [
+    "Unit/coverage and fixture checks",
+    "Prepublication builds, snapshots and fresh isolated installation",
+    "Live acceptance and maintainer approval",
+    "Tagging, publication and actual-tag/PyPI verification"
+  ]
+}

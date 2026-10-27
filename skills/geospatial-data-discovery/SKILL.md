@@ -2,7 +2,7 @@
 name: geospatial-data-discovery
 description: "Find and assess authoritative geospatial datasets or catalogs against known requirements: coverage, feature meaning, access, license, completeness, versions and reproducible pinning. Use for public sources, STAC/Portolan catalogs and read-only discovery of user data. Route joint source/compute/storage/delivery architecture to open-map-stack; do not turn a bounded lookup into a full analysis project."
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # Geospatial data discovery
