@@ -104,10 +104,11 @@ jobs:
 
       - name: Prepare QGIS-capable Python environment
         if: steps.preflight.outputs.ready == 'true'
-        timeout-minutes: 10
+        # Allow native dependency downloads to retry on a slow apt mirror.
+        timeout-minutes: 20
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y python3-qgis python3-venv
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=60 update
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=60 install --no-install-recommends -y python3-qgis python3-venv
           /usr/bin/python3 -m venv --system-site-packages "${RUNNER_TEMP}/openmapstack-eval-venv"
           echo "${RUNNER_TEMP}/openmapstack-eval-venv/bin" >> "$GITHUB_PATH"
           echo "QT_QPA_PLATFORM=offscreen" >> "$GITHUB_ENV"
