@@ -5,10 +5,13 @@ import io
 import json
 import os
 from pathlib import Path
+import shlex
 import tempfile
 import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
+
+import yaml
 
 from evals import ci_preflight, report
 
@@ -68,6 +71,31 @@ class BenchmarkPreflightTests(unittest.TestCase):
         self.assertEqual(github_output.read_text(), 'ready=false\n')
         self.assertIn('OPENAI_COMPATIBLE_BASE_URL', stdout.getvalue())
         self.assertIn('OPENAI_COMPATIBLE_API_KEY', stdout.getvalue())
+
+
+class BenchmarkWorkflowTests(unittest.TestCase):
+    def setUp(self):
+        workflow = Path(__file__).resolve().parents[1] / '.github/workflows/eval-benchmark.yml'
+        self.job = yaml.safe_load(workflow.read_text())['jobs']['live-benchmark']
+        self.qgis_step = next(step for step in self.job['steps']
+                              if step.get('name') == 'Prepare QGIS-capable Python environment')
+
+    def test_qgis_setup_budget_fits_the_bounded_benchmark_job(self):
+        self.assertEqual(self.job['timeout-minutes'], 90)
+        self.assertEqual(self.qgis_step['timeout-minutes'], 20)
+        self.assertLess(sum(step.get('timeout-minutes', 0) for step in self.job['steps']),
+                        self.job['timeout-minutes'])
+
+    def test_both_qgis_apt_commands_retry_with_a_bounded_http_timeout(self):
+        commands = [shlex.split(line) for line in self.qgis_step['run'].splitlines()
+                    if 'apt-get' in line]
+        self.assertEqual(len(commands), 2)
+        for action, tokens in zip(('update', 'install'), commands):
+            with self.subTest(action=action):
+                self.assertIn(action, tokens)
+                options = list(zip(tokens, tokens[1:]))
+                self.assertIn(('-o', 'Acquire::Retries=3'), options)
+                self.assertIn(('-o', 'Acquire::http::Timeout=60'), options)
 
 
 if __name__ == '__main__':
