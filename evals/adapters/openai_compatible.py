@@ -4,6 +4,9 @@ Drives any OpenAI-compatible `/chat/completions` endpoint (OpenRouter,
 vLLM, llama.cpp server, ...) as an autonomous coding agent through a
 tool-execution loop: the model writes files and runs shell commands inside
 the trial workspace until it produces a final message with no tool calls.
+Shell commands run in the rootless Bubblewrap sandbox of ``isolation.py``:
+only the workspace is writable, staged guidance is read-only, and the adapter
+refuses to run where that sandbox is unavailable.
 
 All configuration comes from the environment — no CLI install:
 
@@ -27,6 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from .base import AgentAdapter, AgentRunResult, http_provider_failure
+from .isolation import Sandbox, unavailable_reason
 
 MAX_TURNS = 64
 MAX_TOOL_OUTPUT_CHARS = 20_000
@@ -47,7 +51,8 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "run_shell",
-            "description": "Run a shell command inside the workspace and return its combined output and exit status.",
+            "description": ("Run a shell command in a sandbox at the workspace and return its combined output and exit "
+                                "status. Only the workspace is writable; guidance is read-only."),
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -193,6 +198,14 @@ class OpenaiCompatibleAdapter(AgentAdapter):
         # allowing reads, and rejects writes through either spelling.
         return guidance if guidance.is_dir() else None
 
+    def _shell_sandbox(self, workspace: Path) -> Sandbox:
+        sandbox = Sandbox.for_python_agent(workspace, {})
+        guidance = self._guidance_root(workspace)
+        # A redirected guidance link is not an allowance to mount its target.
+        if guidance is not None and guidance.resolve() == guidance:
+            sandbox.read_only.append(guidance)
+        return sandbox
+
     def _execute_tool(self, name: str, args: Any, workspace: Path, remaining_s: float) -> tuple[bool, str]:
         if not isinstance(args, dict):
             return False, f"tool {name!r} arguments must be an object, got {type(args).__name__}"
@@ -201,10 +214,15 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 command = args.get("command")
                 if not isinstance(command, str) or not command.strip():
                     return False, "run_shell requires a non-empty 'command' string"
-                proc = subprocess.run(  # noqa: S602 - the model authors the command by design
-                    command,
-                    shell=True,
-                    cwd=workspace,
+                # Never fall back to the host: the model authors this command.
+                reason = unavailable_reason()
+                if reason:
+                    return False, f"refusing an unisolated shell command: {reason}"
+                sandbox = self._shell_sandbox(workspace)
+                proc = subprocess.run(
+                    [*sandbox.argv(workspace), "/bin/sh", "-c", command],
+                    env=sandbox.environment({}),
+                    stdin=subprocess.DEVNULL,
                     capture_output=True,
                     text=True,
                     timeout=max(1, min(SHELL_TIMEOUT_S, remaining_s)),
@@ -260,8 +278,9 @@ class OpenaiCompatibleAdapter(AgentAdapter):
             )
             if not value
         ]
+        isolation_unavailable = None if missing else unavailable_reason()
 
-        if missing:
+        if missing or isolation_unavailable:
             return AgentRunResult(
                 agent=self.name,
                 model=requested_model,
@@ -270,12 +289,14 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 success=False,
                 returncode=None,
                 command=["POST", "<OPENAI_COMPATIBLE_BASE_URL>/chat/completions", "<PROMPT:prompt.md>"],
-                stderr=f"OpenAI-compatible adapter is missing required configuration: {', '.join(missing)}",
+                stderr=(f"OpenAI-compatible adapter is missing required configuration: {', '.join(missing)}" if missing
+                        else f"refusing an unisolated live run: {isolation_unavailable}"),
                 permissions={"sandbox": "workspace-write", "network": True, "session_persistence": False},
                 metadata={
                     "requested_seed": seed,
                     "adapter_not_started": True,
                     "missing_environment": missing,
+                    "isolation_unavailable": isolation_unavailable,
                 },
             )
 
@@ -443,6 +464,7 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 "sandbox": "workspace-write",
                 "network": True,
                 "session_persistence": False,
+                "isolation": self._shell_sandbox(workspace).evidence(),
             },
             metadata={
                 "base_url": base_url,

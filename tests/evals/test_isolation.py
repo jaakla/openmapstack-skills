@@ -68,6 +68,17 @@ class SandboxDeclarationTests(unittest.TestCase):
         self.assertEqual(environment["PYTHONPATH"], str(PACKAGE_DIR.parent))
         self.assertNotIn("HOST_ONLY_SECRET", environment)
 
+    def test_read_only_path_inside_the_workspace_is_bound_after_it(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary).resolve()
+            guidance = workspace / "guidance"
+            guidance.mkdir()
+            sandbox = Sandbox(workspace, read_only=[guidance])
+            argv = sandbox.argv(workspace)
+        writable = argv.index("--bind")
+        self.assertEqual(argv[writable:writable + 3], ["--bind", str(workspace), str(workspace)])
+        self.assertEqual(argv[writable + 3:writable + 6], ["--ro-bind", str(guidance), str(guidance)])
+
 
 class SandboxTests(unittest.TestCase):
     @classmethod
