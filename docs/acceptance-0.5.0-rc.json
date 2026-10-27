@@ -2,111 +2,440 @@
   "schema": "openmapstack-release-candidate-evidence/v1",
   "status": "not_accepted",
   "version": "0.5.0",
-  "recorded_at": "2026-10-27T08:08:09.909125+00:00",
-  "source_revision": "65583747aeab54ee82ec45095759fb371b86cab2",
-  "base_revision": "eb41c238a7d82d41ddfa74703a1f20fdbb38720c",
+  "recorded_at": "2026-10-27T19:05:08.236828+00:00",
+  "source_revision": "fb0531d15167c1287a47737b9358e43a0a9a5063",
+  "base_revision": "c40488b00f541e3ccd507d533caea3d76c634b70",
+  "prior_candidates": [
+    {
+      "source_revision": "65583747aeab54ee82ec45095759fb371b86cab2",
+      "base_revision": "eb41c238a7d82d41ddfa74703a1f20fdbb38720c",
+      "status": "superseded",
+      "superseded_because": "main gained #119, #121, #123 and #124 (workflow, eval adapter and test code); the sdist includes top-level tests/test*.py, so the candidate was rebuilt and retested.",
+      "scope_review": "https://github.com/jaakla/openmapstack-skills/issues/122#issuecomment-6447807184",
+      "recorded_at": "2026-10-27T08:08:09.909125+00:00",
+      "artifact_location": "/home/jaak/.cache/agent-tmp/oms-050",
+      "artifacts": [
+        {
+          "file": "dist/openmapstack-0.5.0-py3-none-any.whl",
+          "sha256": "df1a5a40704d0a5a00ff183c619c56e2f138af7900e82ae3176bcf484350eabe",
+          "bytes": 227321
+        },
+        {
+          "file": "dist/openmapstack-0.5.0.tar.gz",
+          "sha256": "8a3488a23368daccf12f96e5b701fb3c72fbdd0fc698596f489344f5916e5637",
+          "bytes": 386151
+        },
+        {
+          "file": "skill-zips/geospatial-data-discovery.zip",
+          "sha256": "b7312437579c012e680fe0c4fa6dbb49cd4e600f1d047abadc74df2058500a3e",
+          "bytes": 32885
+        },
+        {
+          "file": "skill-zips/open-map-stack.zip",
+          "sha256": "51a1e9ab58fa8b40913f3819a64abbfb146d9da0e3c2cc1bce2d7fab65315ddf",
+          "bytes": 324395
+        },
+        {
+          "file": "skill-zips/reproducible-gis-project.zip",
+          "sha256": "cc4dcc4673b993f0b4e2b8ebf9495f48b1608bd1bf33111b69c459c2f2c184b1",
+          "bytes": 297598
+        },
+        {
+          "file": "skill-zips/spatial-sql.zip",
+          "sha256": "2ce56bc9c07f1fa22675f395d50e21a12390b14a5cec9464c7907340728a1fac",
+          "bytes": 22448
+        },
+        {
+          "file": "skill-zips-source-dir/geospatial-data-discovery.zip",
+          "sha256": "4f0f6e7a5af949cf28f8705dec047c4f1aee386b7bbd0af31b43ad35a37d9e79",
+          "bytes": 32885
+        },
+        {
+          "file": "skill-zips-source-dir/open-map-stack.zip",
+          "sha256": "d7b295677f293b1b5320f4a05d3f6c5035fad2617f9da820f8bc9673285a0d10",
+          "bytes": 324395
+        },
+        {
+          "file": "skill-zips-source-dir/reproducible-gis-project.zip",
+          "sha256": "871887bfd6f69f70320030ad950546be3acf5d0cafb345f9b378f119488f374c",
+          "bytes": 297598
+        },
+        {
+          "file": "skill-zips-source-dir/spatial-sql.zip",
+          "sha256": "4dfb364519f16536868d47207b8500a45398cb979c1cff917a51425b89e6ae50",
+          "bytes": 22448
+        },
+        {
+          "file": "snapshots/collection.tar.gz",
+          "sha256": "1f713e97f4ab0584e5f817b997559da311084f11f46ebe57031ac071b62d73c9",
+          "bytes": 613796
+        },
+        {
+          "file": "snapshots/geospatial-data-discovery.tar.gz",
+          "sha256": "30863f2275ed3f8e27423836130fd6857c5b1a030442066cce39d36e4ff41631",
+          "bytes": 30148
+        },
+        {
+          "file": "snapshots/open-map-stack.tar.gz",
+          "sha256": "518693be2d93fbd900e0c5adf83f64d3886b44c3d66a01e5994d310ee3ca589b",
+          "bytes": 298307
+        },
+        {
+          "file": "snapshots/reproducible-gis-project.tar.gz",
+          "sha256": "d9c67f4661133d6a35a724920848991646a43d67cb1eb1aacf4217861592f1b5",
+          "bytes": 273284
+        },
+        {
+          "file": "snapshots/spatial-sql.tar.gz",
+          "sha256": "1bb535c82b0f76449a1818ef7bb293b683c1dd523483326236be91bf3d28c233",
+          "bytes": 20786
+        },
+        {
+          "file": "source-candidate.tar",
+          "sha256": "9f7160d875ef0785a3d61e087108db406600ba92526edb25d6568f6e039cb278",
+          "bytes": 24012800
+        }
+      ],
+      "snapshot_content_sha256": {
+        "collection": "sha256:5173996749df3ef412f1b87ad532485a9d85441110a171a07e75d1f2e38f7d9c",
+        "geospatial-data-discovery": "sha256:0089cae912b253ee4b6daf8feb72327e1ee41787ce1829339fdbdc68b88b3559",
+        "open-map-stack": "sha256:7d56dadbfd3b54df73db310a670b0733e1cfe22395ba8bc29a006c9ab442d559",
+        "reproducible-gis-project": "sha256:1b7a67238219f8d9af8e1bfda146721eb630fcea398548d065fb4ebaa180d73f",
+        "spatial-sql": "sha256:84e26d19998a880c8a2751b9e7b1be478ebd0d112d51386fe3ff388d602f4cc2"
+      },
+      "checks": {
+        "openmapstack_unittest": {
+          "status": "passed",
+          "tests": 1100,
+          "skips": 49
+        },
+        "assertion_coverage": {
+          "status": "passed",
+          "display_percent": "83",
+          "floor": 70
+        },
+        "openmapstack_fixtures": {
+          "status": "passed",
+          "contract": {
+            "graded_trials": 31,
+            "passed": 31
+          },
+          "mutations": {
+            "total": 68,
+            "valid": 68,
+            "detected": 68,
+            "survived": 0,
+            "invalid": 0,
+            "isolated": 68,
+            "score": 1.0
+          }
+        },
+        "installation_plugin_pins_snapshots": "passed"
+      },
+      "ci_snapshot": {
+        "headRefOid": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "isDraft": true,
+        "jobs": [
+          {
+            "conclusion": "SUCCESS",
+            "name": "claude-review",
+            "status": "COMPLETED"
+          },
+          {
+            "conclusion": "SUCCESS",
+            "name": "validate-manifests",
+            "status": "COMPLETED"
+          },
+          {
+            "conclusion": "SUCCESS",
+            "name": "tylertoo-integration",
+            "status": "COMPLETED"
+          },
+          {
+            "conclusion": "SUCCESS",
+            "name": "build",
+            "status": "COMPLETED"
+          },
+          {
+            "conclusion": "SUCCESS",
+            "name": "worked-example",
+            "status": "COMPLETED"
+          },
+          {
+            "conclusion": "SKIPPED",
+            "name": "deploy",
+            "status": "COMPLETED"
+          },
+          {
+            "conclusion": "SUCCESS",
+            "name": "duckdb-compatibility (1.5.3)",
+            "status": "COMPLETED"
+          },
+          {
+            "conclusion": "SUCCESS",
+            "name": "duckdb-compatibility (2.0.x)",
+            "status": "COMPLETED"
+          },
+          {
+            "conclusion": "",
+            "name": "fixture-evals (1.5.3)",
+            "status": "IN_PROGRESS"
+          },
+          {
+            "conclusion": "",
+            "name": "fixture-evals (2.0.x)",
+            "status": "IN_PROGRESS"
+          }
+        ],
+        "url": "https://github.com/jaakla/openmapstack-skills/pull/118"
+      },
+      "evidence_bundle": {
+        "file": "release-evidence-0.5.0-rc.tar.gz",
+        "sha256": "01d836466e8ffbb9a69cdadcc234aa380754de01f7bbc91819677107d332e181",
+        "bytes": 16353701
+      }
+    }
+  ],
   "artifact_kind": "prepublication candidate; future publication workflow rebuilds distributions",
-  "artifact_location": "/home/jaak/.cache/agent-tmp/oms-050",
+  "artifact_location": "/home/jaak/.cache/agent-tmp/oms-050-rc2",
   "artifacts": [
     {
       "file": "dist/openmapstack-0.5.0-py3-none-any.whl",
-      "sha256": "df1a5a40704d0a5a00ff183c619c56e2f138af7900e82ae3176bcf484350eabe",
+      "sha256": "41bca59a517cf859bda245364791b537334a6759c44b1988c041d342b7a9f42a",
       "bytes": 227321
     },
     {
       "file": "dist/openmapstack-0.5.0.tar.gz",
-      "sha256": "8a3488a23368daccf12f96e5b701fb3c72fbdd0fc698596f489344f5916e5637",
-      "bytes": 386151
+      "sha256": "770f3bd071df2e825d3b830a9ee02ce42d75c7ad3c13d62ea6a375e678012cd3",
+      "bytes": 386566
     },
     {
       "file": "skill-zips/geospatial-data-discovery.zip",
-      "sha256": "b7312437579c012e680fe0c4fa6dbb49cd4e600f1d047abadc74df2058500a3e",
+      "sha256": "15057253a209c8f21963265d1c490bd4bc3088a9c267ff08958ba2a1156326e9",
       "bytes": 32885
     },
     {
       "file": "skill-zips/open-map-stack.zip",
-      "sha256": "51a1e9ab58fa8b40913f3819a64abbfb146d9da0e3c2cc1bce2d7fab65315ddf",
+      "sha256": "9b8035dea0849900d997575da801fb554dbcbd51cf676fda8a2746de8ef5368c",
       "bytes": 324395
     },
     {
       "file": "skill-zips/reproducible-gis-project.zip",
-      "sha256": "cc4dcc4673b993f0b4e2b8ebf9495f48b1608bd1bf33111b69c459c2f2c184b1",
+      "sha256": "0bab86bcce3aa8ee6dfc8ac4b560b9900a9831de0ce6ca46b7fb6c5b34d98c1a",
       "bytes": 297598
     },
     {
       "file": "skill-zips/spatial-sql.zip",
-      "sha256": "2ce56bc9c07f1fa22675f395d50e21a12390b14a5cec9464c7907340728a1fac",
+      "sha256": "381d5876be4626ef778e4107b1c95df7e9f0f7626a9b4f9a53187b2d5ac9abff",
       "bytes": 22448
     },
     {
       "file": "skill-zips-source-dir/geospatial-data-discovery.zip",
-      "sha256": "4f0f6e7a5af949cf28f8705dec047c4f1aee386b7bbd0af31b43ad35a37d9e79",
+      "sha256": "3e95193738f96543b287ff3985a73bb081f4d0343178b6c60d43b44d70cf0f2e",
       "bytes": 32885
     },
     {
       "file": "skill-zips-source-dir/open-map-stack.zip",
-      "sha256": "d7b295677f293b1b5320f4a05d3f6c5035fad2617f9da820f8bc9673285a0d10",
+      "sha256": "c1565e4dc9eb4306883cc4ca831cdcda2d0f6722c986ea360471e669e2e573c9",
       "bytes": 324395
     },
     {
       "file": "skill-zips-source-dir/reproducible-gis-project.zip",
-      "sha256": "871887bfd6f69f70320030ad950546be3acf5d0cafb345f9b378f119488f374c",
+      "sha256": "895ca3a9fe81e89910a268c3cf383070cae45650652a48e8e7c95b0abc110ca4",
       "bytes": 297598
     },
     {
       "file": "skill-zips-source-dir/spatial-sql.zip",
-      "sha256": "4dfb364519f16536868d47207b8500a45398cb979c1cff917a51425b89e6ae50",
+      "sha256": "5631fd8987d4ef6352e4ef5612632d5f0944c6601bf5ee68e2c021639ae0c796",
       "bytes": 22448
     },
     {
       "file": "snapshots/collection.tar.gz",
-      "sha256": "1f713e97f4ab0584e5f817b997559da311084f11f46ebe57031ac071b62d73c9",
-      "bytes": 613796
+      "sha256": "b62fbf823c7aa43b5484c2e0d7bc24c091d503b5fd96fd253ef64cf6c7b37e2d",
+      "bytes": 613794
     },
     {
       "file": "snapshots/geospatial-data-discovery.tar.gz",
-      "sha256": "30863f2275ed3f8e27423836130fd6857c5b1a030442066cce39d36e4ff41631",
-      "bytes": 30148
+      "sha256": "ec1236e408c4d72f4d0ba03881e6bf4734d6cd7e75dd416fd8429cd9dcbf158c",
+      "bytes": 30151
     },
     {
       "file": "snapshots/open-map-stack.tar.gz",
-      "sha256": "518693be2d93fbd900e0c5adf83f64d3886b44c3d66a01e5994d310ee3ca589b",
-      "bytes": 298307
+      "sha256": "e1307f3cd0951b2ebff1a8900ecf5549a996d2b93b34aea179b238d469926fc0",
+      "bytes": 298303
     },
     {
       "file": "snapshots/reproducible-gis-project.tar.gz",
-      "sha256": "d9c67f4661133d6a35a724920848991646a43d67cb1eb1aacf4217861592f1b5",
-      "bytes": 273284
+      "sha256": "1ea3e259dd7c5dab0713d076d57d6426aca6f676a5da05d04455b2647e8da5d5",
+      "bytes": 273285
     },
     {
       "file": "snapshots/spatial-sql.tar.gz",
-      "sha256": "1bb535c82b0f76449a1818ef7bb293b683c1dd523483326236be91bf3d28c233",
-      "bytes": 20786
-    },
-    {
-      "file": "source-candidate.tar",
-      "sha256": "9f7160d875ef0785a3d61e087108db406600ba92526edb25d6568f6e039cb278",
-      "bytes": 24012800
+      "sha256": "9f9794922c839e6f74c67d6ce3329fa9203b429a4617bb17487599871a78a544",
+      "bytes": 20788
     }
   ],
+  "payload_comparison_with_prior_candidate": {
+    "prior_source_revision": "65583747aeab54ee82ec45095759fb371b86cab2",
+    "method": "Byte SHA-256 of each file, then payload: member names and per-member SHA-256 for wheel, sdist and ZIPs; content_sha256 and member files for snapshots (snapshot.json excluded, compared by field).",
+    "summary": "No file is byte-identical: archive entries carry build-time mtimes, and snapshot manifests record created_at and the source commit. Payloads of the wheel, all eight ZIPs and all five snapshots are identical. The sdist differs only in openmapstack-0.5.0/tests/test_benchmark_ci.py (#119), as predicted in the scope review.",
+    "files": [
+      {
+        "file": "dist/openmapstack-0.5.0-py3-none-any.whl",
+        "old_sha256": "df1a5a40704d0a5a00ff183c619c56e2f138af7900e82ae3176bcf484350eabe",
+        "new_sha256": "41bca59a517cf859bda245364791b537334a6759c44b1988c041d342b7a9f42a",
+        "bytes_identical": false,
+        "payload_identical": true
+      },
+      {
+        "file": "dist/openmapstack-0.5.0.tar.gz",
+        "old_sha256": "8a3488a23368daccf12f96e5b701fb3c72fbdd0fc698596f489344f5916e5637",
+        "new_sha256": "770f3bd071df2e825d3b830a9ee02ce42d75c7ad3c13d62ea6a375e678012cd3",
+        "bytes_identical": false,
+        "payload_identical": false,
+        "payload_changes": {
+          "changed": [
+            "openmapstack-0.5.0/tests/test_benchmark_ci.py"
+          ]
+        }
+      },
+      {
+        "file": "skill-zips-source-dir/geospatial-data-discovery.zip",
+        "old_sha256": "4f0f6e7a5af949cf28f8705dec047c4f1aee386b7bbd0af31b43ad35a37d9e79",
+        "new_sha256": "3e95193738f96543b287ff3985a73bb081f4d0343178b6c60d43b44d70cf0f2e",
+        "bytes_identical": false,
+        "payload_identical": true
+      },
+      {
+        "file": "skill-zips-source-dir/open-map-stack.zip",
+        "old_sha256": "d7b295677f293b1b5320f4a05d3f6c5035fad2617f9da820f8bc9673285a0d10",
+        "new_sha256": "c1565e4dc9eb4306883cc4ca831cdcda2d0f6722c986ea360471e669e2e573c9",
+        "bytes_identical": false,
+        "payload_identical": true
+      },
+      {
+        "file": "skill-zips-source-dir/reproducible-gis-project.zip",
+        "old_sha256": "871887bfd6f69f70320030ad950546be3acf5d0cafb345f9b378f119488f374c",
+        "new_sha256": "895ca3a9fe81e89910a268c3cf383070cae45650652a48e8e7c95b0abc110ca4",
+        "bytes_identical": false,
+        "payload_identical": true
+      },
+      {
+        "file": "skill-zips-source-dir/spatial-sql.zip",
+        "old_sha256": "4dfb364519f16536868d47207b8500a45398cb979c1cff917a51425b89e6ae50",
+        "new_sha256": "5631fd8987d4ef6352e4ef5612632d5f0944c6601bf5ee68e2c021639ae0c796",
+        "bytes_identical": false,
+        "payload_identical": true
+      },
+      {
+        "file": "skill-zips/geospatial-data-discovery.zip",
+        "old_sha256": "b7312437579c012e680fe0c4fa6dbb49cd4e600f1d047abadc74df2058500a3e",
+        "new_sha256": "15057253a209c8f21963265d1c490bd4bc3088a9c267ff08958ba2a1156326e9",
+        "bytes_identical": false,
+        "payload_identical": true
+      },
+      {
+        "file": "skill-zips/open-map-stack.zip",
+        "old_sha256": "51a1e9ab58fa8b40913f3819a64abbfb146d9da0e3c2cc1bce2d7fab65315ddf",
+        "new_sha256": "9b8035dea0849900d997575da801fb554dbcbd51cf676fda8a2746de8ef5368c",
+        "bytes_identical": false,
+        "payload_identical": true
+      },
+      {
+        "file": "skill-zips/reproducible-gis-project.zip",
+        "old_sha256": "cc4dcc4673b993f0b4e2b8ebf9495f48b1608bd1bf33111b69c459c2f2c184b1",
+        "new_sha256": "0bab86bcce3aa8ee6dfc8ac4b560b9900a9831de0ce6ca46b7fb6c5b34d98c1a",
+        "bytes_identical": false,
+        "payload_identical": true
+      },
+      {
+        "file": "skill-zips/spatial-sql.zip",
+        "old_sha256": "2ce56bc9c07f1fa22675f395d50e21a12390b14a5cec9464c7907340728a1fac",
+        "new_sha256": "381d5876be4626ef778e4107b1c95df7e9f0f7626a9b4f9a53187b2d5ac9abff",
+        "bytes_identical": false,
+        "payload_identical": true
+      },
+      {
+        "file": "snapshots/collection.tar.gz",
+        "old_sha256": "1f713e97f4ab0584e5f817b997559da311084f11f46ebe57031ac071b62d73c9",
+        "new_sha256": "b62fbf823c7aa43b5484c2e0d7bc24c091d503b5fd96fd253ef64cf6c7b37e2d",
+        "bytes_identical": false,
+        "payload_identical": true,
+        "content_sha256": "sha256:5173996749df3ef412f1b87ad532485a9d85441110a171a07e75d1f2e38f7d9c",
+        "manifest_fields_differing": [
+          "created_at",
+          "source_git"
+        ]
+      },
+      {
+        "file": "snapshots/geospatial-data-discovery.tar.gz",
+        "old_sha256": "30863f2275ed3f8e27423836130fd6857c5b1a030442066cce39d36e4ff41631",
+        "new_sha256": "ec1236e408c4d72f4d0ba03881e6bf4734d6cd7e75dd416fd8429cd9dcbf158c",
+        "bytes_identical": false,
+        "payload_identical": true,
+        "content_sha256": "sha256:0089cae912b253ee4b6daf8feb72327e1ee41787ce1829339fdbdc68b88b3559",
+        "manifest_fields_differing": [
+          "created_at",
+          "source_git"
+        ]
+      },
+      {
+        "file": "snapshots/open-map-stack.tar.gz",
+        "old_sha256": "518693be2d93fbd900e0c5adf83f64d3886b44c3d66a01e5994d310ee3ca589b",
+        "new_sha256": "e1307f3cd0951b2ebff1a8900ecf5549a996d2b93b34aea179b238d469926fc0",
+        "bytes_identical": false,
+        "payload_identical": true,
+        "content_sha256": "sha256:7d56dadbfd3b54df73db310a670b0733e1cfe22395ba8bc29a006c9ab442d559",
+        "manifest_fields_differing": [
+          "created_at",
+          "source_git"
+        ]
+      },
+      {
+        "file": "snapshots/reproducible-gis-project.tar.gz",
+        "old_sha256": "d9c67f4661133d6a35a724920848991646a43d67cb1eb1aacf4217861592f1b5",
+        "new_sha256": "1ea3e259dd7c5dab0713d076d57d6426aca6f676a5da05d04455b2647e8da5d5",
+        "bytes_identical": false,
+        "payload_identical": true,
+        "content_sha256": "sha256:1b7a67238219f8d9af8e1bfda146721eb630fcea398548d065fb4ebaa180d73f",
+        "manifest_fields_differing": [
+          "created_at",
+          "source_git"
+        ]
+      },
+      {
+        "file": "snapshots/spatial-sql.tar.gz",
+        "old_sha256": "1bb535c82b0f76449a1818ef7bb293b683c1dd523483326236be91bf3d28c233",
+        "new_sha256": "9f9794922c839e6f74c67d6ce3329fa9203b429a4617bb17487599871a78a544",
+        "bytes_identical": false,
+        "payload_identical": true,
+        "content_sha256": "sha256:84e26d19998a880c8a2751b9e7b1be478ebd0d112d51386fe3ff388d602f4cc2",
+        "manifest_fields_differing": [
+          "created_at",
+          "source_git"
+        ]
+      }
+    ],
+    "evidence": "evidence/payload-comparison.json"
+  },
   "snapshots": {
     "collection": {
       "schema": "openmapstack-skill-snapshot/v2",
       "content_sha256": "sha256:5173996749df3ef412f1b87ad532485a9d85441110a171a07e75d1f2e38f7d9c",
       "source_git": {
-        "commit": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "commit": "fb0531d15167c1287a47737b9358e43a0a9a5063",
         "dirty": false
       },
       "file_count": 147,
       "manifest": {
         "file": "snapshots/collection/snapshot.json",
-        "sha256": "f6244631284d6ae97be54286edd6c3a4ec7414cbd04078f0e86579b0eb8e21c6",
+        "sha256": "1949f00bbf6659d40f63080f9dff2e8c9fc248fdd1b52212a6f00b1d914f5f20",
         "bytes": 32946
       },
       "archive": {
         "file": "snapshots/collection.tar.gz",
-        "sha256": "1f713e97f4ab0584e5f817b997559da311084f11f46ebe57031ac071b62d73c9",
-        "bytes": 613796
+        "sha256": "b62fbf823c7aa43b5484c2e0d7bc24c091d503b5fd96fd253ef64cf6c7b37e2d",
+        "bytes": 613794
       },
       "inspection": "passed"
     },
@@ -114,19 +443,19 @@
       "schema": "openmapstack-skill-snapshot/v2",
       "content_sha256": "sha256:0089cae912b253ee4b6daf8feb72327e1ee41787ce1829339fdbdc68b88b3559",
       "source_git": {
-        "commit": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "commit": "fb0531d15167c1287a47737b9358e43a0a9a5063",
         "dirty": false
       },
       "file_count": 8,
       "manifest": {
         "file": "snapshots/geospatial-data-discovery/snapshot.json",
-        "sha256": "80abf31cceb4abb083bfdda27d4aab5d12f0ccfe3f17283d6847a0d124660351",
+        "sha256": "9be7171a16bd1f3c68c8e29ce162a7bb8d20545e27ce88972cb3e67967f8eb67",
         "bytes": 2512
       },
       "archive": {
         "file": "snapshots/geospatial-data-discovery.tar.gz",
-        "sha256": "30863f2275ed3f8e27423836130fd6857c5b1a030442066cce39d36e4ff41631",
-        "bytes": 30148
+        "sha256": "ec1236e408c4d72f4d0ba03881e6bf4734d6cd7e75dd416fd8429cd9dcbf158c",
+        "bytes": 30151
       },
       "inspection": "passed"
     },
@@ -134,19 +463,19 @@
       "schema": "openmapstack-skill-snapshot/v2",
       "content_sha256": "sha256:7d56dadbfd3b54df73db310a670b0733e1cfe22395ba8bc29a006c9ab442d559",
       "source_git": {
-        "commit": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "commit": "fb0531d15167c1287a47737b9358e43a0a9a5063",
         "dirty": false
       },
       "file_count": 69,
       "manifest": {
         "file": "snapshots/open-map-stack/snapshot.json",
-        "sha256": "e86f53f98f436df8cf588389d9454d9aa4a57ca4ed8a995149400da56973a987",
+        "sha256": "e486faf8efd37e5c38ddc54aa925d54f9876f48d14d152b82054df01fb8436e0",
         "bytes": 14951
       },
       "archive": {
         "file": "snapshots/open-map-stack.tar.gz",
-        "sha256": "518693be2d93fbd900e0c5adf83f64d3886b44c3d66a01e5994d310ee3ca589b",
-        "bytes": 298307
+        "sha256": "e1307f3cd0951b2ebff1a8900ecf5549a996d2b93b34aea179b238d469926fc0",
+        "bytes": 298303
       },
       "inspection": "passed"
     },
@@ -154,19 +483,19 @@
       "schema": "openmapstack-skill-snapshot/v2",
       "content_sha256": "sha256:1b7a67238219f8d9af8e1bfda146721eb630fcea398548d065fb4ebaa180d73f",
       "source_git": {
-        "commit": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "commit": "fb0531d15167c1287a47737b9358e43a0a9a5063",
         "dirty": false
       },
       "file_count": 66,
       "manifest": {
         "file": "snapshots/reproducible-gis-project/snapshot.json",
-        "sha256": "e640f476c7cf217ee2376e799cd96dd1484927a3fd48d73fba8f18bde3fd7e25",
+        "sha256": "324a30b06cfc275dbf3d932c1bc9eee0af3e6bade843d36f29426b0d814dadf0",
         "bytes": 14916
       },
       "archive": {
         "file": "snapshots/reproducible-gis-project.tar.gz",
-        "sha256": "d9c67f4661133d6a35a724920848991646a43d67cb1eb1aacf4217861592f1b5",
-        "bytes": 273284
+        "sha256": "1ea3e259dd7c5dab0713d076d57d6426aca6f676a5da05d04455b2647e8da5d5",
+        "bytes": 273285
       },
       "inspection": "passed"
     },
@@ -174,19 +503,19 @@
       "schema": "openmapstack-skill-snapshot/v2",
       "content_sha256": "sha256:84e26d19998a880c8a2751b9e7b1be478ebd0d112d51386fe3ff388d602f4cc2",
       "source_git": {
-        "commit": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "commit": "fb0531d15167c1287a47737b9358e43a0a9a5063",
         "dirty": false
       },
       "file_count": 7,
       "manifest": {
         "file": "snapshots/spatial-sql/snapshot.json",
-        "sha256": "b469b24e69c1b5e77ca55bd936620ddec1e84657d9a12b58d87290df5cbfbe0f",
+        "sha256": "7934b3743856e011bdc8d72a64810d73690acd704d4589501844e997e9073e6a",
         "bytes": 2184
       },
       "archive": {
         "file": "snapshots/spatial-sql.tar.gz",
-        "sha256": "1bb535c82b0f76449a1818ef7bb293b683c1dd523483326236be91bf3d28c233",
-        "bytes": 20786
+        "sha256": "9f9794922c839e6f74c67d6ce3329fa9203b429a4617bb17487599871a78a544",
+        "bytes": 20788
       },
       "inspection": "passed"
     }
@@ -208,26 +537,29 @@
     "skills_cli": "1.5.26",
     "claude_cli": "2.1.311 (Claude Code)",
     "spatial_preparation": "DuckDB Spatial prepared (OPENMAPSTACK_SPATIAL_EXTENSION_DIR; version=a3dbcd1781)",
-    "temporary_root": "/home/jaak/.cache/agent-tmp/oms-050/tmp",
-    "cache_root": "/home/jaak/.cache/agent-tmp/oms-050/cache"
+    "dependencies_identical_to_prior_candidate": true,
+    "temporary_root": "/home/jaak/.cache/agent-tmp/oms-050-rc2/tmp",
+    "cache_root": "/home/jaak/.cache/agent-tmp/oms-050-rc2/cache"
   },
   "checks": {
     "release_versions": {
       "status": "passed",
       "tests": 1,
       "skips": 0,
+      "owners": 8,
       "log": "evidence/test-release.log"
     },
     "asset_sync": {
       "status": "passed",
+      "command": "python scripts/sync_skill_assets.py --check",
       "log": "evidence/asset-sync.log"
     },
     "openmapstack_unittest": {
       "status": "passed",
-      "tests": 1100,
+      "tests": 1139,
       "skips": 49,
-      "passed": 1051,
-      "duration_seconds": 812.013,
+      "passed": 1090,
+      "duration_seconds": 750.8,
       "duckdb": "2.0.0",
       "command": "python -m coverage run -m unittest discover -v",
       "log": "evidence/unit-coverage.log",
@@ -361,10 +693,6 @@
     "skill_packages_and_snapshot_controls": {
       "status": "passed",
       "source_directory_without_git": {
-        "spatial-sql.zip": {
-          "status": "passed",
-          "payload_identical": true
-        },
         "geospatial-data-discovery.zip": {
           "status": "passed",
           "payload_identical": true
@@ -374,6 +702,10 @@
           "payload_identical": true
         },
         "reproducible-gis-project.zip": {
+          "status": "passed",
+          "payload_identical": true
+        },
+        "spatial-sql.zip": {
           "status": "passed",
           "payload_identical": true
         }
@@ -403,7 +735,7 @@
           "scope": "project",
           "skill": "geospatial-data-discovery",
           "file": "installs/project/snapshots/geospatial-data-discovery/snapshot.json",
-          "sha256": "671c051411dad56cea9e2d23e452057e8906e6204ed2ea534d165ed9cd514f31",
+          "sha256": "00f7364f3fb4204115aac8f854757a2659b80377dd16f39d71d621b9a40992bd",
           "content_sha256": "sha256:0089cae912b253ee4b6daf8feb72327e1ee41787ce1829339fdbdc68b88b3559",
           "file_count": 8,
           "matches_candidate_snapshot": true
@@ -412,7 +744,7 @@
           "scope": "project",
           "skill": "open-map-stack",
           "file": "installs/project/snapshots/open-map-stack/snapshot.json",
-          "sha256": "1713a73ea834fb758c2c77cc5c0f8940a438e238dccdf63e21ff5dca6f499421",
+          "sha256": "b4e41d0884281391883849f752c40adf11c771b4e953d3d27bd1c1bcb88d5fd5",
           "content_sha256": "sha256:7d56dadbfd3b54df73db310a670b0733e1cfe22395ba8bc29a006c9ab442d559",
           "file_count": 69,
           "matches_candidate_snapshot": true
@@ -421,7 +753,7 @@
           "scope": "project",
           "skill": "reproducible-gis-project",
           "file": "installs/project/snapshots/reproducible-gis-project/snapshot.json",
-          "sha256": "4e757c5f8566f8db4e8976bf26797a308850cead22fb376315e9c7a52f30df30",
+          "sha256": "cb5452a0ab1b72d76d6d99fcff267d211965284e56489a7e880feb4d1be8e959",
           "content_sha256": "sha256:1b7a67238219f8d9af8e1bfda146721eb630fcea398548d065fb4ebaa180d73f",
           "file_count": 66,
           "matches_candidate_snapshot": true
@@ -430,7 +762,7 @@
           "scope": "project",
           "skill": "spatial-sql",
           "file": "installs/project/snapshots/spatial-sql/snapshot.json",
-          "sha256": "f0d9442e1935d7419abb29b72f946db7b8869ae47312abb04f80242d5c30050b",
+          "sha256": "9d4d9df87e1941d9bad332e9ab25ee1ddd6df3811820d00949f5f5330871cbc8",
           "content_sha256": "sha256:84e26d19998a880c8a2751b9e7b1be478ebd0d112d51386fe3ff388d602f4cc2",
           "file_count": 7,
           "matches_candidate_snapshot": true
@@ -439,7 +771,7 @@
           "scope": "global",
           "skill": "geospatial-data-discovery",
           "file": "installs/global/snapshots/geospatial-data-discovery/snapshot.json",
-          "sha256": "28f9ba1d8621da9fb1f286851c57ce6e409bf5dbf92c43384a707a3b57f7ea74",
+          "sha256": "52f4bec6d3b876c3d36695fcf79e502934f7dbde1cb1f64c1563e736311cea21",
           "content_sha256": "sha256:0089cae912b253ee4b6daf8feb72327e1ee41787ce1829339fdbdc68b88b3559",
           "file_count": 8,
           "matches_candidate_snapshot": true
@@ -448,7 +780,7 @@
           "scope": "global",
           "skill": "open-map-stack",
           "file": "installs/global/snapshots/open-map-stack/snapshot.json",
-          "sha256": "1b48ecc4c96489fd50c88874a4d6b83c2ef786a82180aeb32db38cc0054823bc",
+          "sha256": "c982f91c9802db5e0065ec9718e55f9778f062bc639647d3840875b14deb3921",
           "content_sha256": "sha256:7d56dadbfd3b54df73db310a670b0733e1cfe22395ba8bc29a006c9ab442d559",
           "file_count": 69,
           "matches_candidate_snapshot": true
@@ -457,7 +789,7 @@
           "scope": "global",
           "skill": "reproducible-gis-project",
           "file": "installs/global/snapshots/reproducible-gis-project/snapshot.json",
-          "sha256": "2ae466df5a372a9a4975e1fd6427ee1a52735624f088fda1029cdcd4cbacfc75",
+          "sha256": "dfca95fde414f2b8e7c6d59bd317b97d3425ebc93bcd9c9d3026215044fbd5b1",
           "content_sha256": "sha256:1b7a67238219f8d9af8e1bfda146721eb630fcea398548d065fb4ebaa180d73f",
           "file_count": 66,
           "matches_candidate_snapshot": true
@@ -466,7 +798,7 @@
           "scope": "global",
           "skill": "spatial-sql",
           "file": "installs/global/snapshots/spatial-sql/snapshot.json",
-          "sha256": "c31109bc9765eac9ab923796b4e4cfab48aab16c0b1b0b3bc1064719598fb01b",
+          "sha256": "8654d1eff29e9c29b0883217a90b4fde4831a102b2bde1b679b2bed92c689fe1",
           "content_sha256": "sha256:84e26d19998a880c8a2751b9e7b1be478ebd0d112d51386fe3ff388d602f4cc2",
           "file_count": 7,
           "matches_candidate_snapshot": true
@@ -580,14 +912,14 @@
       {
         "scope": "project",
         "skill": "open-map-stack",
-        "revision": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "revision": "fb0531d15167c1287a47737b9358e43a0a9a5063",
         "status": "passed",
         "pinned_update_preserves_payload_and_lock": true
       },
       {
         "scope": "global",
         "skill": "spatial-sql",
-        "revision": "65583747aeab54ee82ec45095759fb371b86cab2",
+        "revision": "fb0531d15167c1287a47737b9358e43a0a9a5063",
         "status": "passed",
         "pinned_update_preserves_payload_and_lock": true
       }
@@ -600,72 +932,260 @@
     },
     "local_offline_container_replay": {
       "status": "not_run",
-      "reason": "Version-matched offline Docker gates are CI evidence; not executed locally in this preparation."
+      "reason": "Not repeated locally for this candidate; the version-matched --network none replay runs in the fixture-evals CI jobs recorded in ci_snapshot."
     },
     "final_native_visual_acceptance": {
-      "status": "pending",
-      "reason": "Local Python lacks PyQGIS; optional raster/warehouse/native and full visual evidence remain separate from unit browser tests."
+      "status": "passed_with_capability_gaps_and_one_finding",
+      "summary": "The full visual suite and every PyQGIS unit test passed in the CI visual image; the worked example regenerated, validated and verified, and its real QGIS render tests passed. Host QGIS 3.40 reports all checks passing but aborts at process exit (finding below). Optional runtimes without local fixtures remain not_testable and are not counted as passed.",
+      "components": {
+        "visual_suite": {
+          "status": "passed",
+          "command": "python3 evals/run.py --mode visual",
+          "image": "qgis/qgis:3.44-trixie@sha256:f94e32abbba833ccb4f42334e7f9b76134703bea2a0f476f3024bf38c9e30904",
+          "runtime": {
+            "python": "3.13.5",
+            "qgis": "3.44.15-Solothurn",
+            "chromium": "Playwright chromium-headless-shell 156.0.8078.4"
+          },
+          "selection": {
+            "result_records": 108,
+            "trials_run": 7,
+            "case_definitions_skipped": 101,
+            "trials_not_attempted": 0
+          },
+          "outcomes": {
+            "passed": 7,
+            "assertions_failed": 0,
+            "setup_failed": 0
+          },
+          "integration_visual": {
+            "graded_trials": 3,
+            "passed": 3,
+            "capability": {
+              "assertions_evaluated": 60,
+              "assertions_not_testable": 0,
+              "unmet_soft_gates": 0,
+              "fully_exercised": true
+            }
+          },
+          "mutations": {
+            "total": 4,
+            "valid": 4,
+            "detected": 4,
+            "survived": 0,
+            "invalid": 0,
+            "isolated": 4,
+            "score": 1.0
+          },
+          "cases": [
+            "001-basic-spatial-analysis",
+            "006-presentation-consistency",
+            "031-credits-visibility",
+            "912-dashboard-silent-warnings",
+            "913-basemap-missing",
+            "970-css-hidden-credits",
+            "972-dashboard-mobile-controls-overflow"
+          ],
+          "result": "evidence/native-visual/eval-visual-results.json",
+          "log": "evidence/native-visual/visual.log"
+        },
+        "pyqgis_unittests": {
+          "status": "passed",
+          "modules": [
+            "tests.evals.test_qgis_assertions",
+            "tests.test_delivery",
+            "tests.test_integration"
+          ],
+          "image": "qgis/qgis:3.44-trixie@sha256:f94e32abbba833ccb4f42334e7f9b76134703bea2a0f476f3024bf38c9e30904",
+          "first_run": {
+            "tests": 69,
+            "passed": 67,
+            "failed": 2,
+            "skips": 0,
+            "log": "evidence/native-visual/pyqgis-unittest.log",
+            "cause": "The two real worked-example tests need regenerated layer data; a fresh archive has only the committed project.qgz, so its layers were invalid. CI regenerates first (worked-example job)."
+          },
+          "after_regeneration": {
+            "class": "RuntimeLoadWithRealPyqgisTests",
+            "tests": 5,
+            "passed": 5,
+            "log": "evidence/pyqgis-worked-example.log"
+          }
+        },
+        "worked_example": {
+          "status": "passed",
+          "pipeline": "evidence/worked-example-pipeline.log",
+          "validate": "evidence/worked-example-validate.log",
+          "verify_without_qgis_or_browser": {
+            "passed": 57,
+            "not_testable": 5,
+            "failed": 0,
+            "log": "evidence/worked-example-verify.log"
+          },
+          "test_verify_on_regenerated_outputs": {
+            "tests": 30,
+            "skips": 0,
+            "status": "passed",
+            "log": "evidence/native-visual/test-verify-regenerated-example.log"
+          },
+          "observation": "The regenerated project.qgs differs from the committed one because the pipeline reads live upstream Tartu data; the CI worked-example job treats the same comparison as advisory on pull requests."
+        },
+        "host_qgis_3_40_verify": {
+          "status": "finding",
+          "runtime": {
+            "python": "3.14.4",
+            "qgis": "3.40.15-Bratislava",
+            "venv": "uv, --system-site-packages on /usr/bin/python3"
+          },
+          "results": {
+            "passed": 60,
+            "not_testable": 2,
+            "failed": 0
+          },
+          "not_testable": [
+            "project.duckdb_axis_order_explicit (static analysis cannot prove axis order; by design)",
+            "visual.dashboard_loads_in_browser (Playwright not installed in this venv; covered by the visual suite)"
+          ],
+          "problem": "After printing the passing report the process aborts with std::bad_alloc (signal 6, exit 134). Reproduced twice; peak RSS 404 MB with 3.7 GB free, so not memory pressure. A bare QgsApplication project read and exit in the same venv exits cleanly. Not seen in the QGIS 3.44 image. Not diagnosed further here.",
+          "logs": [
+            "evidence/hostqgis-verify.log",
+            "evidence/hostqgis-verify-2.log",
+            "evidence/hostqgis-probe.log"
+          ]
+        }
+      },
+      "not_testable": [
+        {
+          "capability": "Optional raster runtime (9 unit tests)",
+          "reason": "OPENMAPSTACK_RASTER_TESTS not selected; raster stack not provisioned locally. CI raster-examples workflow is path-filtered and did not run for this head."
+        },
+        {
+          "capability": "Private PostGIS admin and PostGIS DSN tests (7 unit tests)",
+          "reason": "No PostGIS server or DSN configured on this machine."
+        },
+        {
+          "capability": "Live BigQuery (5) and MotherDuck (3) warehouse fixtures",
+          "reason": "Credentialed warehouse fixtures were not used for this preparation."
+        },
+        {
+          "capability": "Live catalog network tests (5)",
+          "reason": "OPENMAPSTACK_NETWORK_TESTS not set; live catalogs are outside the deterministic gate."
+        },
+        {
+          "capability": "Optional established-stack tool QA (4)",
+          "reason": "OMS_STACK_TOOLS not selected."
+        },
+        {
+          "capability": "Real tylertoo tiler QA (2)",
+          "reason": "OMS_TYLERTOO not set locally; the CI tylertoo-integration job passed on the tested head."
+        },
+        {
+          "capability": "Observable Framework city builds (1)",
+          "reason": "OMS_OBSERVABLE_CITY_PROJECTS not provided."
+        },
+        {
+          "capability": "Optional routing extractor (1)",
+          "reason": "Extractor not installed locally."
+        }
+      ]
     }
   },
   "ci_snapshot": {
-    "headRefOid": "65583747aeab54ee82ec45095759fb371b86cab2",
+    "headRefOid": "fb0531d15167c1287a47737b9358e43a0a9a5063",
     "isDraft": true,
+    "url": "https://github.com/jaakla/openmapstack-skills/pull/118",
+    "runs": [
+      "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719371",
+      "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719409",
+      "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719434",
+      "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719457",
+      "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719650"
+    ],
     "jobs": [
       {
-        "conclusion": "SUCCESS",
         "name": "claude-review",
-        "status": "COMPLETED"
+        "workflow": "Claude Code Review",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719409/job/122385160055"
       },
       {
-        "conclusion": "SUCCESS",
         "name": "validate-manifests",
-        "status": "COMPLETED"
+        "workflow": "Claude Code plugin manifests",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719457/job/122385160103"
       },
       {
-        "conclusion": "SUCCESS",
         "name": "tylertoo-integration",
-        "status": "COMPLETED"
+        "workflow": "OpenMapStack fixture evals",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719650/job/122385162133"
       },
       {
-        "conclusion": "SUCCESS",
         "name": "build",
-        "status": "COMPLETED"
+        "workflow": "Project homepage",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719371/job/122385160703"
       },
       {
-        "conclusion": "SUCCESS",
         "name": "worked-example",
-        "status": "COMPLETED"
+        "workflow": "Worked example (full validation)",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719434/job/122385161450"
       },
       {
-        "conclusion": "SKIPPED",
         "name": "deploy",
-        "status": "COMPLETED"
+        "workflow": "Project homepage",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED",
+        "url": "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719371/job/122385542415"
       },
       {
-        "conclusion": "SUCCESS",
         "name": "duckdb-compatibility (1.5.3)",
-        "status": "COMPLETED"
-      },
-      {
+        "workflow": "OpenMapStack fixture evals",
+        "status": "COMPLETED",
         "conclusion": "SUCCESS",
+        "url": "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719650/job/122385162156"
+      },
+      {
         "name": "duckdb-compatibility (2.0.x)",
-        "status": "COMPLETED"
+        "workflow": "OpenMapStack fixture evals",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719650/job/122385162163"
       },
       {
-        "conclusion": "",
         "name": "fixture-evals (1.5.3)",
-        "status": "IN_PROGRESS"
+        "workflow": "OpenMapStack fixture evals",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719650/job/122385162158"
       },
       {
-        "conclusion": "",
         "name": "fixture-evals (2.0.x)",
-        "status": "IN_PROGRESS"
+        "workflow": "OpenMapStack fixture evals",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/jaakla/openmapstack-skills/actions/runs/40559719650/job/122385161731"
       }
     ],
-    "url": "https://github.com/jaakla/openmapstack-skills/pull/118"
+    "summary": {
+      "success": 9,
+      "skipped": 1,
+      "other": []
+    },
+    "note": "Recorded for the tested head. Pushing the evidence commit re-triggers CI on a docs-only head; those runs are not this record."
   },
   "live_acceptance": {
-    "status": "pending",
+    "status": "deferred",
+    "decision": "Live executed-project and routing acceptance (ADR 0006) is deferred for 0.5.0 by maintainer decision (option c). It is neither passed nor not_testable.",
+    "decided_by": "maintainer",
+    "decided_on": "2026-10-27",
+    "decision_url": "https://github.com/jaakla/openmapstack-skills/issues/122#issuecomment-6450211979",
     "issue": "https://github.com/jaakla/openmapstack-skills/issues/112",
     "paid_trials_this_preparation": 0,
     "routing_trials_this_preparation": 0,
@@ -678,178 +1198,125 @@
       "configured_on": "2026-10-06",
       "evidence": "Maintainer confirmation; no secret values accessed."
     },
-    "openai_compatible_isolation": "Sandbox the adapter before using its agent executions as ADR 0006 release evidence.",
+    "openai_compatible_isolation": "Shell commands run in the ADR 0006 Bubblewrap allowlist since #123; ranged reads and exact edits since #124. Network stays shared by maintainer decision.",
     "codex_isolation": "ADR 0006 also requires isolating reads outside its workspace before equivalent release evidence.",
-    "maintainer_actions": [
-      "Restore the Codex credential.",
-      "Replenish or re-scope Anthropic quota.",
-      "Sandbox the configured openai_compatible adapter before using its executions as ADR 0006 release evidence."
-    ],
-    "october_6_output_contract_failures": "not rechecked; live execution is not authorized"
+    "october_6_output_contract_failures": {
+      "status": "deferred",
+      "reason": "Depend on live runs; deferred with live acceptance.",
+      "decision_url": "https://github.com/jaakla/openmapstack-skills/issues/122#issuecomment-6450211979"
+    }
   },
   "pending": [
-    "Final candidate CI and version-matched offline replay review; this CI snapshot is tied to its recorded head.",
-    "Final native/QGIS/full visual and other capability-dependent release evidence or explicit maintainer disposition.",
-    "Live executed-project and routing acceptance after sandbox/account readiness and explicit scope/model/budget authorization.",
+    "Maintainer final acceptance of this candidate; no 0.4.0 release exception is inherited automatically.",
+    "Maintainer disposition of the host QGIS 3.40 exit abort after a passing verify (checks.final_native_visual_acceptance.components.host_qgis_3_40_verify).",
     "Default-branch floating 0.5.0 updates and GitHub-backed marketplace refresh after the candidate reaches the appropriate distribution branch.",
-    "Maintainer final acceptance; no 0.4.0 release exception is inherited automatically.",
     "Tagging/publication, actual-tag and PyPI installation verification, and comparison with the publication workflow rebuild."
   ],
+  "deferred": [
+    {
+      "item": "Live executed-project and routing acceptance under ADR 0006",
+      "decision_url": "https://github.com/jaakla/openmapstack-skills/issues/122#issuecomment-6450211979"
+    },
+    {
+      "item": "Recheck of the October 6 output and contract failures",
+      "decision_url": "https://github.com/jaakla/openmapstack-skills/issues/122#issuecomment-6450211979"
+    }
+  ],
   "provenance": {
-    "tested_source": "Clean committed candidate at source_revision; tests ran in a local clone under artifact_location.",
+    "tested_source": "Clean committed candidate at source_revision, a merge of main into the release branch; tests ran in a fresh clone under artifact_location.",
     "follow_up_scope": "Later evidence commits update only docs/release-0.5.0.md and docs/acceptance-0.5.0-rc.json; runtime, package inputs and skill payloads retain the recorded candidate bytes.",
     "publication_authorized": false
   },
   "preparation_notes": [
-    "The first version-test probe preceded dependency installation and failed to import yaml; after setup, the version test and full suite passed. Bootstrap log is retained.",
-    "An initial standalone snapshot probe selected legacy v1, which cannot represent guidance-only skills; fresh install checks were restarted with explicit --format v2. No product code change was needed; the failed probe is retained under evidence/install-attempt-1/.",
-    "Project/global copied-install checks use fresh isolated homes and physically isolated individual skill sources. Upgrade checks explicitly replace the real v0.4.0 generalist; hosted pin controls use source_revision, not a nonexistent v0.5.0 tag.",
+    "Dependencies were installed from the prior candidate's frozen requirements; pip freeze is identical apart from the local openmapstack path.",
+    "The hosted pin check failed twice before passing, retained under evidence/pin-attempt-1/ and pin-attempt-2/. `skills update` re-runs `add` without -a, which installs for the detected calling agent, or for every installed agent when none is detected. This preparation ran inside Claude Code, so update added Claude Code copies that the Codex-scoped removal did not remove. The 6558374 run was called from Codex. The passing run strips agent markers and sets AI_AGENT=codex, matching that caller; no OpenMapStack payload was involved.",
+    "Copied project/global install checks pass -a codex explicitly and never call update; their removal assertion passed under this session's environment.",
     "Selected diagnostic fixture cases matching not_testable do not count as passed assertion coverage or fully exercised capability."
   ],
   "evidence_files": {
     "evidence/.coverage": {
-      "sha256": "f9c7144f52135163e4fef16b785703f444b6ad85251cf7f6a0fa0c8a1b5b0538",
+      "sha256": "4504aec52fd1e5350f4169ab404ed7b3c81ef6ba8f336bde0acc76f3d5a2e47c",
       "bytes": 229376
     },
     "evidence/artifacts.json": {
-      "sha256": "84e52fd5b127c19ff15840b5d5f52b75ad5df7969a1f5d430ddf9059ed2992eb",
-      "bytes": 2602
+      "sha256": "16bbd8b0be282ecc55af709efa8d86e24544db60dda516e093f71ce65d56f274",
+      "bytes": 2453
     },
     "evidence/asset-sync.log": {
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "bytes": 0
     },
     "evidence/browser-install.log": {
-      "sha256": "dd69c1a3f82fd643a1b1590dee2ab8aa5457c24b2c72f853a6797448c7137894",
-      "bytes": 6876
+      "sha256": "a4508ad0051ebac361b0d8f0d03384a0b666af942cf8b9ee9e51b7450747151d",
+      "bytes": 6888
     },
     "evidence/build.log": {
-      "sha256": "a5a840fdfd1d760b7d930794bcc87475b7becb519bccdb2513aa0b2782264d07",
-      "bytes": 24311
+      "sha256": "6bac9ea898e7e34e96c6e214d0329339b1bbfdbc08b9929100c61531d1d37974",
+      "bytes": 24315
     },
     "evidence/check-driver.log": {
-      "sha256": "9f2776e5f194eb0dc03fbf0db839c012dc53b05703c38cc6792642bdd6ab9039",
+      "sha256": "3e902ab55a7a7fc06b48dc0f4efcd909f5870a4e30c2c65dfcf5d13af049c7c3",
       "bytes": 114
     },
     "evidence/coverage-json.log": {
-      "sha256": "190e69fa69b6d8d6062baab6c8c7e5f6e446689b971528269f25f5d435d31731",
-      "bytes": 80
+      "sha256": "7a52a5c5d8662496025f3f5aa2fd9daa4529f64ee9ff147d6668307212acdbd0",
+      "bytes": 84
     },
     "evidence/coverage-report.log": {
       "sha256": "db244bcb4335911598c7e3563047bc21b662c3452620cbf50b4cf008dfa26b07",
       "bytes": 3482
     },
     "evidence/coverage.json": {
-      "sha256": "ea6ae1d8b58864badff795f07037c3f8b25f640ab09981c9c54de4f63d64d68e",
+      "sha256": "ea18d455c106369b85b65af8eb7063dc16b4aaab7c77453f2e03b20c9511ee35",
       "bytes": 280458
     },
     "evidence/dependency-install.log": {
-      "sha256": "04abbf620b13af1e431b553b80a8abd83daed558f8d20ce1778cde40d0c90b97",
-      "bytes": 12013
+      "sha256": "1f2e9e43be6498f270e80462dc1c679265ea896c27b3d3d72f62a967ad691a42",
+      "bytes": 17133
     },
     "evidence/fixture-evals.json": {
-      "sha256": "bee407881a11bf4b96e60e1af1f029d12b142ee8b67b04e745f16c3683499be7",
-      "bytes": 1041122
+      "sha256": "ea1428c4fa9780dcc56a83d2f5f3901c7a52caae4540ffe2e4f6d10a940558b8",
+      "bytes": 1046809
     },
     "evidence/fixture-evals.log": {
-      "sha256": "ecfc987df00bc9d7cd67e837ad28e48fb1b79320ee32c0d9d02cbb9c09690f81",
-      "bytes": 6705
+      "sha256": "551733a413ab34adb8909d4edf8bd1ae3e4cb05063cec8e41e4105e47cbd79f7",
+      "bytes": 6706
     },
-    "evidence/inspect-collection.json": {
-      "sha256": "220851cdb12177bbbdc31c398b8e0c86f0003490c602c0793ae0058237c898ce",
-      "bytes": 34891
-    },
-    "evidence/inspect-geospatial-data-discovery.json": {
-      "sha256": "8925e825277151764295fcaf92686ae323397ca1c540df4faea14fd881ad675a",
-      "bytes": 3044
-    },
-    "evidence/inspect-open-map-stack.json": {
-      "sha256": "6cf2047090d0a69acdbe5afd0ee25814aa6847c94eefb15e203d2d96c8e731a1",
-      "bytes": 16083
-    },
-    "evidence/inspect-reproducible-gis-project.json": {
-      "sha256": "7ddbb47bdca2770b2be2059ab6ba1d5cf3e7e32f990a34cf8d11d8a321b8b27c",
-      "bytes": 16028
-    },
-    "evidence/inspect-spatial-sql.json": {
-      "sha256": "d7d473bbc6acd9177594266fb994b778f2133b3f3fbe8177fc1cc46d38b25091",
-      "bytes": 2692
-    },
-    "evidence/install-attempt-1/install-create-wheel-env.log": {
+    "evidence/hostqgis-install.log": {
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "bytes": 0
     },
-    "evidence/install-attempt-1/install-driver.log": {
-      "sha256": "5a56de6abb2ce39394590910fffee0de2f3cc88c4741f571f3986b0ea4e987e7",
-      "bytes": 1190
+    "evidence/hostqgis-probe.log": {
+      "sha256": "26023b39017f180836fd31f714a7ec212f5a29e40ea755bf8c596a2a4f96b8b2",
+      "bytes": 157
     },
-    "evidence/install-attempt-1/install-fresh-wheel.log": {
-      "sha256": "335fd992ccae65e247bf495ee1943a9f5c9cff10e7edaad5669c627b5aa2fe59",
-      "bytes": 2481
+    "evidence/hostqgis-verify-2.log": {
+      "sha256": "ec97ceaf9e4b56c238496339e359dfc7174a3078d5d7f62ad104ed8419666641",
+      "bytes": 2084
     },
-    "evidence/install-attempt-1/install-project-geospatial-data-discovery-add.log": {
-      "sha256": "d9b9495158dc8b12879c1793655df7d5dbe0da11c45a090e826a95f0a9e670c8",
-      "bytes": 1414
+    "evidence/hostqgis-verify.log": {
+      "sha256": "87b17bcaf21d0fb67b4b71373597e023488f79e725f526b686f8a2bcceafc285",
+      "bytes": 1220
     },
-    "evidence/install-attempt-1/install-project-geospatial-data-discovery-snapshot.log": {
-      "sha256": "53acefc39b77b6f994b5b561c398895987ea2115364c70b38af5bc8c255d5903",
-      "bytes": 198
+    "evidence/inspect-collection.json": {
+      "sha256": "ffb6ff846cc8de74cd3ba771a1556c1a9b8e9e241f777976cec52db327a8fa0d",
+      "bytes": 34895
     },
-    "evidence/install-attempt-1/install-project-old-install.log": {
-      "sha256": "7d57ce26038e821f4eccbae4efbccc48ea289fa25b6971f8fdccc7cc56b203f5",
-      "bytes": 1171
+    "evidence/inspect-geospatial-data-discovery.json": {
+      "sha256": "9d65131eee1080ae8ca7b9efff510be26c4b10d49b74f94fb2f6b0063a08455e",
+      "bytes": 3048
     },
-    "evidence/install-attempt-1/install-project-open-map-stack-add.log": {
-      "sha256": "8d56f9502e4dc4e4bd0e3cc4b2577894aa315e6256c735e3022b77e0f9182476",
-      "bytes": 1214
+    "evidence/inspect-open-map-stack.json": {
+      "sha256": "2a41f2d6ccdf2cef54ea1bee7693f03549ebc3f4ccf9fbf658b5b47c09e9774d",
+      "bytes": 16087
     },
-    "evidence/install-attempt-1/install-project-open-map-stack-inspect.log": {
-      "sha256": "c835488415edf70a48c0fe68575216b1dd1dcb7cb7d27c3886af44b2ff2d45f3",
-      "bytes": 4546
+    "evidence/inspect-reproducible-gis-project.json": {
+      "sha256": "c14ef2d1c39c5ce7afdd45e28859cfb18fc7bb093949ef2b4e646b36f8a95a55",
+      "bytes": 16032
     },
-    "evidence/install-attempt-1/install-project-open-map-stack-preflight.log": {
-      "sha256": "99300a58804f27a5989ec7fcb561c3b8ff890f9e78bbcfa2c4db68d6339cfd7f",
-      "bytes": 6483
-    },
-    "evidence/install-attempt-1/install-project-open-map-stack-snapshot.log": {
-      "sha256": "1ce3054a129d58c13551cc9bd167785e17b5c318f9af8117b764a45d9779103b",
-      "bytes": 3891
-    },
-    "evidence/install-attempt-1/install-project-reproducible-gis-project-add.log": {
-      "sha256": "280d32ae14f8c5103b59f0c80a0c65c9e1797075062830363e1d677b1fa15d16",
-      "bytes": 1392
-    },
-    "evidence/install-attempt-1/install-project-reproducible-gis-project-inspect.log": {
-      "sha256": "d5623bc7e62ad465488244b726716ea052f7498038ee30df44e62d28f7691c0d",
-      "bytes": 4034
-    },
-    "evidence/install-attempt-1/install-project-reproducible-gis-project-preflight.log": {
-      "sha256": "b6716c60579f28285515f459e479a6c50e5cf519647b20a95c36924bd061404a",
-      "bytes": 6493
-    },
-    "evidence/install-attempt-1/install-project-reproducible-gis-project-snapshot.log": {
-      "sha256": "a26b4f1f2961a8a507ab0332873e2563570e0db92e972e8587f4050a6457b3a1",
-      "bytes": 3399
-    },
-    "evidence/install-attempt-1/install-wheel-api.log": {
-      "sha256": "c94602799aaa1274ee407238440600a680fe811498610ff6a4aaac49d2bcb5a2",
-      "bytes": 1619
-    },
-    "evidence/install-attempt-1/install-wheel-checks.log": {
-      "sha256": "bbc6e5e278d03df945d10cc49b9f6de23bd1c24e4c7f600e50ec2f44543411ea",
-      "bytes": 45768
-    },
-    "evidence/install-attempt-1/install-wheel-import.log": {
-      "sha256": "71ab91984ed08f146bea3da6ac15f27dbbc5b18173c5cf3cf5094f14482453fe",
-      "bytes": 119
-    },
-    "evidence/install-attempt-1/install-wheel-version.log": {
-      "sha256": "ce940d1d5b5bb4e1855534b2bbc3bedc91b174d65980d2ecf7ee45b422d04bcc",
-      "bytes": 19
-    },
-    "evidence/install-attempt-1/installation-checks.json": {
-      "sha256": "d96802aca16ce9d0e5132ab8143c21df7a7a85e4e13c2d83f0ef94bd070a7e23",
-      "bytes": 8877
+    "evidence/inspect-spatial-sql.json": {
+      "sha256": "48e8301c510266165c2e09240096afac615b78beaee59df9a81135e9520bcf2e",
+      "bytes": 2696
     },
     "evidence/install-create-wheel-env.log": {
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -860,91 +1327,91 @@
       "bytes": 170
     },
     "evidence/install-fresh-wheel.log": {
-      "sha256": "335fd992ccae65e247bf495ee1943a9f5c9cff10e7edaad5669c627b5aa2fe59",
-      "bytes": 2481
+      "sha256": "04b3ad9101f7e9420d732c1dae5f95c9c440aa624d8fe1e1001164058a1eef07",
+      "bytes": 2485
     },
     "evidence/install-global-geospatial-data-discovery-add.log": {
-      "sha256": "0717dc2e59eb84a66d87f59d917987a8d12a7aff1d29ec934854fca28bb6a649",
-      "bytes": 1414
+      "sha256": "a690e27dfb73cfa1a6b7127b6f46bed5cc31f463c109bf62d0461ffe9d007247",
+      "bytes": 1438
     },
     "evidence/install-global-geospatial-data-discovery-inspect.log": {
-      "sha256": "a0d71de50a22a0a40ac31b92fb9e943b6bfca19842ba225704619b07ef22e32e",
-      "bytes": 3021
+      "sha256": "420a883d923c9a59cede46d9165caf325f520f40752a29dbc93f818274efe4d1",
+      "bytes": 3025
     },
     "evidence/install-global-geospatial-data-discovery-snapshot.log": {
-      "sha256": "28f9ba1d8621da9fb1f286851c57ce6e409bf5dbf92c43384a707a3b57f7ea74",
+      "sha256": "52f4bec6d3b876c3d36695fcf79e502934f7dbde1cb1f64c1563e736311cea21",
       "bytes": 2473
     },
     "evidence/install-global-list-empty.log": {
-      "sha256": "69ef9f0d8f5d1306902c41e5dc945683f237e39419bc1e53fdde7fa57ef02d91",
-      "bytes": 209
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
     },
     "evidence/install-global-list.log": {
-      "sha256": "d553380cff21945fb5f90c2fd88b8d46d594ca542b446f47874ef3530be2b867",
-      "bytes": 1313
+      "sha256": "fbe5be57bb58420756de6ba06e0a00012af38c23110da59ced982b8c2cb82acf",
+      "bytes": 1047
     },
     "evidence/install-global-old-install.log": {
-      "sha256": "0e9ac2af0136da9552d4db4a73f1f5613fbeedf2e158f7ca8ef945067cb6b361",
-      "bytes": 1171
+      "sha256": "97eb486783858a2471803203f9cb15532010bba9d9b7bee49bd9d207856256df",
+      "bytes": 1195
     },
     "evidence/install-global-open-map-stack-add.log": {
-      "sha256": "aba76b211a454ab74b53cacce3c31a77cbde8348a9e028fa7d1f028b1294e035",
-      "bytes": 1172
+      "sha256": "8c6c86e0f897e799c31dbd20d5ce735e0ae6a4950583b79ef07c496b9e0cd82e",
+      "bytes": 1196
     },
     "evidence/install-global-open-map-stack-inspect.log": {
-      "sha256": "00f14cc49ef6f036c833b342ca3d97764d1a64f4ee7bef2be8585bd52888cefe",
-      "bytes": 16060
+      "sha256": "6d0ec9b6e0a6d3bdcca006421ba13a8928cd7afc28f2501d06b7f0153b89d9d8",
+      "bytes": 16064
     },
     "evidence/install-global-open-map-stack-preflight.log": {
-      "sha256": "828a7e33fc5d02839fbc1433d01da69737497689c1664cf202d8e070be34c648",
-      "bytes": 6479
+      "sha256": "d54e5ea93fc35ea2ab2e6b249e44b799b5f033bddf8e302489445c6eb6871b09",
+      "bytes": 6483
     },
     "evidence/install-global-open-map-stack-snapshot.log": {
-      "sha256": "1b48ecc4c96489fd50c88874a4d6b83c2ef786a82180aeb32db38cc0054823bc",
+      "sha256": "c982f91c9802db5e0065ec9718e55f9778f062bc639647d3840875b14deb3921",
       "bytes": 14912
     },
     "evidence/install-global-remove.log": {
-      "sha256": "8a1765f701dbb622b10793df6e8791f5c2fb9823faf346a4642db86402fc8277",
-      "bytes": 222
+      "sha256": "cc95ed5c31b468aa83962dcc55caf1fca06721bdc84ce0651899580eaaabc34c",
+      "bytes": 242
     },
     "evidence/install-global-reproducible-gis-project-add.log": {
-      "sha256": "16030149efae20d17970c7b17a76ef5ff1f76e123395fe6faedf1e9f64e3b76e",
-      "bytes": 1392
+      "sha256": "492ba000fbf4d10beda3f807a6052065d13563585509abfa11009f2afd353747",
+      "bytes": 1416
     },
     "evidence/install-global-reproducible-gis-project-inspect.log": {
-      "sha256": "31217ea367489512163cf698bd7f1e695082d686ab9aee2af780a32987529b8b",
-      "bytes": 16005
+      "sha256": "f551e42403646d8b417f45c4d89783a8b9ce77ffb43bb904edb150a6cd0993b6",
+      "bytes": 16009
     },
     "evidence/install-global-reproducible-gis-project-preflight.log": {
-      "sha256": "45206a523efc38c11777a214748d6419a0ba07b52e879e527ce7da22a8704aa8",
-      "bytes": 6489
+      "sha256": "16f8b82d38630d0cdc35d97ae43a3d7ee6665dc17623d5310b41d986c93e282c",
+      "bytes": 6493
     },
     "evidence/install-global-reproducible-gis-project-snapshot.log": {
-      "sha256": "2ae466df5a372a9a4975e1fd6427ee1a52735624f088fda1029cdcd4cbacfc75",
+      "sha256": "dfca95fde414f2b8e7c6d59bd317b97d3425ebc93bcd9c9d3026215044fbd5b1",
       "bytes": 14877
     },
     "evidence/install-global-spatial-sql-add.log": {
-      "sha256": "903a6bed4cf4fa48a508e8cce8dd46c8f62b89a3ae2f4a643873187f3086aa1e",
-      "bytes": 1106
+      "sha256": "754987c9f0501903f033366844af7da4241651268ca149b1a7140d4f6c8481a5",
+      "bytes": 1130
     },
     "evidence/install-global-spatial-sql-inspect.log": {
-      "sha256": "ef76c9c24fdea06032a4ee8069b005605c7d8cd084c3d4f4e3a5a028fec8a930",
-      "bytes": 2669
+      "sha256": "6c6a0bf00444632571da95efb106fbd5988bafb7bcab88e91445e80069df8197",
+      "bytes": 2673
     },
     "evidence/install-global-spatial-sql-snapshot.log": {
-      "sha256": "c31109bc9765eac9ab923796b4e4cfab48aab16c0b1b0b3bc1064719598fb01b",
+      "sha256": "8654d1eff29e9c29b0883217a90b4fde4831a102b2bde1b679b2bed92c689fe1",
       "bytes": 2145
     },
     "evidence/install-project-geospatial-data-discovery-add.log": {
-      "sha256": "d9b9495158dc8b12879c1793655df7d5dbe0da11c45a090e826a95f0a9e670c8",
-      "bytes": 1414
+      "sha256": "f98693fa01b3409fa28fed042d4723aa99e3932b729adf40510424b3c87f21ca",
+      "bytes": 1438
     },
     "evidence/install-project-geospatial-data-discovery-inspect.log": {
-      "sha256": "778537a47cb67a117de1d4e3e5b8e9f2cf5a83c19d5d73d47989d0ed1a036df6",
-      "bytes": 3022
+      "sha256": "9701ce784dd5b1e5d995015e761a06ff0ddcb6a6c89729e910efa3942fb8649f",
+      "bytes": 3026
     },
     "evidence/install-project-geospatial-data-discovery-snapshot.log": {
-      "sha256": "671c051411dad56cea9e2d23e452057e8906e6204ed2ea534d165ed9cd514f31",
+      "sha256": "00f7364f3fb4204115aac8f854757a2659b80377dd16f39d71d621b9a40992bd",
       "bytes": 2473
     },
     "evidence/install-project-list-empty.log": {
@@ -952,59 +1419,59 @@
       "bytes": 3
     },
     "evidence/install-project-list.log": {
-      "sha256": "be30f473d58ae1c35da44c328c474d3cfd5e1348054acf1faacbee6fdfb48f3e",
-      "bytes": 1461
+      "sha256": "32e5408c62b1980548c67deaa301bcae818d845663f5e212710dc56555a48082",
+      "bytes": 1417
     },
     "evidence/install-project-old-install.log": {
-      "sha256": "7d57ce26038e821f4eccbae4efbccc48ea289fa25b6971f8fdccc7cc56b203f5",
-      "bytes": 1171
+      "sha256": "e55cd0132d64d024d66ad5bdb70a44c8913c113cdfbc7d6667eb4298157cdd96",
+      "bytes": 1195
     },
     "evidence/install-project-open-map-stack-add.log": {
-      "sha256": "8d56f9502e4dc4e4bd0e3cc4b2577894aa315e6256c735e3022b77e0f9182476",
-      "bytes": 1214
+      "sha256": "88445546fe43d14808c8350b523df12e39b1d3a3431fdb3dff858b590d252f67",
+      "bytes": 1238
     },
     "evidence/install-project-open-map-stack-inspect.log": {
-      "sha256": "49ad8df46bc1c69f1cea16a672a14a5aa00713535a1170724c5cea3100c4b1ba",
-      "bytes": 16061
+      "sha256": "fce85d906362253af1294eb857bf43b6052047f2f073d9fa0ab7e767b85fdd0e",
+      "bytes": 16065
     },
     "evidence/install-project-open-map-stack-preflight.log": {
-      "sha256": "99300a58804f27a5989ec7fcb561c3b8ff890f9e78bbcfa2c4db68d6339cfd7f",
-      "bytes": 6483
+      "sha256": "0a382de2972cb0cb8ba9c75865d6ac2c0f274845b95dc082a53e228d2af8f5b9",
+      "bytes": 6487
     },
     "evidence/install-project-open-map-stack-snapshot.log": {
-      "sha256": "1713a73ea834fb758c2c77cc5c0f8940a438e238dccdf63e21ff5dca6f499421",
+      "sha256": "b4e41d0884281391883849f752c40adf11c771b4e953d3d27bd1c1bcb88d5fd5",
       "bytes": 14912
     },
     "evidence/install-project-remove.log": {
-      "sha256": "87ca9e57ac4bd815d1b1701809a2eb412784fab401c6f801c970ed42c04c39fb",
-      "bytes": 222
+      "sha256": "cc95ed5c31b468aa83962dcc55caf1fca06721bdc84ce0651899580eaaabc34c",
+      "bytes": 242
     },
     "evidence/install-project-reproducible-gis-project-add.log": {
-      "sha256": "280d32ae14f8c5103b59f0c80a0c65c9e1797075062830363e1d677b1fa15d16",
-      "bytes": 1392
+      "sha256": "9995f6625a63336571d87b36546e05d69cfd8929b18e074dadffbf280eea3cec",
+      "bytes": 1416
     },
     "evidence/install-project-reproducible-gis-project-inspect.log": {
-      "sha256": "0902d8a51e39009d809e3db4bb7d7c5c3731ce8185ee3c69952b7bde363d8a1b",
-      "bytes": 16006
+      "sha256": "7486843cc7ce9d53d7c2ed9f26d3ff189c705f5070bdd2e622b970e58f853b6a",
+      "bytes": 16010
     },
     "evidence/install-project-reproducible-gis-project-preflight.log": {
-      "sha256": "b6716c60579f28285515f459e479a6c50e5cf519647b20a95c36924bd061404a",
-      "bytes": 6493
+      "sha256": "47215bb5b9dd536a5178bdf99682345eeb097beb1a9ece9c1c65573c1a8b6dc6",
+      "bytes": 6497
     },
     "evidence/install-project-reproducible-gis-project-snapshot.log": {
-      "sha256": "4e757c5f8566f8db4e8976bf26797a308850cead22fb376315e9c7a52f30df30",
+      "sha256": "cb5452a0ab1b72d76d6d99fcff267d211965284e56489a7e880feb4d1be8e959",
       "bytes": 14877
     },
     "evidence/install-project-spatial-sql-add.log": {
-      "sha256": "3ba0d044c6460e52ed8f86a940827944cec1560e641cc477a30298c6a205cf69",
-      "bytes": 1106
+      "sha256": "83d2d2fd585094891117dd778aa2ed8c97c69a647a5f1729cb887e0e8cd07dba",
+      "bytes": 1130
     },
     "evidence/install-project-spatial-sql-inspect.log": {
-      "sha256": "50074c49b53b3be7c22144eb3d7279119bf7ba9510ead1d417c244414d41484d",
-      "bytes": 2670
+      "sha256": "f0973d5f7da078afbf4002000dbf97afeeb56a654be1bbb5e0c1ddfe31dd6956",
+      "bytes": 2674
     },
     "evidence/install-project-spatial-sql-snapshot.log": {
-      "sha256": "f0d9442e1935d7419abb29b72f946db7b8869ae47312abb04f80242d5c30050b",
+      "sha256": "9d4d9df87e1941d9bad332e9ab25ee1ddd6df3811820d00949f5f5330871cbc8",
       "bytes": 2145
     },
     "evidence/install-wheel-api.log": {
@@ -1016,27 +1483,739 @@
       "bytes": 45768
     },
     "evidence/install-wheel-import.log": {
-      "sha256": "71ab91984ed08f146bea3da6ac15f27dbbc5b18173c5cf3cf5094f14482453fe",
-      "bytes": 119
+      "sha256": "02156efaa55b7134366c232b9c60fabf9e1f07eba608e9feaea9ffbb89e36c04",
+      "bytes": 123
     },
     "evidence/install-wheel-version.log": {
       "sha256": "ce940d1d5b5bb4e1855534b2bbc3bedc91b174d65980d2ecf7ee45b422d04bcc",
       "bytes": 19
     },
     "evidence/installation-checks.json": {
-      "sha256": "eeed8d28cf7bae9a435e53cc5a7eac111e0eb69d332c2ae809bd93674e3ef862",
-      "bytes": 22767
+      "sha256": "4cfc9c72702734c75b9ea23fbc457de8cff80e75ef96fe6d7e5b9f195317cc8d",
+      "bytes": 23031
     },
     "evidence/local-checks.json": {
-      "sha256": "653c842fe7f1c5d8bf9bc0e912f73772b5dfd48aebd1fc7fff7cb637d0e97076",
-      "bytes": 1404
+      "sha256": "32a69c08eb6875d04e5d1b461ae4c4802da4aece181ed598546a67df7d23e103",
+      "bytes": 1428
+    },
+    "evidence/native-visual/eval-visual-results.json": {
+      "sha256": "b372ce9251af5edccfda7dcdedaec0e2adbf69711a7ccdc341891868d11227e9",
+      "bytes": 118472
+    },
+    "evidence/native-visual/pip-freeze.txt": {
+      "sha256": "f19749c12206115dd317e34b82bbb79e03cc0a493a0fea1a80917f8dce344d23",
+      "bytes": 5097
+    },
+    "evidence/native-visual/pyqgis-unittest.exit": {
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2
+    },
+    "evidence/native-visual/pyqgis-unittest.log": {
+      "sha256": "d625971ce1ad141e9084c7c285ad4d0779a40406cd6530518416afa91d1876f0",
+      "bytes": 12763
+    },
+    "evidence/native-visual/results/.gitkeep": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/README.md": {
+      "sha256": "cc2a0779088d2294dd05ae63a98e0fdbf0d7576b0a03e656d9041f1189131363",
+      "bytes": 86
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/dashboard.html": {
+      "sha256": "bc1a8cd208bee50d360543a9cbd334cbaa20fd10e59a35b0bea2cd056dfbdee6",
+      "bytes": 10976
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/data/derived/candidate-parcels.geojson": {
+      "sha256": "43d172b714343e0a9073f6199d9185c09006b16521f6866ed7ca9dd775a9b50d",
+      "bytes": 1194
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/data/derived/candidate-parcels.parquet": {
+      "sha256": "6734168f3d792715304f5dc92b946d15bab485102ee1a9f1b5f5e949b0349d6a",
+      "bytes": 2997
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/data/derived/education_pois.geojson": {
+      "sha256": "39f61d47ea0be16ad61de5a6f600adf0640a56470d043df11e1115bace189d3c",
+      "bytes": 506
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/data/source/parcels.geojson": {
+      "sha256": "9cf955c9aea921c99c6fa2a1e010715a7535e88d84b792595cbf5a85f9716140",
+      "bytes": 1579
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/data/source/pois.geojson": {
+      "sha256": "0e078e7164242df89e9c612da01fe9ab73258b283661bf85cebeac996d20dfa3",
+      "bytes": 516
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/data/source/roads.geojson": {
+      "sha256": "0c263636cdf8cfc5e0e8092a29479268e14ebadc56b9622004ef1a4f327af76c",
+      "bytes": 363
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/pipeline.py": {
+      "sha256": "ad79b1cbe92a92c62710e5f7495fe7ee168bd9b74ae8ee3d9631283fd99e6730",
+      "bytes": 65841
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/project.qgz": {
+      "sha256": "8a21db444806dbc8e32053b95337bbc5c9638dbebe5fa5d9dcbc1a6958574ae0",
+      "bytes": 10599
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/project.yaml": {
+      "sha256": "19ba9fb0588f999a55139c9d77bf2c9f1af83daacc389504557520965de5bf3e",
+      "bytes": 8865
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/runs/run-20260825-080000.json": {
+      "sha256": "e0466c3be219326f2b8492d9bf3dca8ff77516a30434b0a2031f83ecad23d9b9",
+      "bytes": 1917
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/validation/latest-report.json": {
+      "sha256": "0b09d5a17e96a4a8d487a69580213d8d7ab6664db29a91899bb38de97916d4a9",
+      "bytes": 1453
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/vendor/maplibre-gl/maplibre-gl.css": {
+      "sha256": "731181d400d65a8b09d842f55b70bc4dc11010b15b8549e2c65a69d233fbdd2e",
+      "bytes": 63722
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/generated-project/vendor/maplibre-gl/maplibre-gl.js": {
+      "sha256": "c46084df69bbaa995b301a515274a86ec53905c78459b80dccbc27a0c0b8d13b",
+      "bytes": 762783
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/grading.json": {
+      "sha256": "fd7d649f5dffc304cab3062b997d5b9e762daa68dc25b57ed0fd9ea248fccde3",
+      "bytes": 26085
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/visual/qgis-render.png": {
+      "sha256": "8fe9ea862bb7f5fac4a4439d5bcdec72aa117bf05d940e6edb83fcdead9a5144",
+      "bytes": 212913
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/visual/screenshots/project-desktop.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/visual/screenshots/project-group-analysis-after.png": {
+      "sha256": "5c96365529d4cf8a3c5074f8cb5b8421182f27fc61300d3dc8a51e784e4a1568",
+      "bytes": 280720
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/visual/screenshots/project-group-analysis-before.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/visual/screenshots/project-group-basemap-after.png": {
+      "sha256": "83fa3f540553b46f50e97ddbc6247cc6c3bf9c93995a810dcd7a271e332a3ff8",
+      "bytes": 10207
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/visual/screenshots/project-group-basemap-before.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/visual/screenshots/project-group-user_overrides-after.png": {
+      "sha256": "7b1766b811ea66e274422761944d19ff4cf68e7ec8aad1cb015378cc2a3f6a1c",
+      "bytes": 279978
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/visual/screenshots/project-group-user_overrides-before.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/001-basic-spatial-analysis/1/visual/screenshots/project-mobile.png": {
+      "sha256": "52f98613548ada8c9f0545974242151994dc541bbbb61862b9d7c9f346af2a16",
+      "bytes": 98323
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/README.md": {
+      "sha256": "cc2a0779088d2294dd05ae63a98e0fdbf0d7576b0a03e656d9041f1189131363",
+      "bytes": 86
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/dashboard.html": {
+      "sha256": "bc1a8cd208bee50d360543a9cbd334cbaa20fd10e59a35b0bea2cd056dfbdee6",
+      "bytes": 10976
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/data/derived/candidate-parcels.geojson": {
+      "sha256": "43d172b714343e0a9073f6199d9185c09006b16521f6866ed7ca9dd775a9b50d",
+      "bytes": 1194
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/data/derived/candidate-parcels.parquet": {
+      "sha256": "6734168f3d792715304f5dc92b946d15bab485102ee1a9f1b5f5e949b0349d6a",
+      "bytes": 2997
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/data/derived/education_pois.geojson": {
+      "sha256": "39f61d47ea0be16ad61de5a6f600adf0640a56470d043df11e1115bace189d3c",
+      "bytes": 506
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/data/source/parcels.geojson": {
+      "sha256": "9cf955c9aea921c99c6fa2a1e010715a7535e88d84b792595cbf5a85f9716140",
+      "bytes": 1579
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/data/source/pois.geojson": {
+      "sha256": "0e078e7164242df89e9c612da01fe9ab73258b283661bf85cebeac996d20dfa3",
+      "bytes": 516
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/data/source/roads.geojson": {
+      "sha256": "0c263636cdf8cfc5e0e8092a29479268e14ebadc56b9622004ef1a4f327af76c",
+      "bytes": 363
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/pipeline.py": {
+      "sha256": "ad79b1cbe92a92c62710e5f7495fe7ee168bd9b74ae8ee3d9631283fd99e6730",
+      "bytes": 65841
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/project.qgz": {
+      "sha256": "c93f5cadac97c0b624a9801c64dccacec79016cb8588f1b9b41a433478f29929",
+      "bytes": 10599
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/project.yaml": {
+      "sha256": "2014eb400b4526b4256ef5765675fc3d5ca6d4971a74aca591f864b99eef2d0a",
+      "bytes": 8867
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/runs/run-20260825-080000.json": {
+      "sha256": "e0466c3be219326f2b8492d9bf3dca8ff77516a30434b0a2031f83ecad23d9b9",
+      "bytes": 1917
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/validation/latest-report.json": {
+      "sha256": "0b09d5a17e96a4a8d487a69580213d8d7ab6664db29a91899bb38de97916d4a9",
+      "bytes": 1453
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/vendor/maplibre-gl/maplibre-gl.css": {
+      "sha256": "731181d400d65a8b09d842f55b70bc4dc11010b15b8549e2c65a69d233fbdd2e",
+      "bytes": 63722
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/generated-project/vendor/maplibre-gl/maplibre-gl.js": {
+      "sha256": "c46084df69bbaa995b301a515274a86ec53905c78459b80dccbc27a0c0b8d13b",
+      "bytes": 762783
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/grading.json": {
+      "sha256": "73d8da268e730cc65f84cdb482830f0d8eff3f1af8dfbc35cebc9c93e8cf8bd0",
+      "bytes": 13561
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/qgis-render.png": {
+      "sha256": "f995efe97de88a328bd127958193d34e5b35ee882c6616e43355224f2ac43685",
+      "bytes": 212866
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project-desktop.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project-group-analysis-after.png": {
+      "sha256": "5c96365529d4cf8a3c5074f8cb5b8421182f27fc61300d3dc8a51e784e4a1568",
+      "bytes": 280720
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project-group-analysis-before.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project-group-basemap-after.png": {
+      "sha256": "83fa3f540553b46f50e97ddbc6247cc6c3bf9c93995a810dcd7a271e332a3ff8",
+      "bytes": 10207
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project-group-basemap-before.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project-group-user_overrides-after.png": {
+      "sha256": "7b1766b811ea66e274422761944d19ff4cf68e7ec8aad1cb015378cc2a3f6a1c",
+      "bytes": 279978
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project-group-user_overrides-before.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project-mobile.png": {
+      "sha256": "52f98613548ada8c9f0545974242151994dc541bbbb61862b9d7c9f346af2a16",
+      "bytes": 98323
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project_b-desktop.png": {
+      "sha256": "a727b3ae34ee722d4e4f09833ea45fe408dd598b0a64096af9033fed53e1fc3c",
+      "bytes": 705424
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project_b-group-analysis-after.png": {
+      "sha256": "4a0ec6474eaba7e58a9c25c1249db957ca8d03fd1b58e1b81a9a845a5cc26a88",
+      "bytes": 704998
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project_b-group-analysis-before.png": {
+      "sha256": "a727b3ae34ee722d4e4f09833ea45fe408dd598b0a64096af9033fed53e1fc3c",
+      "bytes": 705424
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project_b-group-basemap-after.png": {
+      "sha256": "6d422c494cd9bd906bb9d49af289632367e868aa04020f1c0166ab6c9b74bc7a",
+      "bytes": 7023
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project_b-group-basemap-before.png": {
+      "sha256": "a727b3ae34ee722d4e4f09833ea45fe408dd598b0a64096af9033fed53e1fc3c",
+      "bytes": 705424
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project_b-group-user_overrides-after.png": {
+      "sha256": "58f9f6c7aa13cf54a71f705dbdcab3b98705da152acf76575a1d97d8d7c855cd",
+      "bytes": 705043
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project_b-group-user_overrides-before.png": {
+      "sha256": "a727b3ae34ee722d4e4f09833ea45fe408dd598b0a64096af9033fed53e1fc3c",
+      "bytes": 705424
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project_b-mobile.png": {
+      "sha256": "9872bfcf0b250d6072f16d1da8a0c3fc9526fd6f45c9da5acc42d20935c57171",
+      "bytes": 191380
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project_b-scenario-planned-road-after.png": {
+      "sha256": "ad93316690ea3d685df33dda24bf627cd66e1057437a34d5eed3a5f4886ac33e",
+      "bytes": 705572
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/006-presentation-consistency/1/visual/screenshots/project_b-scenario-planned-road-before.png": {
+      "sha256": "a727b3ae34ee722d4e4f09833ea45fe408dd598b0a64096af9033fed53e1fc3c",
+      "bytes": 705424
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/README.md": {
+      "sha256": "470f5c4158ea345a8ba82350c9b32d6d776df2b249fab674bb5bbad89d25c1b1",
+      "bytes": 2385
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/dashboard.html": {
+      "sha256": "7090534bfc911143b53c764addb0f783230caa48aba2bcde087b806e2c3ea1de",
+      "bytes": 4124
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/data/derived/areas.csv": {
+      "sha256": "7469e9e1e12e3ff87ad37a7b2c7694d6aca3b9eabb6174ba65c16b09166c5488",
+      "bytes": 27
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/data/derived/candidates.geojson": {
+      "sha256": "c89f0394134371cc60f361b7c3ce4f67ac7e04f956c7d12072919602979c9b56",
+      "bytes": 325
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/data/source/parcels.geojson": {
+      "sha256": "f54b136b53620861a72fc59e6a467e3500d94cf86372c1209e80ec632bbc8461",
+      "bytes": 458
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/delivery/dashboard-evidence.json": {
+      "sha256": "9df9ca6ae7c50281ca5a86ab9525a74688fecf608ae191b6c81a225fb4bdebcc",
+      "bytes": 4640
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/delivery/qgis-evidence.json": {
+      "sha256": "51ddadefed984579beb6608dc3b3922da8e40561341c523b9ae1d2252b7c5676",
+      "bytes": 4630
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/findings.md": {
+      "sha256": "aca492529f4d625d7de45e63b2902172c42b609832d399818b1b40a63303bf1c",
+      "bytes": 2337
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/pipeline.py": {
+      "sha256": "2f0a9f169e56d42bd6814636dc01c01bf285d1422a68e777c08e09896f86208c",
+      "bytes": 9246
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/project.qgz": {
+      "sha256": "933ffc6b24ddd74ea317c86dd2dbc6fbda20c7d2c9d201dfd061c3fa878aa892",
+      "bytes": 7067
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/project.yaml": {
+      "sha256": "a15697b7d5ef19bc22fc5592d0c41e1ecca8d2a24f3ae9ffe8845e89acb7e501",
+      "bytes": 4587
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/runs/run-20261027-184936.json": {
+      "sha256": "37c1e7713e832d4ad53c2824a0ca2798ce96199efbbdbe373e7600111a222a41",
+      "bytes": 1710
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/generated-project/validation/latest-report.json": {
+      "sha256": "eeb6877b9442e43b9a0ea0f6fe629dfe2bef78d3ff8aa35e9aa983291a41402f",
+      "bytes": 614
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/031-credits-visibility/1/grading.json": {
+      "sha256": "3cc7f1082d68e4a8dc82279fe25ac872a8ea15e274d90c533de0802e89692495",
+      "bytes": 1762
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/README.md": {
+      "sha256": "cc2a0779088d2294dd05ae63a98e0fdbf0d7576b0a03e656d9041f1189131363",
+      "bytes": 86
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/dashboard.html": {
+      "sha256": "4d4f0d2d9289e1a2203241e48143348b2537ddf341dd25bb25179ff8a703d2c5",
+      "bytes": 11247
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/data/derived/candidate-parcels.geojson": {
+      "sha256": "43d172b714343e0a9073f6199d9185c09006b16521f6866ed7ca9dd775a9b50d",
+      "bytes": 1194
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/data/derived/candidate-parcels.parquet": {
+      "sha256": "6734168f3d792715304f5dc92b946d15bab485102ee1a9f1b5f5e949b0349d6a",
+      "bytes": 2997
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/data/derived/education_pois.geojson": {
+      "sha256": "39f61d47ea0be16ad61de5a6f600adf0640a56470d043df11e1115bace189d3c",
+      "bytes": 506
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/data/source/parcels.geojson": {
+      "sha256": "9cf955c9aea921c99c6fa2a1e010715a7535e88d84b792595cbf5a85f9716140",
+      "bytes": 1579
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/data/source/pois.geojson": {
+      "sha256": "0e078e7164242df89e9c612da01fe9ab73258b283661bf85cebeac996d20dfa3",
+      "bytes": 516
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/data/source/roads.geojson": {
+      "sha256": "0c263636cdf8cfc5e0e8092a29479268e14ebadc56b9622004ef1a4f327af76c",
+      "bytes": 363
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/pipeline.py": {
+      "sha256": "ad79b1cbe92a92c62710e5f7495fe7ee168bd9b74ae8ee3d9631283fd99e6730",
+      "bytes": 65841
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/project.qgz": {
+      "sha256": "257b0297f3d65dddd060b804371d86aa7071a7f9455aa576d89a6f6e156e57d8",
+      "bytes": 10599
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/project.yaml": {
+      "sha256": "f9c94a3ce78c634b70e479a2269e25a0526bea4dc61c8eb991901072d4f7324e",
+      "bytes": 9120
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/runs/run-20260825-080000.json": {
+      "sha256": "e0466c3be219326f2b8492d9bf3dca8ff77516a30434b0a2031f83ecad23d9b9",
+      "bytes": 1917
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/validation/latest-report.json": {
+      "sha256": "0b09d5a17e96a4a8d487a69580213d8d7ab6664db29a91899bb38de97916d4a9",
+      "bytes": 1453
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/vendor/maplibre-gl/maplibre-gl.css": {
+      "sha256": "731181d400d65a8b09d842f55b70bc4dc11010b15b8549e2c65a69d233fbdd2e",
+      "bytes": 63722
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/generated-project/vendor/maplibre-gl/maplibre-gl.js": {
+      "sha256": "c46084df69bbaa995b301a515274a86ec53905c78459b80dccbc27a0c0b8d13b",
+      "bytes": 762783
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/grading.json": {
+      "sha256": "c0bd060633b45543fd59a5346309aa0943b8dab98f6eff10e95f1075033eb4aa",
+      "bytes": 10890
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/visual/screenshots/project-desktop.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/visual/screenshots/project-group-analysis-after.png": {
+      "sha256": "5c96365529d4cf8a3c5074f8cb5b8421182f27fc61300d3dc8a51e784e4a1568",
+      "bytes": 280720
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/visual/screenshots/project-group-analysis-before.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/visual/screenshots/project-group-basemap-after.png": {
+      "sha256": "83fa3f540553b46f50e97ddbc6247cc6c3bf9c93995a810dcd7a271e332a3ff8",
+      "bytes": 10207
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/visual/screenshots/project-group-basemap-before.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/visual/screenshots/project-group-user_overrides-after.png": {
+      "sha256": "7b1766b811ea66e274422761944d19ff4cf68e7ec8aad1cb015378cc2a3f6a1c",
+      "bytes": 279978
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/visual/screenshots/project-group-user_overrides-before.png": {
+      "sha256": "5c76c463176c7a21a5ea27aeb3fd74649b797eedc4316594a67aa5459183f24f",
+      "bytes": 280908
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/912-dashboard-silent-warnings/1/visual/screenshots/project-mobile.png": {
+      "sha256": "52f98613548ada8c9f0545974242151994dc541bbbb61862b9d7c9f346af2a16",
+      "bytes": 98323
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/README.md": {
+      "sha256": "cc2a0779088d2294dd05ae63a98e0fdbf0d7576b0a03e656d9041f1189131363",
+      "bytes": 86
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/dashboard.html": {
+      "sha256": "05439e75bbf31876a6e31bd68b3d2807443bd2e928df695c1ba85c0e733de813",
+      "bytes": 10931
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/data/derived/candidate-parcels.geojson": {
+      "sha256": "43d172b714343e0a9073f6199d9185c09006b16521f6866ed7ca9dd775a9b50d",
+      "bytes": 1194
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/data/derived/candidate-parcels.parquet": {
+      "sha256": "6734168f3d792715304f5dc92b946d15bab485102ee1a9f1b5f5e949b0349d6a",
+      "bytes": 2997
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/data/derived/education_pois.geojson": {
+      "sha256": "39f61d47ea0be16ad61de5a6f600adf0640a56470d043df11e1115bace189d3c",
+      "bytes": 506
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/data/source/parcels.geojson": {
+      "sha256": "9cf955c9aea921c99c6fa2a1e010715a7535e88d84b792595cbf5a85f9716140",
+      "bytes": 1579
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/data/source/pois.geojson": {
+      "sha256": "0e078e7164242df89e9c612da01fe9ab73258b283661bf85cebeac996d20dfa3",
+      "bytes": 516
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/data/source/roads.geojson": {
+      "sha256": "0c263636cdf8cfc5e0e8092a29479268e14ebadc56b9622004ef1a4f327af76c",
+      "bytes": 363
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/pipeline.py": {
+      "sha256": "ad79b1cbe92a92c62710e5f7495fe7ee168bd9b74ae8ee3d9631283fd99e6730",
+      "bytes": 65841
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/project.qgz": {
+      "sha256": "3200e7423e76bac5c5215e64290b4de639d61f066999a6a819f153a86896fc4d",
+      "bytes": 8335
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/project.yaml": {
+      "sha256": "7ffcc28dc999448288d25aae131facdf17583bf8b1b5ede64cfe965a3c1f02c3",
+      "bytes": 9110
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/runs/run-20260825-080000.json": {
+      "sha256": "e0466c3be219326f2b8492d9bf3dca8ff77516a30434b0a2031f83ecad23d9b9",
+      "bytes": 1917
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/validation/latest-report.json": {
+      "sha256": "0b09d5a17e96a4a8d487a69580213d8d7ab6664db29a91899bb38de97916d4a9",
+      "bytes": 1453
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/vendor/maplibre-gl/maplibre-gl.css": {
+      "sha256": "731181d400d65a8b09d842f55b70bc4dc11010b15b8549e2c65a69d233fbdd2e",
+      "bytes": 63722
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/generated-project/vendor/maplibre-gl/maplibre-gl.js": {
+      "sha256": "c46084df69bbaa995b301a515274a86ec53905c78459b80dccbc27a0c0b8d13b",
+      "bytes": 762783
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/grading.json": {
+      "sha256": "950b574e8a5dae25d499814dcfbcf968bc296d1148d7b5db9f934e28ac238fbb",
+      "bytes": 10983
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/visual/screenshots/project-desktop.png": {
+      "sha256": "83fa3f540553b46f50e97ddbc6247cc6c3bf9c93995a810dcd7a271e332a3ff8",
+      "bytes": 10207
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/visual/screenshots/project-group-analysis-after.png": {
+      "sha256": "ab5702243a2cee1d252ea8f850db477f6d83c2ae07b46778f98d441d8cbe4fba",
+      "bytes": 5121
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/visual/screenshots/project-group-analysis-before.png": {
+      "sha256": "83fa3f540553b46f50e97ddbc6247cc6c3bf9c93995a810dcd7a271e332a3ff8",
+      "bytes": 10207
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/visual/screenshots/project-group-basemap-after.png": {
+      "sha256": "83fa3f540553b46f50e97ddbc6247cc6c3bf9c93995a810dcd7a271e332a3ff8",
+      "bytes": 10207
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/visual/screenshots/project-group-basemap-before.png": {
+      "sha256": "83fa3f540553b46f50e97ddbc6247cc6c3bf9c93995a810dcd7a271e332a3ff8",
+      "bytes": 10207
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/visual/screenshots/project-group-user_overrides-after.png": {
+      "sha256": "aa03fce83e58d1e14411fe8d351a1d31d215d06400ae6cd48d99ea54c6153b0e",
+      "bytes": 9120
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/visual/screenshots/project-group-user_overrides-before.png": {
+      "sha256": "83fa3f540553b46f50e97ddbc6247cc6c3bf9c93995a810dcd7a271e332a3ff8",
+      "bytes": 10207
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/913-basemap-missing/1/visual/screenshots/project-mobile.png": {
+      "sha256": "e78263575f3ceb625a7c3d0d7445f5c4dd65338447891f5c5d54024f39b90077",
+      "bytes": 4413
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/README.md": {
+      "sha256": "470f5c4158ea345a8ba82350c9b32d6d776df2b249fab674bb5bbad89d25c1b1",
+      "bytes": 2385
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/dashboard.html": {
+      "sha256": "daba1bbe05bcf213ecbf6a3713a05344bc4c8cd99938763eaa62d5bce44c4e59",
+      "bytes": 4222
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/data/derived/areas.csv": {
+      "sha256": "7469e9e1e12e3ff87ad37a7b2c7694d6aca3b9eabb6174ba65c16b09166c5488",
+      "bytes": 27
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/data/derived/candidates.geojson": {
+      "sha256": "c89f0394134371cc60f361b7c3ce4f67ac7e04f956c7d12072919602979c9b56",
+      "bytes": 325
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/data/source/parcels.geojson": {
+      "sha256": "f54b136b53620861a72fc59e6a467e3500d94cf86372c1209e80ec632bbc8461",
+      "bytes": 458
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/delivery/dashboard-evidence.json": {
+      "sha256": "6023bc662071973e99460ba6e9a425630d89e3cc1667a23249a87f859b3c13d7",
+      "bytes": 4640
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/delivery/qgis-evidence.json": {
+      "sha256": "5cb7e581eda693cf6499d782d0fa299a6977d4be7876c641ea4d45352aab795c",
+      "bytes": 4630
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/findings.md": {
+      "sha256": "065590aa6c52f37b539f2712e9415b892fa4c4a6a768719cbfd6d78a695988f2",
+      "bytes": 2337
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/pipeline.py": {
+      "sha256": "0cd4432602a4e31ae5d642ae25cf6c79b0b3c2ec2ba71ab23309ea6df5a515a1",
+      "bytes": 9556
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/project.qgz": {
+      "sha256": "46edd0e9bddaf5158378da3eb56addfd16a35851a926c43b4e5e84833cfbd358",
+      "bytes": 7067
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/project.yaml": {
+      "sha256": "841bbb0b6f955c1e2444d20d1e09a3af5e67b4a9065af195646ec0f49385c227",
+      "bytes": 4587
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/runs/run-20261027-185113.json": {
+      "sha256": "8453e5df430db7ecab95de376ad9338558b7767a2197ff76c11ec61c88393ee4",
+      "bytes": 1710
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/generated-project/validation/latest-report.json": {
+      "sha256": "2aede19916d6a21f2b23274f07f0dffad8b4d579d49e1d79e6e12f04e3d318a4",
+      "bytes": 614
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/970-css-hidden-credits/1/grading.json": {
+      "sha256": "c1b1694c40c69167910ccd173619a89c7b60061319e371e796868bfb41d7e974",
+      "bytes": 3078
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/README.md": {
+      "sha256": "cc2a0779088d2294dd05ae63a98e0fdbf0d7576b0a03e656d9041f1189131363",
+      "bytes": 86
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/dashboard.html": {
+      "sha256": "1b54d729432e21eefae768f1042d7a497be6e7069f6f49a3671ecfaf7962d6fa",
+      "bytes": 11651
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/data/derived/candidate-parcels.geojson": {
+      "sha256": "43d172b714343e0a9073f6199d9185c09006b16521f6866ed7ca9dd775a9b50d",
+      "bytes": 1194
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/data/derived/candidate-parcels.parquet": {
+      "sha256": "6734168f3d792715304f5dc92b946d15bab485102ee1a9f1b5f5e949b0349d6a",
+      "bytes": 2997
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/data/derived/education_pois.geojson": {
+      "sha256": "39f61d47ea0be16ad61de5a6f600adf0640a56470d043df11e1115bace189d3c",
+      "bytes": 506
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/data/source/parcels.geojson": {
+      "sha256": "9cf955c9aea921c99c6fa2a1e010715a7535e88d84b792595cbf5a85f9716140",
+      "bytes": 1579
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/data/source/pois.geojson": {
+      "sha256": "0e078e7164242df89e9c612da01fe9ab73258b283661bf85cebeac996d20dfa3",
+      "bytes": 516
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/data/source/roads.geojson": {
+      "sha256": "0c263636cdf8cfc5e0e8092a29479268e14ebadc56b9622004ef1a4f327af76c",
+      "bytes": 363
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/pipeline.py": {
+      "sha256": "ad79b1cbe92a92c62710e5f7495fe7ee168bd9b74ae8ee3d9631283fd99e6730",
+      "bytes": 65841
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/project.qgz": {
+      "sha256": "d1bf49ce6e79a9768f3dff20d44bdad0efbcf8231070e96f6f296ed0b2333039",
+      "bytes": 10599
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/project.yaml": {
+      "sha256": "4855252a2b87213cd42d71ac8410f39c31f8fa6bd35d62e19ec479408ccdd8c1",
+      "bytes": 9138
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/runs/run-20260825-080000.json": {
+      "sha256": "e0466c3be219326f2b8492d9bf3dca8ff77516a30434b0a2031f83ecad23d9b9",
+      "bytes": 1917
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/validation/latest-report.json": {
+      "sha256": "0b09d5a17e96a4a8d487a69580213d8d7ab6664db29a91899bb38de97916d4a9",
+      "bytes": 1453
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/vendor/maplibre-gl/maplibre-gl.css": {
+      "sha256": "731181d400d65a8b09d842f55b70bc4dc11010b15b8549e2c65a69d233fbdd2e",
+      "bytes": 63722
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/generated-project/vendor/maplibre-gl/maplibre-gl.js": {
+      "sha256": "c46084df69bbaa995b301a515274a86ec53905c78459b80dccbc27a0c0b8d13b",
+      "bytes": 762783
+    },
+    "evidence/native-visual/results/20261027T184803Z/visual/972-dashboard-mobile-controls-overflow/1/grading.json": {
+      "sha256": "7eb797906bf3cff5802c6720ab1c5b720ce768d5729df88c51fc72505e743bfb",
+      "bytes": 5302
+    },
+    "evidence/native-visual/results/latest.json": {
+      "sha256": "b372ce9251af5edccfda7dcdedaec0e2adbf69711a7ccdc341891868d11227e9",
+      "bytes": 118472
+    },
+    "evidence/native-visual/runtime.log": {
+      "sha256": "71663c3159ea059ea0d80f3d20dc2271db905c83b7b71b42589a8d52a20bef3c",
+      "bytes": 37
+    },
+    "evidence/native-visual/setup.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "evidence/native-visual/setup.log": {
+      "sha256": "2f17a53e770adc3cddd1926078bfda2dd5b0ef3b3509cfcae15356ad14db6419",
+      "bytes": 21624
+    },
+    "evidence/native-visual/test-verify-regenerated-example.log": {
+      "sha256": "c0095feee1c6e433662be80f4f21192e5b25f738bbf99702930c0c62d06415c8",
+      "bytes": 4541
+    },
+    "evidence/native-visual/visual-docker.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "evidence/native-visual/visual.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "evidence/native-visual/visual.log": {
+      "sha256": "8f57971cf49df76f74afae42fff30797ccafbc5ca94b36c0da84bffd26e7ff97",
+      "bytes": 11036
+    },
+    "evidence/native-visual/visual_container.sh": {
+      "sha256": "8356e3de91ad435f9ea6f28eb7031cdbc76cc33840cd8fdfea104d29decbe038",
+      "bytes": 1527
+    },
+    "evidence/native-visual.json": {
+      "sha256": "fa7fdb62cb7d2a81164c2fb1d3657cfeaa62a24b3fecbbbd2984ac955ea03b59",
+      "bytes": 5966
     },
     "evidence/package-controls.json": {
-      "sha256": "ea7b39711332ff667f8d68f8335208bc087c354893e2cc25518b23a1484c920e",
+      "sha256": "fb6d07f479fd1b05cf13f43e65bdb62eeacc89abf4f7a41b8f87c0aabeb5db3b",
       "bytes": 4188
     },
+    "evidence/payload-comparison.json": {
+      "sha256": "f6273d33f5989f5ca373b7bf9e4b41453b5de88817ff511570a4b0607a4c669f",
+      "bytes": 7825
+    },
+    "evidence/pin-attempt-1/pin-checks.json": {
+      "sha256": "78376d0e6800fd9e1fc65e3dd9f067a6c183b45bb92fdbb33d3e1f4c90f9369d",
+      "bytes": 1670
+    },
+    "evidence/pin-attempt-1/pin-driver.log": {
+      "sha256": "31452b1cb1d9ff3e256c48689e8bf56843f684978b82bf54b202fb26aeac92e5",
+      "bytes": 289
+    },
+    "evidence/pin-attempt-1/pin-project-add.log": {
+      "sha256": "09c582ad79b257aae30b8f9ecadddc1db530e141785508e2649da35310b262cc",
+      "bytes": 2201
+    },
+    "evidence/pin-attempt-1/pin-project-remove.log": {
+      "sha256": "8c8e60ce0312fe45d48e741e7bd5b79399d53e44fa1c0911b2c1189e2c833756",
+      "bytes": 242
+    },
+    "evidence/pin-attempt-1/pin-project-update.log": {
+      "sha256": "88e83b67e1c39e68d83e581c08b225cdba912dd5457ae6596fb4aadc134c5dd7",
+      "bytes": 249
+    },
+    "evidence/pin-attempt-2/pin-checks.json": {
+      "sha256": "78376d0e6800fd9e1fc65e3dd9f067a6c183b45bb92fdbb33d3e1f4c90f9369d",
+      "bytes": 1670
+    },
+    "evidence/pin-attempt-2/pin-driver.log": {
+      "sha256": "57e92d69ea7e50bdb74b598cd067f51442d6715b667d928c3998e7571bc912f8",
+      "bytes": 289
+    },
+    "evidence/pin-attempt-2/pin-project-add.log": {
+      "sha256": "6bc183191bfff222e29ac94bb05103b9625eba2240d3e3460dba1e9bd40dd1f1",
+      "bytes": 3132
+    },
+    "evidence/pin-attempt-2/pin-project-remove.log": {
+      "sha256": "69f318c5c05d99fff6a50d2c79fb4109e0ec04cdd990dc9b0e240fe651bd8bad",
+      "bytes": 159
+    },
+    "evidence/pin-attempt-2/pin-project-update.log": {
+      "sha256": "88e83b67e1c39e68d83e581c08b225cdba912dd5457ae6596fb4aadc134c5dd7",
+      "bytes": 249
+    },
     "evidence/pin-checks.json": {
-      "sha256": "5dd902e12a637f98be28f94f3cfaf8fcd683f6ebd351d38d240404d137fd13a9",
+      "sha256": "b9f9982150dde288be9405f7955bb73b1887977714cba0ff382a06b90d60d476",
       "bytes": 3535
     },
     "evidence/pin-driver.log": {
@@ -1044,11 +2223,11 @@
       "bytes": 122
     },
     "evidence/pin-global-add.log": {
-      "sha256": "a4c8d687832baabe634c055bb00d03cca4809662e1339b5f3dd6591f13fb9c9a",
-      "bytes": 1936
+      "sha256": "bb1340ad278a7d8dd702ffb2d021ae669f2623d8078f703231ffd8ab14e89371",
+      "bytes": 2007
     },
     "evidence/pin-global-remove.log": {
-      "sha256": "d1f0280051cb7baed531d6dd454fc9318bb6c1df51a615ce5def2ed6ffd6ceed",
+      "sha256": "a8f7c5b77e882535ad25eb010432ec066d8d2311df86216d6fd49fe537333544",
       "bytes": 222
     },
     "evidence/pin-global-update.log": {
@@ -1056,8 +2235,8 @@
       "bytes": 173
     },
     "evidence/pin-project-add.log": {
-      "sha256": "2f98d046f988c96e784c50f93ad287471890e0144b244bb1f561fb49ef985e9a",
-      "bytes": 2002
+      "sha256": "572b3114862465fe648824feaf3552f4644eac196c792c5d5c7581fd57b051e6",
+      "bytes": 2109
     },
     "evidence/pin-project-remove.log": {
       "sha256": "a8f7c5b77e882535ad25eb010432ec066d8d2311df86216d6fd49fe537333544",
@@ -1068,8 +2247,8 @@
       "bytes": 249
     },
     "evidence/plugin-checks.json": {
-      "sha256": "979b2b7187d947152282c58c195d1a77c7c5e1bd18443a4c364e9e9907330e5b",
-      "bytes": 2960
+      "sha256": "18fa342461b08effb223aa29d058318d32a500ce18e73b4adbbaed6f083d053d",
+      "bytes": 2976
     },
     "evidence/plugin-driver.log": {
       "sha256": "c24adfa42d78becb99556d8e572f3dea26dfe354319b426c221998cffd53ca55",
@@ -1084,8 +2263,8 @@
       "bytes": 3
     },
     "evidence/plugin-list.log": {
-      "sha256": "52d570771543d7e390206e9a9fbc4c99a27f971095beee66eb7392c4c23a5550",
-      "bytes": 477
+      "sha256": "5abcc4cc4b5b53be599147f76dd042ee1ba40bec4a1ac56d28c1a1c2f20a7d59",
+      "bytes": 485
     },
     "evidence/plugin-marketplace-add.log": {
       "sha256": "398f0d5ec54204d268b61d8968b187cba2a76cdbeb33c9479a80ccc59e2386b6",
@@ -1100,12 +2279,12 @@
       "bytes": 121
     },
     "evidence/plugin-marketplace-validation.log": {
-      "sha256": "565272ac8894d24c55e00b8fc4ec9a29c081b934b020298a27ae95dab8f3031b",
-      "bytes": 131
+      "sha256": "2212e5c427fcb78ee595b3cfb94cf3f97da243d2cf32a37db3b6570557f496be",
+      "bytes": 135
     },
     "evidence/plugin-plugin-validation.log": {
-      "sha256": "7e6fac6b14130fe8dd6543214873b81c407a7c82ad6fa699196fdebbdeb15bea",
-      "bytes": 1661
+      "sha256": "d9d056a47ad7729fa78c35aec1e6f124f25ff5f06b5f8e6350047f491b00e4eb",
+      "bytes": 1673
     },
     "evidence/plugin-source-inventory.log": {
       "sha256": "f859ee2447310c13ff63ef7f59ee17afebff2b1a47d8866456e01e447f6c1d43",
@@ -1116,101 +2295,105 @@
       "bytes": 66
     },
     "evidence/plugin-update.log": {
-      "sha256": "7f292cbb82261c66e0ded5739accd7d3efee0b16151945fd993a22e6c5da30e2",
-      "bytes": 301
+      "sha256": "e95f5d158732b01f0e50254faab2345d31553e35ede9d65b0d4bd8e7e72e9dd9",
+      "bytes": 305
     },
     "evidence/plugin-version.log": {
       "sha256": "0896bb2b0f0c7741c8ab6df43385b83f8fc18620da007e784d0dba2f4b75580b",
       "bytes": 22
     },
     "evidence/pr-candidate-ci.json": {
-      "sha256": "758ae7e2478b680a53c75859b8b8e8c1d55587e4b496d25a574b9b0e558a4e8f",
-      "bytes": 869
+      "sha256": "3e94cab5f4700a7f5b1672e1c7b5b30464f7be9079ae6bb281f874b5dc207b78",
+      "bytes": 3355
     },
-    "evidence/pr-initial-ci.json": {
-      "sha256": "7b04d55b1ac0d2a80f81ebb064f9f1b62204c2dcc6ee9cddd13b34d5ae575043",
-      "bytes": 864
+    "evidence/pyqgis-worked-example.log": {
+      "sha256": "e46cbc498fed54edb734735896615d8ff2d5de6459794b988a79c6d0c0d94d62",
+      "bytes": 1052
     },
     "evidence/requirements-frozen.txt": {
-      "sha256": "5c435a1e3c230a7d30d6340b5c7328733d192a460ee67e0b58cd6cb805929c47",
-      "bytes": 856
+      "sha256": "5d139100f5084ac4b31262fb5ed371bc14774acedfc8b5af4622f66c7e8c431f",
+      "bytes": 860
     },
     "evidence/skill-packages.log": {
-      "sha256": "991a2055351b992202e48753620642fdbcdec4c5c5a2976c4e3fd15195727f8f",
-      "bytes": 378
-    },
-    "evidence/skills-add-help.log": {
-      "sha256": "03acd0a337fe3308cb05b3f72f3df6e20644f781bac046e6b98bb91feee66bee",
-      "bytes": 5163
+      "sha256": "0717320a9e93ebedc01c4363d77209fdfc93cedf5e46e31875ed9eb5bcb34167",
+      "bytes": 394
     },
     "evidence/skills-cli-version.log": {
-      "sha256": "653e7cf38027961122ce971eb6a597ce4132f39b4983320fa2a35e0f76cb8961",
-      "bytes": 216
+      "sha256": "b14cd67e8f0172884ef1f58dc8a35bb0bbc3f19f514fa1839b899201e8b17e32",
+      "bytes": 7
     },
     "evidence/snapshot-changed-control.json": {
-      "sha256": "24a5452913e295dc16ca69422dd00e31c85db142e2a1a20ed70ab5ae276ae758",
-      "bytes": 2794
+      "sha256": "a737d43b71ab25ead9dd1ddecfa33ba523683c34d63682059274b9adfd4e86f0",
+      "bytes": 2798
     },
     "evidence/snapshot-collection.json": {
-      "sha256": "f6244631284d6ae97be54286edd6c3a4ec7414cbd04078f0e86579b0eb8e21c6",
+      "sha256": "1949f00bbf6659d40f63080f9dff2e8c9fc248fdd1b52212a6f00b1d914f5f20",
       "bytes": 32946
     },
     "evidence/snapshot-geospatial-data-discovery.json": {
-      "sha256": "80abf31cceb4abb083bfdda27d4aab5d12f0ccfe3f17283d6847a0d124660351",
+      "sha256": "9be7171a16bd1f3c68c8e29ce162a7bb8d20545e27ce88972cb3e67967f8eb67",
       "bytes": 2512
     },
     "evidence/snapshot-missing-control.json": {
-      "sha256": "1f832cd2a997da6da0f37ce08cb55c3ca6f83d808bed063fe079d29208050f50",
-      "bytes": 2794
+      "sha256": "61590138798dc915be1d55f18dbb7af9ef32ade9dd0f14f94595734d4e35a685",
+      "bytes": 2798
     },
     "evidence/snapshot-open-map-stack.json": {
-      "sha256": "e86f53f98f436df8cf588389d9454d9aa4a57ca4ed8a995149400da56973a987",
+      "sha256": "e486faf8efd37e5c38ddc54aa925d54f9876f48d14d152b82054df01fb8436e0",
       "bytes": 14951
     },
     "evidence/snapshot-reproducible-gis-project.json": {
-      "sha256": "e640f476c7cf217ee2376e799cd96dd1484927a3fd48d73fba8f18bde3fd7e25",
+      "sha256": "324a30b06cfc275dbf3d932c1bc9eee0af3e6bade843d36f29426b0d814dadf0",
       "bytes": 14916
     },
     "evidence/snapshot-spatial-sql.json": {
-      "sha256": "b469b24e69c1b5e77ca55bd936620ddec1e84657d9a12b58d87290df5cbfbe0f",
+      "sha256": "7934b3743856e011bdc8d72a64810d73690acd704d4589501844e997e9073e6a",
       "bytes": 2184
     },
     "evidence/source-clone.log": {
-      "sha256": "ae0ffe2c57444774f00cc2f6ed328c3cce9932ce9d075ba88eb0291aa798362d",
-      "bytes": 67
+      "sha256": "bbd058195a4a0ec98ddcab2890244eca634879827b4917aad887dcb750b5511c",
+      "bytes": 65
     },
     "evidence/source-directory-packages.log": {
-      "sha256": "2b7f072b745997183f8b4a9e6b23da9888b9249425a706e8476c453bc6a439c5",
-      "bytes": 431
+      "sha256": "d944e08608c4889a6081be3551fd1c4f6d9162fe10fb6de2668cc78e1a29fe3e",
+      "bytes": 447
     },
     "evidence/spatial-prepare.log": {
       "sha256": "7ff26eef59e01438c8f5c56ea34705c7b2142597dfb12c3e27b9a519fafd5598",
       "bytes": 81
     },
-    "evidence/test-cli-install.log": {
-      "sha256": "972344d72e595ff33e3fb0b518cef2e34a1aa1cf384d2770799e8f9718067136",
-      "bytes": 2407
-    },
-    "evidence/test-release-bootstrap-missing-deps.log": {
-      "sha256": "1b21be67a20b5124097b8e7272b1152be69be590b0b6b3e65d22d3fb7effa783",
-      "bytes": 1366
-    },
     "evidence/test-release.log": {
-      "sha256": "d0eddb7e0c010728751a737a985b87d0499652364e605f761f3a40dd37adf95d",
+      "sha256": "d08bdbb09602d276ddf96221ae1fcca3db14df887bf40699ae854586e4d8e24d",
       "bytes": 221
     },
     "evidence/twine-check.log": {
-      "sha256": "2afe94e6e777f816397f8828927abe4abd1d846bf0a2e355ab3a40418f432181",
-      "bytes": 179
+      "sha256": "2a57bd7a370d4b3cd5c29031d28205b2c433c845d2568b7fc677588ca0bc327b",
+      "bytes": 205
     },
     "evidence/unit-coverage.log": {
-      "sha256": "a25b802544e8cf410df66f904dc62913ab3e6f050e51f99e59c00d8b9162a750",
-      "bytes": 183850
+      "sha256": "07834d567cbe5eb9f6562e23154d23e3a88c8971762274ddbafe10f5a36d3116",
+      "bytes": 191334
+    },
+    "evidence/worked-example-install.log": {
+      "sha256": "f30ecd99c855a431b5cdbd4a7aa6a975a11ba114978730b433ccd8ac2a6afc60",
+      "bytes": 6707
+    },
+    "evidence/worked-example-pipeline.log": {
+      "sha256": "ee9a586820c19bac7e3c29eb4a21b22fa088bb5320e59ecc5156ce11386eced7",
+      "bytes": 7826
+    },
+    "evidence/worked-example-validate.log": {
+      "sha256": "4dc3d88b9eaaaa30752bf4e1264ce0fe25e0e77075df3cb954560328a32bb4e4",
+      "bytes": 375
+    },
+    "evidence/worked-example-verify.log": {
+      "sha256": "af1494b17611c0374d7f9f60a0f6673bc61b5419585bcf6022f2e27ad5fd8b36",
+      "bytes": 957
     }
   },
   "evidence_bundle": {
-    "file": "release-evidence-0.5.0-rc.tar.gz",
-    "sha256": "01d836466e8ffbb9a69cdadcc234aa380754de01f7bbc91819677107d332e181",
-    "bytes": 16353701
+    "file": "release-evidence-0.5.0-rc2.tar.gz",
+    "sha256": "95fb086474683fbcb8d1e0c36efcecb3a6d37e4fa592b89a0363bb0b7b7bd424",
+    "bytes": 16402276
   }
 }
