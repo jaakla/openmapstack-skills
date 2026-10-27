@@ -35,7 +35,8 @@ HTTP_TIMEOUT_S = 300
 
 SYSTEM_PROMPT = """You are an autonomous coding agent working inside a plain \
 directory (your workspace). Complete the user's task there. You can run \
-shell commands and create, read, and list files with the provided tools. \
+shell commands, create, read, and list files, read large files in line ranges, \
+and make exact-string edits instead of rewriting whole files. \
 Read controlled guidance when provided; write files only in your workspace. \
 Work incrementally: inspect the workspace, write the needed files, run and \
 verify your work, and iterate until the task is done. When you are finished, \
@@ -76,13 +77,39 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "read_file",
-            "description": "Read a file in the workspace or the runner-provided read-only guidance directory.",
+            "description": (
+                "Read a file in the workspace or the runner-provided read-only guidance directory. Output is capped "
+                f"at {MAX_TOOL_OUTPUT_CHARS} characters; a partial read ends with a note giving the line range, the "
+                "file's total lines and characters, and the offset to continue from."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Path relative to the workspace; controlled guidance may be beside it."},
+                    "offset": {"type": "integer", "description": "First line to read, 1-based (default 1)."},
+                    "limit": {"type": "integer", "description": "Maximum number of lines to read (default: as many as fit)."},
                 },
                 "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "edit_file",
+            "description": (
+                "Replace an exact string in an existing workspace text file. old_string must match the file "
+                "exactly, including whitespace, and be unique unless replace_all is true."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Workspace-relative file path."},
+                    "old_string": {"type": "string", "description": "Exact text to replace."},
+                    "new_string": {"type": "string", "description": "Replacement text."},
+                    "replace_all": {"type": "boolean", "description": "Replace every occurrence (default false)."},
+                },
+                "required": ["path", "old_string", "new_string"],
             },
         },
     },
@@ -124,6 +151,43 @@ def _resolve_tool_path(workspace: Path, raw: Any, guidance: Path | None, *, writ
     if candidate.is_relative_to(resolved_workspace):
         return candidate
     raise ValueError(f"path escapes the workspace or controlled guidance: {raw!r}")
+
+
+def _positive_int(args: dict[str, Any], key: str) -> int | None:
+    value = args.get(key)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ValueError(f"{key!r} must be a positive integer, got {value!r}")
+    return value
+
+
+def _read_range(text: str, offset: int | None, limit: int | None) -> tuple[bool, str]:
+    """Whole lines from ``offset``, within ``limit`` and the output cap."""
+    lines = text.splitlines(keepends=True)
+    start = (offset or 1) - 1
+    if start and start >= len(lines):
+        return False, f"offset {start + 1} is past the end of the file ({len(lines)} lines)"
+    if not lines:
+        return True, "" if offset is None and limit is None else "[read_file: empty file]"
+    end = len(lines) if limit is None else min(len(lines), start + limit)
+    chosen, size = [], 0
+    for line in lines[start:end]:
+        if chosen and size + len(line) > MAX_TOOL_OUTPUT_CHARS:
+            break
+        chosen.append(line)
+        size += len(line)
+    stop = start + len(chosen)
+    content = "".join(chosen)
+    clipped = len(content) > MAX_TOOL_OUTPUT_CHARS
+    if offset is None and limit is None and stop == len(lines) and not clipped:
+        return True, content
+    note = f"[read_file: lines {start + 1}-{stop} of {len(lines)}; {len(text)} characters total; "
+    if clipped:
+        content = content[:MAX_TOOL_OUTPUT_CHARS]
+        note += f"line {stop} was cut at {MAX_TOOL_OUTPUT_CHARS} characters; "
+    note += f"more remains, continue with offset={stop + 1}]" if stop < len(lines) else "end of file]"
+    return True, content + ("" if content.endswith("\n") or not content else "\n") + note
 
 
 def _tool_arguments(raw: Any, finish_reason: Any) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
@@ -224,7 +288,36 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 target = _resolve_tool_path(workspace, args.get("path"), self._guidance_root(workspace))
                 if not target.is_file():
                     return False, f"not a file: {args.get('path')!r}"
-                return True, _truncate(target.read_text(encoding="utf-8", errors="replace"))
+                offset, limit = _positive_int(args, "offset"), _positive_int(args, "limit")
+                with target.open(encoding="utf-8", errors="replace", newline="") as handle:
+                    return _read_range(handle.read(), offset, limit)
+            if name == "edit_file":
+                target = _resolve_tool_path(workspace, args.get("path"), self._guidance_root(workspace), write=True)
+                old, new = args.get("old_string"), args.get("new_string")
+                if not isinstance(old, str) or not old or not isinstance(new, str):
+                    return False, "edit_file requires a non-empty 'old_string' and a string 'new_string'"
+                if old == new:
+                    return False, "old_string and new_string are identical; nothing to change"
+                replace_all = args.get("replace_all", False)
+                if not isinstance(replace_all, bool):
+                    return False, "edit_file 'replace_all' must be a boolean"
+                if not target.is_file():
+                    return False, f"not a file: {args.get('path')!r}"
+                # Keep line endings as written; a read_file excerpt matches them.
+                with target.open(encoding="utf-8", newline="") as handle:
+                    text = handle.read()
+                count = text.count(old)
+                if count == 0:
+                    return False, f"old_string not found in {args.get('path')!r}; read the file and copy the text exactly"
+                if count > 1 and not replace_all:
+                    return False, (f"old_string occurs {count} times in {args.get('path')!r}; "
+                                   "include more surrounding text to make it unique, or set replace_all")
+                text = text.replace(old, new) if replace_all else text.replace(old, new, 1)
+                with target.open("w", encoding="utf-8", newline="") as handle:
+                    handle.write(text)
+                replaced = count if replace_all else 1
+                return True, (f"replaced {replaced} occurrence{'s' if replaced > 1 else ''} in "
+                              f"{target.relative_to(workspace.resolve())}; file now has {len(text.splitlines())} lines")
             if name == "list_dir":
                 target = _resolve_tool_path(workspace, args.get("path") or ".", self._guidance_root(workspace))
                 if not target.is_dir():

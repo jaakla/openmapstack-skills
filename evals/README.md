@@ -520,7 +520,7 @@ repetitions; publication runs should request five.
 The `openai_compatible` adapter runs live cases against any OpenAI-compatible
 `/chat/completions` endpoint with no CLI install. It drives the model as an
 autonomous agent via a tool-execution loop (`run_shell`, `write_file`,
-`read_file`, `list_dir`), so the same assertions can grade an endpoint-hosted
+`read_file`, `edit_file`, `list_dir`), so the same assertions can grade an endpoint-hosted
 model like a CLI agent. File reads/listings allow the workspace and the
 runner-staged `benchmark-context/openmapstack` guidance directory; file writes
 remain in the workspace and cannot modify guidance. These file-tool boundaries
@@ -534,6 +534,14 @@ malformed arguments without that signal, retain JSON error locations, and are
 returned to the model for repair. Missing finish reasons remain explicit nulls;
 an unterminated string alone does not prove truncation. A final response ending
 at the output limit is not recorded as a completed run.
+
+`read_file` takes an optional 1-based line `offset` and line `limit` and returns
+whole lines within the 20,000-character output cap; a partial read ends with a
+note giving the line range, the file's total lines and characters, and the
+offset to continue from. `edit_file` replaces an exact `old_string` that must be
+unique unless `replace_all` is set, so the agent can repair a large file without
+rewriting it. Like `write_file`, it is confined to the workspace and cannot
+modify guidance.
 
 All configuration is environment-based:
 
