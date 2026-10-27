@@ -117,6 +117,33 @@ class _RunnerHarness(unittest.TestCase):
 
 
 class EvalRunnerTests(_RunnerHarness):
+    def test_atomic_summaries_keep_normal_artifact_permissions(self):
+        previous_umask = os.umask(0o022)
+        self.addCleanup(os.umask, previous_umask)
+        summary = eval_runner.build_summary([], {'mode': 'fixture'})
+        # The Docker producer and host artifact uploader have different UIDs.
+        # A private tempfile's 0600 mode must not become the published mode.
+        for mask, expected_mode in ((0o022, 0o644), (0o077, 0o600)):
+            os.umask(mask)
+            output = self.root / f'offline-eval-results-{mask}.json'
+            with self.subTest(umask=oct(mask)):
+                for _ in range(2):
+                    eval_runner._write_summary(summary, str(output), announce=False)
+                    for path in (output, self.results_dir / 'latest.json'):
+                        self.assertEqual(path.stat().st_mode & 0o777, expected_mode)
+                        self.assertEqual(json.loads(path.read_text()), summary)
+
+    def test_failed_atomic_publish_keeps_the_previous_summary(self):
+        output = self.root / 'checkpoint.json'
+        original = eval_runner.build_summary([], {'mode': 'live', 'checkpoint': True})
+        eval_runner._write_summary(original, str(output), announce=False)
+        replacement = eval_runner.build_summary([], {'mode': 'live'})
+        with patch.object(Path, 'replace', side_effect=OSError('interrupted publish')):
+            with self.assertRaisesRegex(OSError, 'interrupted publish'):
+                eval_runner._write_summary(replacement, str(output), announce=False)
+        self.assertEqual(json.loads(output.read_text()), original)
+        self.assertEqual(json.loads((self.results_dir / 'latest.json').read_text()), original)
+
     def test_fixture_mode_is_default_and_passes(self) -> None:
         self.write_case()
         exit_code, stdout, _ = self.call_main([])
@@ -945,6 +972,8 @@ class EvalRunnerTests(_RunnerHarness):
         self.assertEqual(len(calls), 3)
         summary = json.loads(output.read_text())
         self.assertTrue(summary['run_incomplete'])
+        self.assertFalse(summary['run_setup_failed'])
+        self.assertNotIn('checkpoint', summary['run_config'])
         self.assertEqual(summary['selection']['trials_run'], 3)
         self.assertEqual(summary['selection']['trials_not_attempted'], 5)
         self.assertEqual(summary['selection']['case_definitions_skipped'], 1)
@@ -965,6 +994,37 @@ class EvalRunnerTests(_RunnerHarness):
         self.assertIn('STOP   codex: quota_exhausted', stdout)
         self.assertIn('Run incomplete: 5 trials not attempted', stdout)
         self.assertEqual(eval_runner.validation_errors(summary, eval_runner._load_eval_schema('results-v2.schema.json')), [])
+
+    def test_interrupted_live_run_retains_completed_trials_and_a_broken_run_record(self):
+        self.write_case('live', modes=['live'])
+        calls = []
+        class Adapter:
+            executable = 'fake-agent'
+            def is_available(self):
+                return True
+            def run(self, prompt, workspace, **kwargs):
+                calls.append(workspace)
+                if len(calls) == 2:
+                    raise KeyboardInterrupt('simulate CI deadline')
+                (workspace / 'marker.txt').write_text('ok')
+                return AgentRunResult(agent='codex', model=kwargs['model'], workspace=workspace,
+                                      duration_s=0.1, success=True, returncode=0, version='fake 1')
+        output = self.root / 'interrupted.json'
+        with patch.object(eval_runner, '_load_adapter', return_value=Adapter()), self.assertRaises(KeyboardInterrupt):
+            self.call_main(['--mode', 'live', '--agent', 'codex', '--model', 'test-model',
+                            '--repetitions', '3', '--run-id', 'interrupted', '--json', str(output)])
+        summary = json.loads(output.read_text())
+        self.assertTrue(summary['run_setup_failed'])
+        self.assertTrue(summary['run_config']['checkpoint'])
+        self.assertEqual(summary['selection']['trials_run'], 1)
+        self.assertEqual(summary['outcomes']['passed'], 1)
+        self.assertEqual(summary['setup_errors'][0]['stage'], 'incomplete_run')
+        from evals.report import export_report
+        report_dir = self.root / 'interrupted-report'
+        export_report(summary, report_dir, artifact_root=self.root)
+        records = [json.loads(p.read_text()) for p in report_dir.glob('*-result.json')]
+        self.assertEqual(sorted(r['status'] for r in records), ['broken', 'passed'])
+        self.assertIn('checkpoint retains 1 completed trial', (report_dir / 'summary.md').read_text())
 
     def test_trial_failures_and_retryable_provider_errors_do_not_stop_later_calls(self):
         self.write_case('live', modes=['live'])

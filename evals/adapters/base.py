@@ -141,3 +141,22 @@ def parse_json_lines(stdout: str) -> tuple[list[dict[str, Any]], list[str]]:
         else:
             unparsed.append(line)
     return events, unparsed
+
+
+def http_provider_failure(status: int | None, message: str) -> dict[str, Any] | None:
+    """Classify an actual API error, supplied by an adapter, not task output."""
+    category = None
+    if status == 401:
+        category = "authentication"
+    elif status == 403:
+        category = "permission_denied"
+    elif any(marker in message.lower() for marker in (
+        "insufficient_quota", "usage_limit_reached", "exceeded your current quota",
+        "credit balance is too low", "you have hit your usage limit",
+        "quota has been exhausted", "quota exceeded", "quota_exceeded",
+        "billing_hard_limit_reached", "insufficient credits", "monthly spend limit",
+    )):
+        category = "quota_exhausted"
+    if category is None:
+        return None  # Temporary rate limits and server failures stay trial-local.
+    return {"category": category, "scope": "provider", "retryable": False, "message": message[:2000]}

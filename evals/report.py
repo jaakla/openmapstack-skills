@@ -11,6 +11,7 @@ from collections import Counter
 import hashlib
 import html
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -133,10 +134,23 @@ def _evidence(result: dict[str, Any], root: Path, attachments: _Attachments) -> 
         # reporting never executes the project or renders its HTML inline.
         source = f"{uuid.uuid4()}-attachment.zip"
         with zipfile.ZipFile(attachments.directory / source, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-            for path in sorted(project.rglob("*")):
-                safe = _safe_path(project, str(path.relative_to(project)))
-                if safe.is_file():
-                    archive.write(safe, str(path.relative_to(project)))
+            omitted = []
+            for parent, directories, files in os.walk(project, followlinks=False):
+                for name in sorted(directories[:]):
+                    path = Path(parent) / name
+                    if path.is_symlink() or name in {".venv", "venv"}:
+                        directories.remove(name)
+                        omitted.append(str(path.relative_to(project)))
+                for name in sorted(files):
+                    path = Path(parent) / name
+                    if path.is_symlink():
+                        omitted.append(str(path.relative_to(project)))
+                        continue
+                    safe = _safe_path(project, str(path.relative_to(project)))
+                    if safe.is_file():
+                        archive.write(safe, str(path.relative_to(project)))
+            if omitted:
+                warnings.append("Generated-project ZIP omits virtual environments and symlinks (never dereferenced): " + ", ".join(omitted))
         retained.append({"name": "Generated project (ZIP)", "source": source, "type": "application/zip"})
     return retained, warnings
 
@@ -153,6 +167,8 @@ def markdown_summary(summary: dict[str, Any]) -> str:
         if score.get("trials_run"):
             capability = score.get("capability") or {}
             lines.append(f"| {cell(name)} | {score['passed']} / {score['graded_trials']} | {score['setup_failed']} | {capability.get('assertions_not_testable', 0)} | {capability.get('unmet_soft_gates', 0)} |")
+    if summary.get("run_skipped"):
+        lines.extend(["", f"**Skipped / not run: {cell(summary['skip_reason'])}**", "No agent was invoked and no trials were graded."])
     errors = Counter(failure_detail(r) for r in summary["results"] if r["status"] == "setup_failed")
     if summary.get("run_incomplete"):
         lines.extend(["", f"**Run incomplete: {summary['selection']['trials_not_attempted']} trials not attempted after a provider failure.**"])
@@ -161,6 +177,13 @@ def markdown_summary(summary: dict[str, Any]) -> str:
     if errors:
         lines.extend(["", "### Infrastructure errors", "", "| Trials affected | Recorded diagnosis |", "| --- | --- |"])
         lines.extend(f"| {count} | {cell(detail)} |" for detail, count in errors.most_common())
+    provider_errors = Counter(
+        (r.get("agent_run") or {}).get("failure", {}).get("category")
+        for r in summary["results"] if r["status"] == "setup_failed" and ((r.get("agent_run") or {}).get("failure") or {}).get("scope") == "provider"
+    )
+    if provider_errors:
+        lines.extend(["", "### Provider setup failures (not skill regressions)", ""])
+        lines.extend(f"- {cell(category)}: {count} trial(s)" for category, count in sorted(provider_errors.items()))
     failed = [r for r in summary["results"] if r["status"] == "assertions_failed"]
     if failed:
         lines.extend(["", "### Grading failures", "", "| Case | Trial | Arm | Failure details |", "| --- | --- | --- | --- |"])
@@ -186,6 +209,8 @@ def export_report(summary: dict[str, Any], output: Path, *, artifact_root: Path)
     output.parent.mkdir(parents=True, exist_ok=True)
     identities: set[str] = set()
     records = list(summary["results"])
+    if summary.get("run_skipped"):
+        records.append({"id": "provider-preflight", "trial": 1, "mode": "live", "score_type": "run_setup", "status": "skipped", "reason": summary["skip_reason"]})
     if summary["run_setup_failed"]:
         records.append({"id": "run-setup", "trial": 1, "mode": summary["run_config"].get("mode", "fixture"), "score_type": "run_setup", "status": "setup_failed", "setup_error": {"stage": "run_setup", "message": _json(summary["setup_errors"])}})
     config = summary["run_config"]
@@ -255,6 +280,8 @@ def export_report(summary: dict[str, Any], output: Path, *, artifact_root: Path)
                 record["parameters"].append({"name": "reported_model", "value": agent["model"], "excluded": True})
             if unavailable or soft_unmet:
                 record["labels"].append({"name": "tag", "value": "capability-incomplete"})
+            if result["status"] == "setup_failed" and (agent.get("failure") or {}).get("scope") == "provider":
+                record["labels"].append({"name": "tag", "value": "provider-setup:" + agent["failure"]["category"]})
             # Historical summaries have no wall-clock trial timestamps. Do
             # not invent a timeline from export time or sequential durations.
             (directory / f"{record['uuid']}-result.json").write_text(_json(record), encoding="utf-8")

@@ -56,6 +56,9 @@ jobs:
     name: live benchmark (${{ matrix.agent }})
     # Use distro Python with the matching native PyQGIS bindings.
     runs-on: ubuntu-24.04
+    # Bound the entire leg to a quarter of GitHub's six-hour default, with
+    # room for evidence export after the shorter benchmark step times out.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -76,8 +79,32 @@ jobs:
       - uses: actions/checkout@v4
         if: steps.selection.outputs.run == 'true'
 
-      - name: Prepare QGIS-capable Python environment
+      - uses: actions/setup-python@v5
         if: steps.selection.outputs.run == 'true'
+        with:
+          python-version: '3.12'
+
+      - name: Prepare lightweight report runtime
+        if: steps.selection.outputs.run == 'true'
+        timeout-minutes: 5
+        run: python -m pip install -e .
+
+      - name: Check provider configuration without contacting providers
+        id: preflight
+        if: steps.selection.outputs.run == 'true'
+        timeout-minutes: 1
+        env:
+          EVAL_AGENT: ${{ matrix.agent }}
+          EVAL_MODEL: ${{ matrix.agent == 'claude_code' && (github.event.inputs.claude_model || vars.CLAUDE_BENCHMARK_MODEL) || matrix.agent == 'codex' && (github.event.inputs.codex_model || vars.CODEX_BENCHMARK_MODEL) || matrix.agent == 'openai_compatible' && (github.event.inputs.openai_model || vars.OPENAI_COMPATIBLE_BENCHMARK_MODEL) || '' }}
+          ANTHROPIC_API_KEY: ${{ matrix.agent == 'claude_code' && secrets.ANTHROPIC_API_KEY || '' }}
+          OPENAI_API_KEY: ${{ matrix.agent == 'codex' && secrets.OPENAI_API_KEY || '' }}
+          OPENAI_COMPATIBLE_BASE_URL: ${{ matrix.agent == 'openai_compatible' && vars.OPENAI_COMPATIBLE_BASE_URL || '' }}
+          OPENAI_COMPATIBLE_API_KEY: ${{ matrix.agent == 'openai_compatible' && secrets.OPENAI_COMPATIBLE_API_KEY || '' }}
+        run: python -m evals.ci_preflight --agent "$EVAL_AGENT" --model "$EVAL_MODEL" --json "eval-benchmark-results-$EVAL_AGENT.json"
+
+      - name: Prepare QGIS-capable Python environment
+        if: steps.preflight.outputs.ready == 'true'
+        timeout-minutes: 10
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y python3-qgis python3-venv
@@ -86,14 +113,21 @@ jobs:
           echo "QT_QPA_PLATFORM=offscreen" >> "$GITHUB_ENV"
           echo "QGIS_PREFIX_PATH=/usr" >> "$GITHUB_ENV"
 
+      - name: Enable and verify live-agent sandbox
+        if: steps.preflight.outputs.ready == 'true'
+        timeout-minutes: 2
+        run: bash scripts/ci/enable-bwrap.sh
+
       - name: Install eval dependencies
-        if: steps.selection.outputs.run == 'true'
+        if: steps.preflight.outputs.ready == 'true'
+        timeout-minutes: 10
         run: |
           pip install -r evals/requirements.txt '.[visual]'
           python -m playwright install --with-deps chromium
 
       - name: Verify native QGIS runtime
-        if: steps.selection.outputs.run == 'true'
+        if: steps.preflight.outputs.ready == 'true'
+        timeout-minutes: 1
         run: |
           python - <<'PY'
           from qgis.core import Qgis, QgsApplication, QgsCoordinateReferenceSystem, QgsProviderRegistry
@@ -105,41 +139,36 @@ jobs:
           PY
 
       - name: Prepare controlled DuckDB Spatial directory
-        if: steps.selection.outputs.run == 'true'
+        if: steps.preflight.outputs.ready == 'true'
+        timeout-minutes: 2
         run: |
           echo "OPENMAPSTACK_SPATIAL_EXTENSION_DIR=${RUNNER_TEMP}/openmapstack-duckdb-extensions" >> "$GITHUB_ENV"
           OPENMAPSTACK_SPATIAL_EXTENSION_DIR="${RUNNER_TEMP}/openmapstack-duckdb-extensions" python evals/prepare_spatial.py
 
       - name: Install and verify agent CLI
-        if: steps.selection.outputs.run == 'true'
+        if: steps.preflight.outputs.ready == 'true'
+        timeout-minutes: 5
         env:
           EVAL_AGENT: ${{ matrix.agent }}
-          OPENAI_COMPATIBLE_BASE_URL: ${{ vars.OPENAI_COMPATIBLE_BASE_URL }}
-          OPENAI_COMPATIBLE_API_KEY: ${{ secrets.OPENAI_COMPATIBLE_API_KEY }}
         run: |
           case "$EVAL_AGENT" in
             claude_code)
               npm install --global @anthropic-ai/claude-code
               claude --version
-              # The adapter refuses to run Claude Code without its sandbox.
-              bash scripts/ci/enable-bwrap.sh
               ;;
             codex)
               npm install --global @openai/codex
               codex --version
               ;;
             openai_compatible)
-              # No CLI to install: the adapter talks to an OpenAI-compatible
-              # HTTP endpoint configured entirely through the environment.
-              if [[ -z "$OPENAI_COMPATIBLE_BASE_URL" || -z "$OPENAI_COMPATIBLE_API_KEY" ]]; then
-                echo "openai_compatible requires the OPENAI_COMPATIBLE_BASE_URL variable and OPENAI_COMPATIBLE_API_KEY secret." >&2
-                exit 2
-              fi
+              : # HTTP adapter: configuration was checked offline above.
               ;;
           esac
 
       - name: Run repeated live benchmark
-        if: steps.selection.outputs.run == 'true'
+        if: steps.preflight.outputs.ready == 'true'
+        # Leaves time for always() report/evidence steps after a trial stalls.
+        timeout-minutes: 35
         env:
           ANTHROPIC_API_KEY: ${{ matrix.agent == 'claude_code' && secrets.ANTHROPIC_API_KEY || '' }}
           ANTHROPIC_CUSTOM_HEADERS: "anthropic-workspace-id: ${{ secrets.ANTHROPIC_WORKSPACE_ID }}"
@@ -147,8 +176,8 @@ jobs:
           EVAL_AGENT: ${{ matrix.agent }}
           CLAUDE_MODEL: ${{ github.event.inputs.claude_model || vars.CLAUDE_BENCHMARK_MODEL }}
           CODEX_MODEL: ${{ github.event.inputs.codex_model || vars.CODEX_BENCHMARK_MODEL }}
-          OPENAI_COMPATIBLE_BASE_URL: ${{ vars.OPENAI_COMPATIBLE_BASE_URL }}
-          OPENAI_COMPATIBLE_API_KEY: ${{ secrets.OPENAI_COMPATIBLE_API_KEY }}
+          OPENAI_COMPATIBLE_BASE_URL: ${{ matrix.agent == 'openai_compatible' && vars.OPENAI_COMPATIBLE_BASE_URL || '' }}
+          OPENAI_COMPATIBLE_API_KEY: ${{ matrix.agent == 'openai_compatible' && secrets.OPENAI_COMPATIBLE_API_KEY || '' }}
           OPENAI_COMPATIBLE_MODEL: ${{ github.event.inputs.openai_model || vars.OPENAI_COMPATIBLE_BENCHMARK_MODEL }}
           EVAL_REPETITIONS: ${{ github.event.inputs.repetitions || '3' }}
           EVAL_TIMEOUT: ${{ github.event.inputs.timeout || '1200' }}
@@ -192,6 +221,7 @@ jobs:
 
       - name: Build Allure review report
         if: always() && steps.selection.outputs.run == 'true'
+        timeout-minutes: 5
         uses: ./.github/actions/eval-report
         with:
           results: eval-benchmark-results-${{ matrix.agent }}.json
@@ -199,6 +229,7 @@ jobs:
 
       - name: Upload complete benchmark evidence
         if: always() && steps.selection.outputs.run == 'true'
+        timeout-minutes: 3
         uses: actions/upload-artifact@v4
         with:
           name: eval-benchmark-${{ matrix.agent }}-${{ github.run_id }}

@@ -106,6 +106,36 @@ class EvalReportTests(unittest.TestCase):
         self.assertEqual(records[0]["status"], "passed")
         self.assertIn("bundle is missing", records[0]["description"])
 
+    def test_generated_project_venv_and_symlinks_are_omitted_without_following(self):
+        project = self.root / 'bundle/generated-project'
+        (project / '.venv/bin').mkdir(parents=True)
+        (project / '.venv/bin/python').symlink_to('/usr/bin/python3')
+        (project / '.venv/installed-library.py').write_text('runtime dependency')
+        (project / 'broken-link').symlink_to('/does/not/exist')
+        (project / 'external-dir').symlink_to('/etc', target_is_directory=True)
+        (project / 'pipeline.py').write_text('print("retained source")')
+        (project / 'source-link').symlink_to('pipeline.py')
+        output, records = self.export([self.trial(mode='live', artifact_bundle='bundle')])
+        attachment = next(a for a in records[0]['attachments'] if a['type'] == 'application/zip')
+        with zipfile.ZipFile(output / attachment['source']) as archive:
+            self.assertEqual(archive.namelist(), ['pipeline.py'])
+        self.assertIn('omits virtual environments and symlinks', records[0]['description'])
+        self.assertIn('.venv', records[0]['description'])
+        self.assertIn('broken-link', records[0]['description'])
+
+    def test_provider_authentication_and_quota_are_broken_not_grading_failures(self):
+        output, records = self.export([
+            self.trial(id=category, status='setup_failed', assertions=[],
+                       agent_run={'failure': {'category': category, 'scope': 'provider', 'retryable': False}},
+                       setup_error={'stage': 'agent_execution', 'message': category})
+            for category in ('authentication', 'quota_exhausted')
+        ])
+        self.assertEqual([r['status'] for r in records], ['broken', 'broken'])
+        self.assertTrue(all(any(label['value'].startswith('provider-setup:') for label in r['labels']) for r in records))
+        summary = (output / 'summary.md').read_text()
+        self.assertIn('Provider setup failures (not skill regressions)', summary)
+        self.assertIn('0 failed grading', summary)
+
     def test_run_setup_and_missing_input_never_create_green_zero_trial_report(self):
         missing = self.root / "missing.json"
         stderr = io.StringIO()

@@ -1773,18 +1773,30 @@ def build_summary(results: list[dict[str, Any]], run_config: dict[str, Any]) -> 
     }
 
 
-def _write_summary(summary: dict[str, Any], json_path: str | None) -> None:
+def _write_summary(summary: dict[str, Any], json_path: str | None, *, announce: bool = True) -> None:
     schema_errors = validation_errors(summary, _load_eval_schema("results-v2.schema.json"))
     if schema_errors:
         raise ValueError(f"eval result schema validation failed: {'; '.join(schema_errors)}")
+    payload = json.dumps(summary, indent=2, default=str)
+
+    def write_atomic(path: Path) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Stage privately, but publish with normal output-file permissions
+        # (0666 filtered by umask). NamedTemporaryFile's 0600 survives rename
+        # and makes root-produced Docker results unreadable to the uploader.
+        # A CI deadline must still leave the previous checkpoint intact.
+        with tempfile.TemporaryDirectory(dir=path.parent, prefix=f".{path.name}.") as directory:
+            temporary = Path(directory) / path.name
+            temporary.write_text(payload, encoding="utf-8")
+            temporary.replace(path)
+
     if json_path:
         out_path = Path(json_path)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
-        print(f"\nWrote {out_path}")
+        write_atomic(out_path)
+        if announce:
+            print(f"\nWrote {out_path}")
 
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    (RESULTS_DIR / "latest.json").write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+    write_atomic(RESULTS_DIR / "latest.json")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1985,6 +1997,20 @@ def main(argv: list[str] | None = None) -> int:
 
     results: list[dict[str, Any]] = []
     stopped_agents: dict[str, dict[str, Any]] = {}
+    summary_path = args.json or (str(result_root / "summary.json") if result_root is not None else None)
+
+    def checkpoint_live_results() -> None:
+        if args.mode != "live":
+            return
+        partial = build_summary(results, {**run_config, "checkpoint": True})
+        partial["run_setup_failed"] = True
+        partial["setup_errors"] = [{
+            "stage": "incomplete_run",
+            "message": f"Live benchmark has not finished; checkpoint retains {partial['selection']['trials_run']} completed trial(s). Inspect the job for interruption or deadline expiry. This is not a completed benchmark.",
+        }]
+        _write_summary(partial, summary_path, announce=False)
+
+    checkpoint_live_results()
     paired = len(arms) > 1
     for case_dir in case_dirs:
         case_def = _load_case(case_dir)
@@ -2004,6 +2030,7 @@ def main(argv: list[str] | None = None) -> int:
                     "reason": f"not attempted after {stop['failure']['category']} in {stop['case']} trial={stop['trial']} arm={stop['arm']}",
                     "duration_s": 0.0, "agent_run": None, "assertions": [], "dimension_totals": {}, "hard_failures": [],
                 })
+                checkpoint_live_results()
                 continue
             try:
                 result = run_case(
@@ -2065,6 +2092,7 @@ def main(argv: list[str] | None = None) -> int:
                     },
                 }
             results.append(result)
+            checkpoint_live_results()
             if result.get("status") == "skipped":
                 print(f"SKIP   {result['id']:40s} ({result['reason']})")
                 break
@@ -2125,7 +2153,6 @@ def main(argv: list[str] | None = None) -> int:
         ]
         print(f"ERROR  zero cases executed for mode={args.mode!r}", file=sys.stderr)
 
-    summary_path = args.json or (str(result_root / "summary.json") if result_root is not None else None)
     _write_summary(summary, summary_path)
 
     print()
