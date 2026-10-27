@@ -338,8 +338,25 @@
     "routing_trials_this_preparation": 0,
     "exception": 1
   },
+  "completed": [
+    {
+      "item": "commit release documentation and confirm final CI",
+      "revision": "f7f50ecbe4978c8b462efa2834f4ab584e625c7e",
+      "runs": [
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40598468709",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40598468714",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40598468823",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40598468864",
+        "https://github.com/jaakla/openmapstack-skills/actions/runs/40598468892"
+      ],
+      "jobs_passed": 9,
+      "jobs_skipped": [
+        "deploy"
+      ],
+      "jobs_failed": []
+    }
+  ],
   "pending": [
-    "commit release documentation and confirm final CI",
     "maintainer marks #118 ready and merges it",
     "publish tag/release and verify PyPI/tag-pinned installations, default-branch floating updates and the publication workflow rebuild"
   ],
