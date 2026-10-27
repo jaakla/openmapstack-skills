@@ -1,0 +1,16 @@
+id: 972-dashboard-mobile-controls-overflow
+case_type: mutation
+modes: [visual]
+score_types: {visual: mutation_tests}
+project_dir: project
+hard_gate: true
+visual:
+  generator: '{python} {evals_dir}/fixtures/reference_pipeline/gen.py {project_dir} --break=dashboard_mobile_controls_overflow'
+mutation:
+  control_generator: '{python} {evals_dir}/fixtures/reference_pipeline/gen.py {project_dir}'
+assertions:
+  - assert: project.conforms_to_schema
+  - assert: validation.run_record_matches
+  - assert: visual.dashboard_layout_within_viewport
+    expect: failed
+    expect_code: dashboard_layout_invalid
