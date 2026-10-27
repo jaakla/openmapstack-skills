@@ -36,6 +36,7 @@ HTTP_TIMEOUT_S = 300
 SYSTEM_PROMPT = """You are an autonomous coding agent working inside a plain \
 directory (your workspace). Complete the user's task there. You can run \
 shell commands and create, read, and list files with the provided tools. \
+Read controlled guidance when provided; write files only in your workspace. \
 Work incrementally: inspect the workspace, write the needed files, run and \
 verify your work, and iterate until the task is done. When you are finished, \
 reply with a short summary and no tool calls."""
@@ -75,11 +76,11 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "read_file",
-            "description": "Read a workspace-relative file's content.",
+            "description": "Read a file in the workspace or the runner-provided read-only guidance directory.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "path": {"type": "string", "description": "Workspace-relative path to read."},
+                    "path": {"type": "string", "description": "Path relative to the workspace; controlled guidance may be beside it."},
                 },
                 "required": ["path"],
             },
@@ -89,7 +90,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "list_dir",
-            "description": "List a workspace-relative directory's entries.",
+            "description": "List a directory in the workspace or the runner-provided read-only guidance directory.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -107,14 +108,43 @@ def _truncate(value: str, limit: int = MAX_TOOL_OUTPUT_CHARS) -> str:
     return value[:limit] + f"\n...[truncated {len(value) - limit} characters]"
 
 
-def _resolve_in_workspace(workspace: Path, raw: Any) -> Path:
+def _resolve_tool_path(workspace: Path, raw: Any, guidance: Path | None, *, write: bool = False) -> Path:
     if not isinstance(raw, str) or not raw.strip():
         raise ValueError("path must be a non-empty workspace-relative string")
     resolved_workspace = workspace.resolve()
-    candidate = (workspace / raw).resolve()
-    if candidate != resolved_workspace and resolved_workspace not in candidate.parents:
-        raise ValueError(f"path escapes the workspace: {raw!r}")
-    return candidate
+    lexical_path = Path(os.path.abspath(resolved_workspace / raw))
+    candidate = lexical_path.resolve()
+    # Check both spellings: a workspace link cannot grant guidance writes,
+    # nor can a link inside guidance redirect a write back to the workspace.
+    if guidance is not None:
+        if write and (lexical_path.is_relative_to(guidance) or candidate.is_relative_to(guidance)):
+            raise ValueError("controlled guidance directory is read-only")
+        if not write and candidate.is_relative_to(guidance):
+            return candidate
+    if candidate.is_relative_to(resolved_workspace):
+        return candidate
+    raise ValueError(f"path escapes the workspace or controlled guidance: {raw!r}")
+
+
+def _tool_arguments(raw: Any, finish_reason: Any) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    diagnostic: dict[str, Any] = {
+        "code": "tool_arguments_truncated" if finish_reason == "length" else "tool_arguments_malformed",
+        "message": ("Response reached its output limit; invalid tool arguments were not executed."
+                    if finish_reason == "length" else
+                    "Tool arguments must be a JSON object; invalid arguments were not executed."),
+        "finish_reason": finish_reason,
+        "argument_type": type(raw).__name__,
+    }
+    try:
+        parsed = json.loads(raw) if isinstance(raw, str) else raw
+    except json.JSONDecodeError as exc:
+        diagnostic["parse_error"] = {"message": exc.msg, "position": exc.pos,
+                                     "line": exc.lineno, "column": exc.colno}
+    else:
+        if isinstance(parsed, dict):
+            return parsed, None
+        diagnostic["parsed_type"] = type(parsed).__name__
+    return None, diagnostic
 
 
 class OpenaiCompatibleAdapter(AgentAdapter):
@@ -152,6 +182,17 @@ class OpenaiCompatibleAdapter(AgentAdapter):
         with urllib.request.urlopen(request, timeout=timeout_s) as response:
             return json.loads(response.read().decode("utf-8"))
 
+    def _guidance_root(self, workspace: Path) -> Path | None:
+        if self.trial_root is None:
+            return None
+        trial = self.trial_root.resolve()
+        if not workspace.resolve().is_relative_to(trial):
+            return None
+        guidance = trial / "benchmark-context" / "openmapstack"
+        # Keep the lexical boundary: the resolver follows links before
+        # allowing reads, and rejects writes through either spelling.
+        return guidance if guidance.is_dir() else None
+
     def _execute_tool(self, name: str, args: Any, workspace: Path, remaining_s: float) -> tuple[bool, str]:
         if not isinstance(args, dict):
             return False, f"tool {name!r} arguments must be an object, got {type(args).__name__}"
@@ -172,7 +213,7 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 output = f"exit={proc.returncode}\n{proc.stdout}{proc.stderr}".strip()
                 return proc.returncode == 0, _truncate(output)
             if name == "write_file":
-                target = _resolve_in_workspace(workspace, args.get("path"))
+                target = _resolve_tool_path(workspace, args.get("path"), self._guidance_root(workspace), write=True)
                 content = args.get("content")
                 if not isinstance(content, str):
                     return False, "write_file requires 'content' to be a string"
@@ -180,12 +221,12 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 target.write_text(content, encoding="utf-8")
                 return True, f"wrote {len(content)} chars to {target.relative_to(workspace.resolve())}"
             if name == "read_file":
-                target = _resolve_in_workspace(workspace, args.get("path"))
+                target = _resolve_tool_path(workspace, args.get("path"), self._guidance_root(workspace))
                 if not target.is_file():
                     return False, f"not a file: {args.get('path')!r}"
                 return True, _truncate(target.read_text(encoding="utf-8", errors="replace"))
             if name == "list_dir":
-                target = _resolve_in_workspace(workspace, args.get("path") or ".")
+                target = _resolve_tool_path(workspace, args.get("path") or ".", self._guidance_root(workspace))
                 if not target.is_dir():
                     return False, f"not a directory: {args.get('path')!r}"
                 entries = []
@@ -250,6 +291,8 @@ class OpenaiCompatibleAdapter(AgentAdapter):
             {"role": "user", "content": prompt},
         ]
         events: list[dict[str, Any]] = []
+        finish_reasons: list[Any] = []
+        tool_call_diagnostics: list[dict[str, Any]] = []
         usage: dict[str, float | int] = {}
         cost_usd: float | None = None
         models_observed: set[str] = set()
@@ -306,7 +349,10 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 models_observed.add(response["model"])
 
             choices = response.get("choices")
-            message = choices[0].get("message") if isinstance(choices, list) and choices else None
+            choice = choices[0] if isinstance(choices, list) and choices and isinstance(choices[0], dict) else {}
+            finish_reason = choice.get("finish_reason")
+            finish_reasons.append(finish_reason)
+            message = choice.get("message")
             if not isinstance(message, dict):
                 error_text = "response contained no assistant message"
                 break
@@ -321,6 +367,7 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 {
                     "type": "assistant.message",
                     "turn": turns,
+                    "finish_reason": finish_reason,
                     "content": _truncate(assistant_entry["content"], 2000),
                     "tool_calls": [
                         {
@@ -335,6 +382,9 @@ class OpenaiCompatibleAdapter(AgentAdapter):
             )
 
             if not tool_calls:
+                if finish_reason == "length":
+                    error_text = "response truncated at the output limit (finish_reason=length); no completed final message"
+                    break
                 completed = True
                 final_message = assistant_entry["content"] or None
                 break
@@ -345,20 +395,18 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 function = call.get("function") or {}
                 name = function.get("name")
                 raw_arguments = function.get("arguments")
-                try:
-                    args = json.loads(raw_arguments) if isinstance(raw_arguments, str) else raw_arguments
-                except json.JSONDecodeError:
-                    args = None
-                ok, output = self._execute_tool(name, args, workspace, deadline - time.monotonic())
-                events.append(
-                    {
-                        "type": "tool.result",
-                        "turn": turns,
-                        "tool": name,
-                        "ok": ok,
-                        "output": _truncate(output, 2000),
-                    }
-                )
+                args, diagnostic = _tool_arguments(raw_arguments, finish_reason)
+                if diagnostic is not None:
+                    diagnostic.update(turn=turns, tool=name, tool_call_id=call.get("id"))
+                    tool_call_diagnostics.append(diagnostic)
+                    ok, output = False, json.dumps(diagnostic)
+                else:
+                    ok, output = self._execute_tool(name, args, workspace, deadline - time.monotonic())
+                tool_result = {"type": "tool.result", "turn": turns, "tool": name,
+                               "ok": ok, "output": _truncate(output, 2000)}
+                if diagnostic is not None:
+                    tool_result["diagnostic"] = diagnostic
+                events.append(tool_result)
                 messages.append(
                     {
                         "role": "tool",
@@ -405,6 +453,8 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 "timed_out": timed_out,
                 "timeout_s": timeout_s,
                 "turns": turns,
+                "finish_reasons": finish_reasons,
+                "tool_call_diagnostics": tool_call_diagnostics,
                 "max_turns": MAX_TURNS,
                 "structured_completion": completed,
                 "cost_available": cost_usd is not None,
