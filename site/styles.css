@@ -68,6 +68,8 @@ h1{max-width:760px;font-size:clamp(42px,4.25vw,64px);line-height:.99;letter-spac
 .example-preview{display:block;height:230px;background:#eef4f4;overflow:hidden}
 .example-preview img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .28s ease}
 .example-preview:hover img{transform:scale(1.025)}
+.gallery-link{grid-template-columns:minmax(0,1fr) auto}
+.gallery-link .text-link{margin-top:0}
 .site-footer{display:flex;align-items:center;gap:20px;min-height:76px;font-size:13px;color:var(--muted)}
 .site-footer strong{font-size:15px;color:var(--ink);letter-spacing:-.03em}
 .site-footer a{margin-left:auto;color:var(--teal-dark);font-weight:650;text-decoration:none}
