@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -41,11 +43,36 @@ class OpenaiCompatibleFileToolTests(unittest.TestCase):
         self.write("rows.txt", text)
         ok, output = self.execute("read_file", path="rows.txt", offset=3, limit=2)
         self.assertTrue(ok)
-        self.assertEqual(output, f"row 3\nrow 4\n[read_file: lines 3-4 of 10; {len(text)} characters total; "
-                                 "more remains, continue with offset=5]")
+        self.assertEqual(output, f"[read_file: lines 3-4 of 10; {len(text)} characters total; "
+                                 "more remains, continue with offset=5]\nrow 3\nrow 4\n")
         ok, output = self.execute("read_file", path="rows.txt", offset=9)
         self.assertTrue(ok)
-        self.assertEqual(output, f"row 9\nrow 10\n[read_file: lines 9-10 of 10; {len(text)} characters total; end of file]")
+        self.assertEqual(output, f"[read_file: lines 9-10 of 10; {len(text)} characters total; end of file]\nrow 9\nrow 10\n")
+
+    def test_a_last_line_without_a_newline_is_shown_exactly(self):
+        self.write("tail.txt", "one\ntwo")
+        ok, output = self.execute("read_file", path="tail.txt", offset=2)
+        self.assertTrue(ok)
+        self.assertEqual(output, "[read_file: lines 2-2 of 2; 7 characters total; end of file]\ntwo")
+
+    def test_line_numbers_match_sed_despite_other_line_separators(self):
+        # str.splitlines() would also split on these; tracebacks, grep -n and sed do not.
+        text = "first\x0cpage\nsecond\u2028same line\nthird\x0b\x1c\x1d\x1e\x85\nfourth\r\nfifth\n"
+        (self.workspace / "odd.txt").write_bytes(text.encode("utf-8"))
+        for offset in range(1, 6):
+            with self.subTest(offset=offset):
+                ok, output = self.execute("read_file", path="odd.txt", offset=offset, limit=1)
+                self.assertTrue(ok)
+                note, line = output.split("\n", 1)
+                self.assertIn(f"lines {offset}-{offset} of 5", note)
+                self.assertEqual(line, text.split("\n")[offset - 1] + "\n")
+                if shutil.which("sed"):
+                    sed = subprocess.run(["sed", "-n", f"{offset}p", "odd.txt"], cwd=self.workspace,
+                                         capture_output=True, check=True)
+                    self.assertEqual(line.encode("utf-8"), sed.stdout)
+        ok, output = self.execute("edit_file", path="odd.txt", old_string="fifth", new_string="5th")
+        self.assertTrue(ok, output)
+        self.assertIn("file now has 5 lines", output)
 
     def test_large_file_is_paged_by_whole_lines_until_the_end(self):
         line = "x" * 99 + "\n"
@@ -55,7 +82,7 @@ class OpenaiCompatibleFileToolTests(unittest.TestCase):
         for _ in range(10):
             ok, output = self.execute("read_file", **({"path": "pipeline.py"} | ({"offset": offset} if offset else {})))
             self.assertTrue(ok)
-            body, note = output.rsplit("[read_file: ", 1)
+            note, body = output.split("\n", 1)
             self.assertLessEqual(len(body), MAX_TOOL_OUTPUT_CHARS)
             self.assertIn(f"of 450; {len(text)} characters total", note)
             pieces.append(body)
@@ -70,9 +97,11 @@ class OpenaiCompatibleFileToolTests(unittest.TestCase):
         self.write("data.geojson", text)
         ok, output = self.execute("read_file", path="data.geojson")
         self.assertTrue(ok)
-        self.assertTrue(output.startswith("y" * MAX_TOOL_OUTPUT_CHARS + "\n[read_file: lines 1-1 of 2;"))
-        self.assertIn(f"line 1 was cut at {MAX_TOOL_OUTPUT_CHARS} characters", output)
-        self.assertIn("continue with offset=2", output)
+        note, body = output.split("\n", 1)
+        self.assertTrue(note.startswith("[read_file: lines 1-1 of 2;"))
+        self.assertIn(f"line 1 was cut at {MAX_TOOL_OUTPUT_CHARS} characters", note)
+        self.assertIn("continue with offset=2", note)
+        self.assertEqual(body, "y" * MAX_TOOL_OUTPUT_CHARS)
 
     def test_invalid_ranges_are_rejected(self):
         self.write("rows.txt", "a\nb\n")
@@ -91,7 +120,8 @@ class OpenaiCompatibleFileToolTests(unittest.TestCase):
     def test_ranged_read_keeps_the_guidance_boundary(self):
         ok, output = self.execute("read_file", path="../benchmark-context/openmapstack/SKILL.md", offset=2, limit=1)
         self.assertTrue(ok)
-        self.assertTrue(output.startswith("line two\n[read_file: lines 2-2 of 3;"))
+        self.assertTrue(output.startswith("[read_file: lines 2-2 of 3;"))
+        self.assertTrue(output.endswith("]\nline two\n"))
         (self.root / "private.txt").write_text("private\n")
         ok, output = self.execute("read_file", path="../private.txt", offset=1)
         self.assertFalse(ok)
@@ -120,13 +150,32 @@ class OpenaiCompatibleFileToolTests(unittest.TestCase):
         self.assertIn("replaced 2 occurrences", output)
         self.assertEqual((self.workspace / "values.py").read_text(), "x = 2\ny = 2\n")
 
+    def test_overlapping_matches_are_not_unique(self):
+        self.write("gaps.txt", "x\n\n\ny\n")
+        ok, output = self.execute("edit_file", path="gaps.txt", old_string="\n\n", new_string="\n")
+        self.assertFalse(ok)
+        self.assertIn("occurs 2 times", output)
+        self.assertEqual((self.workspace / "gaps.txt").read_text(), "x\n\n\ny\n")
+
     def test_edit_preserves_line_endings_seen_by_read_file(self):
         self.write("windows.txt", "first\r\nsecond\r\n")
         ok, output = self.execute("read_file", path="windows.txt", offset=1, limit=1)
-        self.assertTrue(output.startswith("first\r\n"))
+        self.assertTrue(output.endswith("]\nfirst\r\n"))
         ok, output = self.execute("edit_file", path="windows.txt", old_string="first\r\n", new_string="1st\r\n")
         self.assertTrue(ok, output)
         self.assertEqual((self.workspace / "windows.txt").read_bytes(), b"1st\r\nsecond\r\n")
+
+    def test_lf_old_string_matches_a_crlf_file_in_its_own_line_endings(self):
+        self.write("windows.txt", "first\r\nsecond\r\nthird\r\n")
+        ok, output = self.execute("edit_file", path="windows.txt", old_string="first\nsecond\n",
+                                  new_string="1st\n2nd\n")
+        self.assertTrue(ok, output)
+        self.assertIn("using its CRLF line endings", output)
+        self.assertEqual((self.workspace / "windows.txt").read_bytes(), b"1st\r\n2nd\r\nthird\r\n")
+        ok, output = self.execute("edit_file", path="windows.txt", old_string="1st\nmissing\n", new_string="x")
+        self.assertFalse(ok)
+        self.assertIn("CRLF", output)
+        self.assertEqual((self.workspace / "windows.txt").read_bytes(), b"1st\r\n2nd\r\nthird\r\n")
 
     def test_invalid_edit_arguments_are_rejected(self):
         self.write("a.txt", "a\n")

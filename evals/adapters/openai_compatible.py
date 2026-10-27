@@ -16,6 +16,7 @@ This module is only imported by `--mode live` runs, never by fixture CI.
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import shutil
@@ -79,8 +80,9 @@ TOOLS = [
             "name": "read_file",
             "description": (
                 "Read a file in the workspace or the runner-provided read-only guidance directory. Output is capped "
-                f"at {MAX_TOOL_OUTPUT_CHARS} characters; a partial read ends with a note giving the line range, the "
-                "file's total lines and characters, and the offset to continue from."
+                f"at {MAX_TOOL_OUTPUT_CHARS} characters of file content. A partial read starts with a one-line note giving "
+                "the line range, the file's total lines and characters, and the offset to continue from; the "
+                "content after it is exact."
             ),
             "parameters": {
                 "type": "object",
@@ -162,9 +164,27 @@ def _positive_int(args: dict[str, Any], key: str) -> int | None:
     return value
 
 
+def _lines(text: str) -> list[str]:
+    """Lines ending at ``\\n`` only, as tracebacks, ``grep -n`` and ``sed`` count them."""
+    return io.StringIO(text, newline="\n").readlines()
+
+
+def _occurrences(text: str, old: str) -> int:
+    """Occurrences of ``old`` in ``text``, overlapping ones included."""
+    count, index = 0, text.find(old)
+    while index != -1:
+        count += 1
+        index = text.find(old, index + 1)
+    return count
+
+
+def _crlf(value: str) -> str:
+    return value.replace("\r\n", "\n").replace("\n", "\r\n")
+
+
 def _read_range(text: str, offset: int | None, limit: int | None) -> tuple[bool, str]:
     """Whole lines from ``offset``, within ``limit`` and the output cap."""
-    lines = text.splitlines(keepends=True)
+    lines = _lines(text)
     start = (offset or 1) - 1
     if start and start >= len(lines):
         return False, f"offset {start + 1} is past the end of the file ({len(lines)} lines)"
@@ -187,7 +207,8 @@ def _read_range(text: str, offset: int | None, limit: int | None) -> tuple[bool,
         content = content[:MAX_TOOL_OUTPUT_CHARS]
         note += f"line {stop} was cut at {MAX_TOOL_OUTPUT_CHARS} characters; "
     note += f"more remains, continue with offset={stop + 1}]" if stop < len(lines) else "end of file]"
-    return True, content + ("" if content.endswith("\n") or not content else "\n") + note
+    # The note leads, so the content after it is exactly what the file holds.
+    return True, note + "\n" + content
 
 
 def _tool_arguments(raw: Any, finish_reason: Any) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
@@ -306,18 +327,25 @@ class OpenaiCompatibleAdapter(AgentAdapter):
                 # Keep line endings as written; a read_file excerpt matches them.
                 with target.open(encoding="utf-8", newline="") as handle:
                     text = handle.read()
-                count = text.count(old)
+                matched_crlf = False
+                if old not in text and "\n" in old and "\r\n" in text and _crlf(old) in text:
+                    old, new, matched_crlf = _crlf(old), _crlf(new), True
+                count = _occurrences(text, old)
                 if count == 0:
-                    return False, f"old_string not found in {args.get('path')!r}; read the file and copy the text exactly"
+                    hint = " The file uses CRLF (\\r\\n) line endings." if "\r\n" in text else ""
+                    return False, (f"old_string not found in {args.get('path')!r}; "
+                                   f"read the file and copy the text exactly.{hint}")
                 if count > 1 and not replace_all:
                     return False, (f"old_string occurs {count} times in {args.get('path')!r}; "
                                    "include more surrounding text to make it unique, or set replace_all")
+                replaced = text.count(old) if replace_all else 1
                 text = text.replace(old, new) if replace_all else text.replace(old, new, 1)
                 with target.open("w", encoding="utf-8", newline="") as handle:
                     handle.write(text)
-                replaced = count if replace_all else 1
                 return True, (f"replaced {replaced} occurrence{'s' if replaced > 1 else ''} in "
-                              f"{target.relative_to(workspace.resolve())}; file now has {len(text.splitlines())} lines")
+                              f"{target.relative_to(workspace.resolve())}"
+                              f"{' using its CRLF line endings' if matched_crlf else ''}; "
+                              f"file now has {len(_lines(text))} lines")
             if name == "list_dir":
                 target = _resolve_tool_path(workspace, args.get("path") or ".", self._guidance_root(workspace))
                 if not target.is_dir():
