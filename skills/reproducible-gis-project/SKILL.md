@@ -2,7 +2,7 @@
 name: reproducible-gis-project
 description: "Compile, validate or maintain a reproducible GIS project from an existing analysis or chosen workflow: project.yaml, canonical pipeline, pinned sources, executable corrections, validation, reruns and QGIS/web presentation. Use when delivery and reproducibility are the task. Route unresolved source/compute/storage architecture to open-map-stack; a bounded SQL review or dataset lookup does not need a project."
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # Reproducible GIS project

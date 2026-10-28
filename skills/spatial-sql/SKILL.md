@@ -2,7 +2,7 @@
 name: spatial-sql
 description: "Write, review, debug or optimize spatial SQL on an already chosen engine, including DuckDB Spatial, PostGIS, BigQuery GIS, Snowflake and Sedona. Use for spatial predicates, joins, indexes, query plans, CRS and metric/geodesic correctness. Route unresolved engine or cross-system architecture choices to open-map-stack; ordinary non-spatial SQL and casual place questions are outside this skill."
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # Spatial SQL

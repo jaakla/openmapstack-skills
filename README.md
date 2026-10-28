@@ -152,7 +152,7 @@ Some my local Estonia-specific guidance (Maa- ja Ruumiamet, ETAK, EPSG:3301 / L-
 
 ## Install
 
-The 0.4.0 collection provides four independently installable skills. The
+The 0.5.0 release candidate provides four independently installable skills. The
 OpenMapStack CLI is a separate installation for project execution and validation.
 From a checkout, install the generalist and CLI for project work:
 
@@ -171,12 +171,13 @@ installed sibling. Generated example outputs and downloaded source data are
 omitted; the example pipeline needs network access and its documented GIS
 environment.
 
-Once the release tag and Python package are published, pin both parts of the
-coordinated release:
+The following 0.5.0 commands are unavailable until the release tag and Python
+package are published. Before publication, use the matching checkout or a wheel
+built from it. After publication, pin both parts of the coordinated release:
 
 ```bash
-npx skills@1.5.26 add https://github.com/jaakla/openmapstack-skills/tree/v0.4.0/skills/open-map-stack -a codex -y
-python -m pip install 'openmapstack[geo]==0.4.0'
+npx skills@1.5.26 add https://github.com/jaakla/openmapstack-skills/tree/v0.5.0/skills/open-map-stack -a codex -y
+python -m pip install 'openmapstack[geo]==0.5.0'
 ```
 
 For a floating install use `npx skills@1.5.26 add jaakla/openmapstack-skills
@@ -229,9 +230,10 @@ does not require a project; material multi-stage analyses retain the complete
 reproducibility contract. Casual place lookups and ordinary non-spatial coding
 are outside the collection's scope.
 
-See the [0.4.0 release notes](https://github.com/jaakla/openmapstack-skills/releases/tag/v0.4.0)
-for executed validation and installation checks, consumer migration and known
-limitations.
+See the [0.5.0 release preparation](docs/release-0.5.0.md) and
+[candidate evidence](docs/acceptance-0.5.0-rc.json) for current checks and pending
+acceptance. The published [0.4.0 release notes](https://github.com/jaakla/openmapstack-skills/releases/tag/v0.4.0)
+retain the previous release's validation and installation evidence.
 
 ## Use your established stack
 
