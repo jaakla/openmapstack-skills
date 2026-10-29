@@ -74,6 +74,12 @@ test('outbound payloads drop query strings, fragments, unknown fields and values
   assert.equal(event.properties.$current_url, HOME);
   assert.equal(event.properties.$referrer, 'https://search.example/');
   assert.doesNotMatch(JSON.stringify(event), /SECRET|install-claude|\$set/);
+  for (const flag of [undefined, true, false]) {
+    const properties = flag === undefined ? {} : { $process_person_profile: flag };
+    for (const name of ['$pageview', '$pageleave', '$web_vitals', 'demo_opened']) {
+      assert.equal(config.before_send({ event: name, properties }).properties.$process_person_profile, false);
+    }
+  }
   assert.equal(config.before_send({ event: '$autocapture', properties: {} }), null);
   assert.equal(config.before_send({ event: 'route_search_completed', properties: {} }), null);
 });

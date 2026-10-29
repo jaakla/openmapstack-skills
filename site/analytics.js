@@ -55,6 +55,8 @@
     }
     if (properties.$session_entry_url) clean.$session_entry_url = safeURL(properties.$session_entry_url);
     clean.site = site; clean.environment = 'production'; clean.release = release;
+    // Ingestion creates person profiles unless every event carries this flag.
+    clean.$process_person_profile = false;
     return { ...event, properties: clean };
   }
   function track(name, properties = {}) {
