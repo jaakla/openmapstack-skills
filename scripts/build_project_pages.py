@@ -7,7 +7,9 @@ import argparse
 import html
 import json
 import math
+import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -145,9 +147,18 @@ def build(destination: Path, *, observable_projects: Path | None = None) -> None
     tartu = destination / "demos" / "tartu"
     for directory in (assets, nyc / "data" / "derived", tartu):
         directory.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(SITE / "index.html", destination / "index.html")
-    shutil.copy2(SITE / "styles.css", destination / "styles.css")
-    shutil.copy2(SITE / "installation.js", destination / "installation.js")
+    homepage = (SITE / "index.html").read_text(encoding="utf-8")
+    release = os.environ.get("GITHUB_SHA") or "local-build"
+    if not re.fullmatch(r"[A-Za-z0-9-]+", release):
+        raise ValueError("GITHUB_SHA must be a plain revision identifier")
+    marker = 'data-release="local-build"'
+    if homepage.count(marker) != 1:
+        raise ValueError("homepage must load analytics.js exactly once")
+    # Attribute homepage analytics to the deployed revision; nothing else changes.
+    (destination / "index.html").write_text(
+        homepage.replace(marker, f'data-release="{release}"'), encoding="utf-8")
+    for name in ("styles.css", "installation.js", "analytics.js"):
+        shutil.copy2(SITE / name, destination / name)
     # Reuse the upload-package builder so site downloads retain full skill assets.
     subprocess.run(["bash", str(ROOT / "scripts/build-claude-skill-package.sh"),
                     "--out", str(destination / "skills")], check=True)

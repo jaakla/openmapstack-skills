@@ -8,6 +8,7 @@ on:
       - site/**
       - scripts/build_project_pages.py
       - tests/test_project_pages.py
+      - tests/site_analytics.test.mjs
   push:
     branches: [main]
     paths:
@@ -21,6 +22,7 @@ on:
       - templates/**
       - openmapstack/schemas/**
       - tests/test_project_pages.py
+      - tests/site_analytics.test.mjs
       - tests/test_observable_cities.py
       - examples/observable-cities/**
       - examples/delivery-profiles/**
@@ -53,6 +55,8 @@ jobs:
           cache-dependency-path: examples/observable-cities/observable/package-lock.json
       - name: Install project validation dependencies
         run: python3 -m pip install -e .
+      - name: Test homepage analytics privacy and production guards
+        run: node --test tests/site_analytics.test.mjs
       - name: Test and assemble static site
         run: |
           python3 -m unittest -v tests.test_project_pages tests.test_observable_cities

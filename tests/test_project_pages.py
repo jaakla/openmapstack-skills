@@ -189,6 +189,10 @@ class ProjectPagesTests(unittest.TestCase):
                 self.assertTrue((output / relative).exists(), relative)
             self.assertEqual((ROOT / "site/installation.js").read_bytes(),
                              (output / "installation.js").read_bytes())
+            self.assertEqual((ROOT / "site/analytics.js").read_bytes(),
+                             (output / "analytics.js").read_bytes())
+            self.assertEqual(homepage.count('src="./analytics.js"'), 1)
+            self.assertNotIn("analytics.js", renderer)
             collection = json.loads((ROOT / "collection.json").read_text())
             for skill in collection["skills"]:
                 name = skill["name"]
@@ -212,6 +216,21 @@ class ProjectPagesTests(unittest.TestCase):
             for name in ("nyc-preview.svg", "tartu-preview.svg"):
                 preview = ElementTree.parse(output / "assets" / name).getroot()
                 self.assertTrue(any(child.tag.endswith("path") for child in preview))
+
+    def test_homepage_analytics_is_attributed_to_the_deployed_revision(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            projects = self.bundles(root)
+            with patch.dict(os.environ, {"GITHUB_SHA": "0123abcd"}):
+                build(root / "site", observable_projects=projects)
+            homepage = (root / "site/index.html").read_text(encoding="utf-8")
+            self.assertIn('src="./analytics.js" defer data-release="0123abcd"', homepage)
+            source = (ROOT / "site/index.html").read_text(encoding="utf-8")
+            self.assertEqual(homepage, source.replace('data-release="local-build"',
+                                                      'data-release="0123abcd"'))
+            with patch.dict(os.environ, {"GITHUB_SHA": '"><script>'}):
+                with self.assertRaisesRegex(ValueError, "plain revision"):
+                    build(root / "site", observable_projects=projects)
 
     def test_build_refuses_to_write_into_source_directories(self) -> None:
         for destination in (ROOT, ROOT / "site", ROOT / "examples" / "nyc-private-mobility",
