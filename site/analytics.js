@@ -62,7 +62,9 @@
   function track(name, properties = {}) {
     try {
       if (!permitted() || !events.has(name)) return;
-      window.posthog?.capture(name, cleanProperties(properties));
+      const options = ['demo_opened', 'repo_opened', 'skill_downloaded'].includes(name)
+        ? { transport: 'sendBeacon', send_instantly: true } : undefined;
+      window.posthog?.capture(name, cleanProperties(properties), options);
     } catch { /* Analytics must never interrupt installation or navigation. */ }
   }
   window.omsAnalytics = { track, site };
@@ -98,12 +100,6 @@
   // Delegated listener only reads element ids/hrefs that the homepage itself defines.
   document.addEventListener('click', event => {
     const target = event.target;
-    const tab = target.closest?.('.install-tabs [role="tab"]');
-    const client = tab?.id?.replace(/^tab-/, '');
-    if (clients.includes(client)) track('feature_used', { feature: client });
-    const copy = target.closest?.('[data-copy]');
-    const copied = copy?.dataset.copy?.replace(/^command-/, '');
-    if (clients.includes(copied)) track('install_command_copied', { client: copied });
     const link = target.closest?.('a[href]');
     if (!link) return;
     let url;
