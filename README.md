@@ -4,6 +4,8 @@
 
 Explore the [project homepage](https://jaakla.github.io/openmapstack-skills/), with bundled NYC and Tartu examples in standalone HTML and Observable Framework. The [Observable city samples](examples/observable-cities/) include reactive filters, thematic maps, downloads, and delivery evidence. Browse more projects in the [examples gallery](https://jaakla.github.io/openmapstack-samples/). Build the complete Pages site with `python3 scripts/build_project_pages.py` (Python project dependencies, Node 20+ and npm required); no warehouse credentials or Observable account are needed.
 
+The published homepage (only the homepage, not the demos or the LangSmith review page) loads optional, privacy-limited PostHog analytics from [site/analytics.js](site/analytics.js). It shares the EU project used by the samples gallery and tags events with `site=skills-home`. Collection runs only at `jaakla.github.io/openmapstack-skills/` and skips automated browsers and Do Not Track/GPC. It records page views, Web Vitals, pointer/keyboard install-tab selections, successful command copies, skill ZIP download clicks and demo/gallery/repository link clicks. URL queries and fragments are removed, and session recording, autocapture and person profiles are off. Run `node --test tests/site_analytics.test.mjs` to check the guards.
+
 Install (assuming you have git and nodejs with npx already installed):
 ```bash
 npx skills@1.5.26 add jaakla/openmapstack-skills --skill open-map-stack -g

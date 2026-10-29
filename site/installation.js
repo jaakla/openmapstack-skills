@@ -10,7 +10,10 @@ function activateTab(index, updateHash = false) {
     tab.tabIndex = selected ? 0 : -1;
     panels[position].hidden = !selected;
   });
-  if (updateHash) history.replaceState(null, '', `#${panels[index].id}`);
+  if (updateHash) {
+    history.replaceState(null, '', `#${panels[index].id}`);
+    window.omsAnalytics?.track('feature_used', { feature: tabs[index].id.replace(/^tab-/, '') });
+  }
 }
 
 function selectFromHash() {
@@ -50,6 +53,7 @@ document.querySelectorAll('[data-copy]').forEach((button) => {
     try {
       await navigator.clipboard.writeText(code.textContent);
       status.textContent = 'Copied to clipboard.';
+      window.omsAnalytics?.track('install_command_copied', { client: button.dataset.copy.replace(/^command-/, '') });
     } catch {
       const selection = window.getSelection();
       const range = document.createRange();
