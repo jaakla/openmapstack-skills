@@ -28,7 +28,8 @@ postgis = ["psycopg[binary]>=3.1"]
 # written as GeoParquet through DuckDB, so [geo] is needed to materialise.
 bigquery = ["google-cloud-bigquery>=3.11"]
 # MotherDuck speaks the DuckDB protocol; the extension is loaded at runtime.
-motherduck = ["duckdb>=1.5.3"]
+# MotherDuck does not support DuckDB 2.x yet; lift the cap when it does.
+motherduck = ["duckdb>=1.5.3,<2"]
 all = ["openmapstack[geo,visual,postgis,bigquery,motherduck]"]
 
 [project.scripts]
