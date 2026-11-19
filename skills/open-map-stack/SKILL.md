@@ -90,6 +90,7 @@ evidence. Do not duplicate their SQL, ingestion or scheduler definitions.
 | Running GDAL/OGR, GeoPandas, xarray, DuckDB, PostGIS, or PDAL — the actual processing | `references/processing.md` |
 | Writing or reviewing spatial SQL / GeoSQL in DuckDB Spatial, PostGIS, BigQuery GIS, Snowflake, or Sedona | `references/spatial-sql.md` |
 | Vector analytics, raster analytics, terrain/hydrology, network analysis, point cloud workflows | `references/analytics.md` |
+| City2Graph spatial graphs, urban morphology, GTFS/OD networks, proximity relations or GeoPandas–NetworkX–PyG conversion | `references/spatial-graphs.md` |
 | Tile generation (PMTiles, MVT), tile servers (Martin, TiTiler), delivered rendering (MapLibre, deck.gl), or exploration rendering (kepler.gl, lonboard) | `references/web-delivery.md` |
 | Designing a project's dashboard or report pages: archetypes, components, tokens and the state hooks the checks use | `references/design-language.md` |
 | QGIS desktop, QGIS plugin ecosystem, QGIS MCP, PyQGIS scripting, Processing toolbox | `references/qgis.md` |
@@ -138,6 +139,7 @@ For simple one-shot questions (single CRS conversion, one `ogr2ogr` invocation),
 | CLI batch jobs on raster | GDAL utilities (`gdalwarp`, `gdal_translate -of COG`) |
 | Point clouds | PDAL pipelines |
 | Terrain & hydrology beyond `gdaldem` | WhiteboxTools or GRASS |
+| Bounded urban/transport/proximity graphs or heterogeneous GeoAI inputs | City2Graph + NetworkX; optional PyG (see `spatial-graphs.md`) |
 | Desktop styling, cartography, ad-hoc exploration | QGIS (see `qgis.md`) |
 
 ## Universal anti-patterns — flag and correct

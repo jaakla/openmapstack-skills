@@ -1,0 +1,33 @@
+name: Optional City2Graph examples
+
+on:
+  pull_request:
+    paths:
+      - 'skills/open-map-stack/SKILL.md'
+      - 'skills/open-map-stack/references/spatial-graphs.md'
+      - 'tests/test_city2graph_examples.py'
+      - 'evals/requirements-city2graph.txt'
+      - 'evals/city2graph.md'
+      - '.github/workflows/city2graph-examples.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  city2graph-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the optional graph runtime
+        run: pip install -r evals/requirements-city2graph.txt
+      - name: Record resolved dependency versions
+        run: pip freeze
+      - name: Check shipped graph examples and mutation controls
+        env:
+          OPENMAPSTACK_CITY2GRAPH_TESTS: '1'
+        run: python -m unittest -v tests.test_city2graph_examples

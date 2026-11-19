@@ -329,6 +329,11 @@ wbt.watershed("d8.tif", "outlets.shp", "watersheds.tif")
 
 ## Network analysis
 
+For building–street relations, GTFS and OD graphs, proximity networks, or
+GeoPandas–NetworkX–PyG conversion, read [spatial graphs with City2Graph](spatial-graphs.md).
+Keep graph semantics, source IDs, direction and cost units explicit; use the
+routing engines below when the task requires route serving or scheduled journeys.
+
 ### Choosing a routing engine
 
 For city/country analysis, self-hosted OSRM/Valhalla/GraphHopper can be excellent. For global production routing, traffic-aware ETAs, large matrices, or strict SLAs, hosted APIs/SaaS often beat local preprocessing. See `services-and-scale.md`.

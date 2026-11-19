@@ -24,6 +24,10 @@ the agent's narration.
 For runnable tylertoo/Tippecanoe planning cases, mutation controls and the
 automatically installed real GeoParquet-to-PMTiles CI integration check, see [tylertoo delivery review](tylertoo.md).
 
+For the optional City2Graph runtime, executable spatial-graph guidance examples,
+independent edge/flow oracles and mutation controls, see
+[City2Graph example checks](city2graph.md).
+
 ## Execution modes and score types
 
 The 0.4.0 collection layout lives in `skills/`. Use `--collection` with live
