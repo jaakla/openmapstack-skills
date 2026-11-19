@@ -1,0 +1,2 @@
+# Optional guide-example runtime. Use Python 3.12; no Torch/PyG extras.
+city2graph==1.1.0

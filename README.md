@@ -47,6 +47,7 @@ Includes all the skills.
 - [references/formats-and-crs.md](skills/open-map-stack/references/formats-and-crs.md) - how to choose formats, conversions, projections, EPSG codes.
 - [references/processing.md](skills/open-map-stack/references/processing.md) - when and how to use GDAL/OGR, GeoPandas, xarray, DuckDB, PostGIS, PDAL and other open geo processing tools.
 - [references/analytics.md](skills/open-map-stack/references/analytics.md) — do vector/raster analytics, terrain, hydrology, network, point clouds, geocoding etc.
+- [references/spatial-graphs.md](skills/open-map-stack/references/spatial-graphs.md) — optional City2Graph workflows for urban morphology, GTFS/OD and proximity graphs, NetworkX analysis and GeoAI preparation, with direction, CRS and source-ID checks.
 - [references/web-delivery.md](skills/open-map-stack/references/web-delivery.md) — renderer selection for maps, tylertoo/Tippecanoe vector tiling, PMTiles, MVT, Martin, TiTiler, MapLibre, deck.gl, kepler.gl, and lonboard formats and engines.
 - [references/qgis.md](skills/open-map-stack/references/qgis.md) — QGIS desktop, plugins, PyQGIS, Processing, QGIS MCP.
 - [references/validation-and-ops.md](skills/open-map-stack/references/validation-and-ops.md) — validation, manifests, attribution, and deployment checks, including the machine-readable reproducible-project contract.
