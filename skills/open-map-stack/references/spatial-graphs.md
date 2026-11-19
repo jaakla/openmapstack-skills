@@ -1,10 +1,10 @@
 # Spatial graphs with City2Graph
 
-Use [City2Graph](https://city2graph.net/latest/) when the analysis needs explicit
-relationships among geographic features: buildings and streets, transit stops,
-origin–destination flows, neighboring points, or adjacent zones. Keep spatial
-filtering and aggregation in DuckDB/PostGIS where appropriate, then construct
-the bounded graph in Python. City2Graph is an optional analysis dependency.
+Consider [City2Graph](https://city2graph.net/latest/) when its GIS graph builders,
+typed relations or GeoPandas–NetworkX–PyG conversions replace substantial custom
+glue. Preserve an existing graph and its analysis tools when they already fit the
+task. Keep spatial filtering and aggregation in DuckDB/PostGIS where appropriate,
+then construct the bounded graph in Python. City2Graph is an optional dependency.
 
 ## Contents
 
@@ -18,6 +18,33 @@ the bounded graph in Python. City2Graph is an optional analysis dependency.
 
 ## Choose the graph
 
+Choose by the required operation before choosing a City2Graph builder:
+
+| Task | Prefer or preserve |
+|---|---|
+| Centrality, components or paths on an existing NetworkX graph | NetworkX directly; no conversion layer is needed |
+| Acquire, clean and analyze OSM street networks | OSMnx |
+| Repeated accessibility queries over many origins on a fixed network | Pandana; use a schedule-aware engine when transit timing matters |
+| Timetable-based multimodal travel-time matrices | r5py / R5 |
+| A transit journey-planner service | OpenTripPlanner |
+| Spatial weights, Moran's I or LISA | PySAL: libpysal for weights and esda for statistics |
+| Individual building/street morphology measurements | momepy directly when its metrics suffice |
+| Custom-network graph analysis within an existing PostGIS workflow | pgRouting |
+| Route/isochrone services or large car matrices | Valhalla / OSRM, according to [routing requirements](services-and-scale.md#routing-isochrones-and-matrices) |
+| Assemble GIS layers into typed graphs or move graphs between GIS and PyG | City2Graph builders/converters, then the appropriate analysis library |
+
+City2Graph supplies construction and interchange; NetworkX supplies algorithms,
+and PyG supplies a model framework. Keep those responsibilities explicit. This
+guidance establishes no speed or accuracy superiority over the alternatives.
+Benchmark the measured bottleneck on a representative study area, including
+construction and conversion costs, while preserving direction and weight semantics.
+
+For polygon adjacency, City2Graph uses libpysal to find neighbors, but its
+[`contiguity_graph` weights](https://city2graph.net/latest/api/proximity.html)
+are distances between polygon centroids by default. They are not automatically
+binary or row-standardized statistical weights. Select the intended statistical
+weight definition explicitly before passing adjacency to a PySAL analysis.
+
 | Analytical need | City2Graph entry point | Decision to make explicit |
 |---|---|---|
 | Building–street relationships and urban form | `morphological_graph` | Node and relation types, street connectivity, tessellation and study boundary |
@@ -27,11 +54,9 @@ the bounded graph in Python. City2Graph is an optional analysis dependency.
 | GIS graph to general graph algorithms | `gdf_to_nx`, `nx_to_gdf` | Stable source IDs, direction, parallel edges and weight semantics |
 | Typed graph to GNN input | `gdf_to_pyg` | Feature/label columns, relation types, reverse edges and train/test split |
 
-Keep OSMnx for acquiring and analyzing OSM street networks. Use City2Graph when
-combining those networks with other feature types or converting graph formats.
-Keep Valhalla/OSRM or a suitable hosted engine for route-serving workloads;
-use r5py or another schedule-aware engine for departure-time transit journeys.
-See [network analysis](analytics.md#network-analysis) for those choices.
+See [network analysis](analytics.md#network-analysis) for the existing routing
+and accessibility workflows. Use City2Graph alongside them when assembling
+additional feature types or converting graph representations adds value.
 
 ## Prepare inputs and runtime
 
