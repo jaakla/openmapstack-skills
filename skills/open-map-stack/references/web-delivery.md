@@ -4,7 +4,7 @@ For selected existing tools and runnable dlt/Dagster/dbt/Observable/QGIS example
 see `established-stack.md`. Keep one owner per transformation/dependency;
 optional tool runtimes are required only for selected integration work.
 
-Generating tiles, serving them, and rendering them. The 2026 default stack: PMTiles + Martin (or static hosting) + MapLibre. Choose tylertoo for direct GeoParquet vector tiling when its generalization fits the map, tippecanoe for established multi-format workflows, and TiTiler for dynamic raster tiling.
+Generating tiles, serving them, and rendering them. The 2026 default stack: PMTiles + Martin (or static hosting) + MapLibre. Choose tylertoo for direct GeoParquet vector tiling when its generalization fits the map, tippecanoe for established multi-format workflows (or manby, which takes the same options, when tippecanoe's build time or memory gets in the way), and TiTiler for dynamic raster tiling.
 
 ## Map review rules
 
@@ -32,7 +32,7 @@ kepler.gl does not replace MapLibre: it is an exploratory React/Redux applicatio
 1. **Static deployment, no server budget?** → Generate PMTiles, host on S3 / R2 / any static origin, fetch with MapLibre via the PMTiles protocol plugin.
 2. **Dynamic data in PostGIS, multi-user?** → Martin in front of PostGIS, MVT generation in-database with `ST_AsMVT`.
 3. **On-the-fly raster tiling from COGs?** → TiTiler (FastAPI-based) with on-demand resampling/styling.
-4. **Mixed vector + raster, batch generation, very large dataset?** → Planetiler for OSM-derived vector at planet scale; tylertoo for GeoParquet-native batch builds; tippecanoe for other vector inputs or existing cartographic workflows. See the tool-selection guidance below.
+4. **Mixed vector + raster, batch generation, very large dataset?** → Planetiler for OSM-derived vector at planet scale; tylertoo for GeoParquet-native batch builds; tippecanoe for other vector inputs or existing cartographic workflows, run by manby when the same options must build faster. See the tool-selection guidance below.
 
 ## PMTiles — the modern default
 
@@ -165,6 +165,47 @@ tippecanoe -o combined.pmtiles \
   -L'{"file":"roads.geojson", "layer":"roads", "minzoom":4}'
 ```
 
+### manby — the same options on a faster engine
+
+[manby](https://github.com/birkskyum/manby) is a Rust port of Tippecanoe with a
+faster tiling engine. It accepts Tippecanoe's options and is meant to produce
+the same tiles; `manby join` takes the place of `tile-join`. It can also read
+GeoParquet, FlatGeobuf, GeoPackage and Shapefile without a GeoJSON stream.
+Treat it as a different executable for the same cartography: keep the arguments
+and change only the program name. Unlike tylertoo, it is not a different
+generalization.
+
+Consider it when Tippecanoe's build time or peak memory slows each data refresh,
+or when the runtime cannot install Tippecanoe. Keep Tippecanoe when it is fast
+enough, or when the options in use have not been checked against the installed
+manby release.
+
+* Read the current [options](https://birkskyum.github.io/manby/reference/options/)
+  and [differences](https://birkskyum.github.io/manby/reference/differences/)
+  pages. `manby --version` names the Tippecanoe release it follows; pin the
+  tested manby release in the project runtime.
+* To migrate a tuned pipeline, keep every option and build both tools on a
+  representative subset. Compare decompressed tiles and tileset metadata, not
+  archive checksums: compression differs, so the archive bytes can differ while
+  every tile matches. Keep the Tippecanoe command as the reference and fallback.
+* Some options exist only in manby, such as per-tile thresholds, faster size
+  checks and sharding. They can make tiles that differ from Tippecanoe's. Add
+  them only as a reviewed cartographic change, never in a like-for-like migration.
+* When the output must match an existing build, reproject to WGS84 with the
+  project's recorded GDAL/PROJ step before tiling. manby's own reprojection
+  (`-s`) uses a different projection library, and tiny coordinate differences
+  can change which features density-based dropping keeps. Whether an embedded CRS is honoured
+  varies by input format and release: pass the CRS explicitly or reproject first.
+* Measure runtime and peak memory on the actual workload; savings vary with input
+  and options. Run the same archive checks as for Tippecanoe. Either tool can exit
+  successfully with an empty or out-of-range archive and only print a warning.
+
+```bash
+manby --version
+# The tuned Tippecanoe arguments, unchanged
+manby -o buildings.pmtiles -l buildings -zg --drop-densest-as-needed buildings.fgb
+```
+
 ## tylertoo — GeoParquet-native vector tiles
 
 [tylertoo](https://github.com/geoparquet-io/tylertoo) builds PMTiles directly from
@@ -241,7 +282,7 @@ java -jar planetiler.jar --download \
   --output=planet.pmtiles
 ```
 
-Use Planetiler's profiles (OpenMapTiles, Shortbread, custom). For other vector overlays, choose between tylertoo and tippecanoe using the input format and required cartographic behavior above.
+Use Planetiler's profiles (OpenMapTiles, Shortbread, custom). For other vector overlays, choose between tylertoo and tippecanoe (or manby) using the input format and required cartographic behavior above.
 
 ## Tile servers
 

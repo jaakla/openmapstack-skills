@@ -1,0 +1,33 @@
+id: 032-tiler-compatible-engine
+case_type: positive
+modes:
+- fixture
+- live
+score_types:
+  fixture: contract_ci
+  live: agent_benchmark
+project_dir: project
+hard_gate: true
+fixture:
+  generator: '{python} {evals_dir}/fixtures/tiler-engine/gen.py {project_dir}'
+live:
+  prompt_file: prompt.md
+  agent_workdir: project
+  fixtures: []
+assertions:
+- assert: tiling.command_matches
+  args:
+    path: tiling-plan.json
+    field: accelerated
+    expected:
+    - manby
+    - --output
+    - buildings.pmtiles
+    - --minimum-zoom
+    - '10'
+    - --maximum-zoom
+    - '14'
+    - --layer
+    - buildings
+    - --drop-densest-as-needed
+    - buildings.geojsonl

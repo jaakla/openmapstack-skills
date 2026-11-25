@@ -23,6 +23,8 @@ the agent's narration.
 
 For runnable tylertoo/Tippecanoe planning cases, mutation controls and the
 automatically installed real GeoParquet-to-PMTiles CI integration check, see [tylertoo delivery review](tylertoo.md).
+For the manby engine-migration cases and the CI check that compares manby
+with a pinned Tippecanoe build tile by tile, see [manby parity review](manby.md).
 
 ## Execution modes and score types
 

@@ -1,0 +1,31 @@
+id: 954-tiler-engine-generalization-change
+case_type: mutation
+modes:
+- fixture
+score_types:
+  fixture: mutation_tests
+project_dir: project
+hard_gate: true
+fixture:
+  generator: '{python} {evals_dir}/fixtures/tiler-engine/gen.py {project_dir} --mutation=generalization-change'
+assertions:
+- assert: tiling.command_matches
+  args:
+    path: tiling-plan.json
+    field: accelerated
+    expected:
+    - manby
+    - --output
+    - buildings.pmtiles
+    - --minimum-zoom
+    - '10'
+    - --maximum-zoom
+    - '14'
+    - --layer
+    - buildings
+    - --drop-densest-as-needed
+    - buildings.geojsonl
+  expect: failed
+  expect_code: tiler_command_mismatch
+mutation:
+  control_generator: '{python} {evals_dir}/fixtures/tiler-engine/gen.py {project_dir}'
