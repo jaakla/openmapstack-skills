@@ -52,6 +52,25 @@ class TilingCheckTests(unittest.TestCase):
         self.path.write_text(json.dumps({'existing': ['tippecanoe', '--feature-filter={"*":[">","population",10000]}', 'cities.geojson']}))
         self.assertEqual(command_matches(self.root, path='plan.json', field='existing', expected=command).status, 'passed')
 
+    def test_compatible_engine_keeps_options_but_not_identity(self):
+        accelerated = ['manby', '--output', 'b.pmtiles', '--maximum-zoom', '14',
+                       '--drop-densest-as-needed', 'b.geojsonl']
+        check = lambda command: command_matches(self.root, path='plan.json', field='a',
+                                                expected=accelerated)
+        for command, code in (
+                (['tippecanoe', *accelerated[1:]], 'tiler_command_mismatch'),
+                (accelerated + ['--as-needed-per-tile'], 'tiler_command_mismatch'),
+                (accelerated + ['--fast'], 'tiler_command_mismatch'),
+                (accelerated + ['--fast=yes'], 'tiler_command_invalid'),
+                (accelerated + ['--shard', '1/2'], 'tiler_command_invalid'),
+                (['tippecanoe', *accelerated[1:], '--fast'], 'tiler_command_invalid')):
+            with self.subTest(command=command):
+                self.path.write_text(json.dumps({'a': command}))
+                self.assertEqual(check(command).data['code'], code)
+        self.path.write_text(json.dumps({'a': ['manby', 'b.geojsonl', '--drop-densest-as-needed',
+                                               '--maximum-zoom=14', '--output=b.pmtiles']}))
+        self.assertEqual(check(accelerated).status, 'passed')
+
     def test_missing_malformed_and_unreadable_plan(self):
         self.assertEqual(self.result().data['code'], 'file_missing')
         self.path.write_text('{')
@@ -70,7 +89,8 @@ class TilingCheckTests(unittest.TestCase):
 class TilingCaseTests(unittest.TestCase):
     def test_fixtures_and_healthy_control_mutations(self):
         for name in ('026-tiler-selection', '947-tiler-wrong-tool', '948-tiler-thinning',
-                     '949-tiler-replace-existing'):
+                     '949-tiler-replace-existing', '032-tiler-compatible-engine',
+                     '953-tiler-engine-output-change', '954-tiler-engine-generalization-change'):
             with self.subTest(case=name):
                 result = eval_runner.run_case(CASES / name, 'fixture')
                 self.assertEqual(result['status'], 'passed', result)
@@ -112,3 +132,32 @@ class TilingCaseTests(unittest.TestCase):
                 result = eval_runner.run_case(CASES / '026-tiler-selection', 'live',
                     agent_override='codex', model='test-stub', skill_mode='enabled')
             self.assertEqual(result['status'], 'assertions_failed' if remove_guard else 'passed', result)
+
+    def test_live_grader_rejects_output_changing_engine_option(self):
+        # Stub proves wiring and rejection, not actual agent adherence.
+        for add_option in (False, True):
+            class StubAdapter:
+                executable = 'test-stub'
+
+                @staticmethod
+                def is_available():
+                    return True
+
+                @staticmethod
+                def run(prompt, workspace, **kwargs):
+                    if 'tiling-plan.json' not in prompt or 'accelerated' not in prompt:
+                        raise AssertionError('missing live task')
+                    command = ['manby', '--output', 'buildings.pmtiles', '--minimum-zoom', '10',
+                               '--maximum-zoom', '14', '--layer', 'buildings',
+                               '--drop-densest-as-needed', 'buildings.geojsonl']
+                    if add_option:
+                        command.insert(1, '--as-needed-per-tile')
+                    (workspace / 'tiling-plan.json').write_text(json.dumps({'accelerated': command}))
+                    return AgentRunResult(agent='codex', model='test-stub', workspace=workspace,
+                        duration_s=0.0, success=True, returncode=0, command=['test-stub'],
+                        metadata={'structured_completion': True})
+
+            with patch.object(eval_runner, '_load_adapter', return_value=StubAdapter()):
+                result = eval_runner.run_case(CASES / '032-tiler-compatible-engine', 'live',
+                    agent_override='codex', model='test-stub', skill_mode='enabled')
+            self.assertEqual(result['status'], 'assertions_failed' if add_option else 'passed', result)

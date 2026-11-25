@@ -11,12 +11,17 @@ from pathlib import Path
 from . import AssertionResult, failed, get_in, not_testable, passed, project_root
 
 
-# Deliberately bounded plan vocabulary; not a replacement for either tool's CLI.
+# Deliberately bounded plan vocabulary; not a replacement for any tool's CLI.
+_TIPPECANOE = {'--minimum-zoom': True, '--maximum-zoom': True, '--layer': True,
+               '--output': True, '--feature-filter': True,
+               '--drop-densest-as-needed': False}
 _OPTIONS = {
     'tylertoo': {'--min-zoom': True, '--max-zoom': True, '--layer-name': True,
                 '--verbatim': False},
-    'tippecanoe': {'--minimum-zoom': True, '--maximum-zoom': True,
-                   '--layer': True, '--output': True, '--feature-filter': True},
+    'tippecanoe': _TIPPECANOE,
+    # manby takes Tippecanoe's options. Its own output-changing switches are
+    # known here so that adding one to a like-for-like migration is a mismatch.
+    'manby': {**_TIPPECANOE, '--as-needed-per-tile': False, '--fast': False},
 }
 
 

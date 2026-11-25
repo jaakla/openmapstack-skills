@@ -26,6 +26,33 @@ jobs:
           : "${OMS_TYLERTOO:?installer must configure the executable}"
           python -m unittest tests.test_tylertoo -v
 
+  manby-parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned test dependencies
+        run: python -m pip install -r evals/requirements-tylertoo.txt
+      - name: Build pinned Tippecanoe reference
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libsqlite3-dev zlib1g-dev
+          bash scripts/ci/install-tippecanoe.sh "${RUNNER_TEMP}/tippecanoe"
+          echo "OMS_TIPPECANOE=${RUNNER_TEMP}/tippecanoe/tippecanoe" >> "$GITHUB_ENV"
+      - name: Install checksum-verified manby release
+        run: |
+          bash scripts/ci/install-manby.sh "${RUNNER_TEMP}/manby/manby"
+          echo "OMS_MANBY=${RUNNER_TEMP}/manby/manby" >> "$GITHUB_ENV"
+      - name: Compare manby with Tippecanoe and run the negative control
+        run: |
+          # Fail rather than silently taking the local-only test skip.
+          : "${OMS_MANBY:?installer must configure the executable}"
+          : "${OMS_TIPPECANOE:?installer must configure the executable}"
+          python -m unittest tests.test_manby -v
+
   duckdb-compatibility:
     name: duckdb-compatibility (${{ matrix.duckdb }})
     runs-on: ubuntu-latest
